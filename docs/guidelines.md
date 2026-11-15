@@ -156,9 +156,14 @@ headset model, VR runtime.
 - Remotes: `origin` = the fork (https://github.com/joschi127/FNVVR), default push target.
   `upstream` = df4l/FNVVR, fetch only (push URL disabled). Never push to `upstream`.
 - `master` mirrors `upstream/master` and gets fast-forwards only, no fork commits.
-- Fork work happens on a working branch (name chosen by the maintainer, recorded in
-  `local/NOTES.md`) in small, self-contained commits that each build, so single changes can be
-  offered upstream later. Separate branches only for experiments and for changes offered upstream.
+- Fork work happens on the working branch `coop-compat` in small, self-contained commits that each
+  build, so single changes can be offered upstream later. Separate branches only for experiments
+  and for changes offered upstream.
+- Upstream moves fast (many commits per day, AI-assisted). Keep fork changes small and easy to
+  rebase onto a new upstream state; merge `upstream/master` into `coop-compat` (or rebase short
+  branches) regularly instead of letting long divergent branches pile up. Changes offered upstream
+  must be small, tested and explained by the maintainer in their own words (upstream ignores
+  low-effort AI contributions).
 - **No AI attribution in commits or PRs** (no `Co-Authored-By: <AI agent>` trailers, no "generated
   with" lines). Commits are authored by the repository owner only.
 - Check before every push: nothing from the "never commit" list, no binaries, no local paths.
