@@ -1,5 +1,23 @@
 # FNVVR Reborn
 
+> [!NOTE]
+> This is a fork of [FNVVR](https://github.com/df4l/FNVVR) by [df4l](https://github.com/df4l). All
+> credit for the VR mod goes to df4l and to the DXVK authors; this fork is not official. For the
+> released mod, support and the Discord, use the original project.
+>
+> **Goal of this fork:** get FNVVR running stable together with
+> [New Vegas True Co-op](https://github.com/Zyrcxies/NewVegasCoop) (play New Vegas with friends, in
+> VR). The two stay **separate mods that work together**; they are not merged
+> ([ADR 0001](docs/adr/0001-two-separate-mods-that-cooperate.md)). Fixes go where the cause is:
+> into this fork, or as reports/changes for the co-op mod in its own project.
+>
+> - Setup (game, co-op requirements, VR runtime): [docs/setup.md](docs/setup.md)
+> - Code analysis and known conflicts between the two mods: [docs/analysis/](docs/analysis/)
+> - Automated testing without a headset and without a person in front of the PC comes first
+>   ([ADR 0002](docs/adr/0002-headless-ai-testing-first.md)).
+> - Working branch: `coop-compat`. Guidelines for contributors and AI agents:
+>   [docs/guidelines.md](docs/guidelines.md).
+
 A VR mod for *Fallout: New Vegas*, built into a fork of [DXVK](https://github.com/doitsujin/dxvk).
 
 The original FNVVR was Windows-only: it shared frames between the game's DirectX 9Ex surface and a DirectX 11 VR pipeline. That interop does not exist on Linux (Wine/Proton). This project takes a different route: the VR layer lives inside the DXVK fork that translates the game's Direct3D 9 calls to Vulkan, and the eye images are shared with the VR runtime through Vulkan instead.
