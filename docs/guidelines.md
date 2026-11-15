@@ -52,6 +52,9 @@ Rules:
 
 ## Game versions and setup
 
+The full list of what to install (game, True Co-op requirements, VR runtime) is in
+[docs/setup.md](setup.md).
+
 - Supported executable: `FalloutNV.exe` 1.4.0.525. All game addresses are in
   `src/d3d9/vr/vr_game_addresses.h`; upstream reads them from the Steam executable and notes that
   the GOG executable has the same code addresses. The Epic Games Store build is unverified; do not
