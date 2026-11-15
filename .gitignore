@@ -4,3 +4,8 @@ FNVVR_old/
 .vscode/
 .idea/
 *.swp
+
+# Local-only notes and test data (see docs/guidelines.md "Data hygiene"): never commit
+/local/
+CLAUDE.local.md
+/.claude/settings.local.json
