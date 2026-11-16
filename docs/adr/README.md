@@ -23,3 +23,4 @@ reverse-engineering material.
 |---|---|---|
 | [0001](0001-two-separate-mods-that-cooperate.md) | FNVVR and New Vegas True Co-op stay two separate mods | Accepted |
 | [0002](0002-headless-ai-testing-first.md) | Headless, agent-run testing first | Proposed |
+| [0003](0003-coop-markers-in-vr.md) | Co-op name markers in VR: drawn by FNVVR in the direction of the friend | Proposed |

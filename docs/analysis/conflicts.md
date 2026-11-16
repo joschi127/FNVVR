@@ -79,6 +79,9 @@ switch those patch groups off (`d3d9.vrEnginePatchGroups`) to bisect a crash.
   tiles), or co-op could place markers through a VR-aware projection if one is exposed. Needs a
   design decision (ADR) because it touches the interface between the mods. Test: capture with a
   `fakefriend` standing in view; marker should sit over the friend.
+- **Likely**: FNVVR culls only the game's own HUD groups and yUI's tiles per panel pass
+  (`vr_hud_layers.cpp`); the injected co-op tiles are never culled and may show on the head panel and
+  on every hand panel. Proposed handling: [ADR 0003](../adr/0003-coop-markers-in-vr.md).
 
 ### 3.3 Menus that do not pause (confirmed in code, medium)
 - With RTM + co-op, menus, the Pip-Boy, VATS and the escape menu run in real time. FNVVR shows menus
