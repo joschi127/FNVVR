@@ -144,6 +144,7 @@ switch those patch groups off (`d3d9.vrEnginePatchGroups`) to bisect a crash.
 | `NVCoop.ini` `[Coop]` | `Borderless=0` | avoid the borderless resize fighting FNVVR's window (3.1) |
 | `dxvk.conf` | `d3d9.vrRealTimeCasino = False`, `d3d9.vrRealTimeVigorTester = False`, `d3d9.vrRealTimeCaravan = False` | RTM + co-op already keep menus live; avoids order-dependent patches (1) |
 | `NVCoop.ini` | `iFieldOfView=0` (default) | keep co-op from writing the FOV; FNVVR owns the projection |
+| `Data\config\NVCoop.ini` `[Settings]` | `iVoiceChatMode=1` (open mic) | push-to-talk reads the keyboard only while the game window is in the foreground; no controller button reaches it (3.1). A push-to-talk gesture in FNVVR would need a signal the co-op mod reads; not planned for now |
 | Windows | headset as default audio output | co-op voice/TTS use the default device (3.9) |
 
 ## 5. Test plan derived from this (for ADR 0002's harness)
