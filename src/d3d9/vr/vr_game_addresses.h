@@ -522,6 +522,76 @@ namespace dxvk {
     constexpr uint8_t   FaderHalfExtentCode[] = { 0xDC, 0x0D, 0x88, 0x15, 0x01, 0x01 };
 
     /**
+     * BSUtilities::ReflectCameraAboutArbitraryPlane (__cdecl: camera, plane,
+     * reflected camera) mirrors a camera about a water plane for the water
+     * reflections. It negates the up axis and copies the camera's frustum.
+     * Called by TESWaterSystem::MTSetupSelectiveReflectionTexture,
+     * MTSetupWorldReflectionTexture and MTSetupSkyReflectionTexture.
+     */
+    constexpr uintptr_t ReflectCameraAboutPlane = 0x00C4BF40;
+    constexpr uintptr_t ReflectCameraCallSites[] = { 0x004E9E2D, 0x004EAB27, 0x004EB098 };
+
+    /**
+     * BSShaderManager::fTimers: the shader timers, set once per frame by
+     * BSShaderManager::UpdateTimers (0x0086F330, from OnIdle). Entry 1 is
+     * the frame's time step, which BSShaderManager::GetTimer(true) returns:
+     * the water noise scroll, the water displacement simulation and the
+     * ripple timer of the water pass add it each time they run.
+     */
+    constexpr uintptr_t ShaderTimeStep    = 0x011F9410;
+    constexpr uintptr_t ShaderGetTimer    = 0x00452E70;
+    constexpr uint8_t   ShaderGetTimerCode[] = {
+      0x55, 0x8B, 0xEC, 0x0F, 0xB6, 0x45, 0x08, 0xF7, 0xD8, 0x1B, 0xC0,
+      0xF7, 0xD8, 0xD9, 0x04, 0x85, 0x0C, 0x94, 0x1F, 0x01, 0x5D, 0xC3 };
+
+    /**
+     * Work of the world render that follows the frame's time or does not
+     * depend on the view, see findings/stereo-passes.md. The world is drawn
+     * for each eye and for a scope's lens; the passes after the left eye's
+     * see no time passing and skip that work:
+     * - BSFadeNode::OnVisible (0x00B4E490) fades a node in or out by the game
+     *   timer's step (float at AppTimer + TimerStepAfterMultiplier), read by
+     *   the 6-byte fld instructions at FadeStepReadSites;
+     * - Main::Swap adds BSTimer::GetRealTimeSeconds (__thiscall on the timer,
+     *   returns a float) to the time the black loading fader has been shown,
+     *   at SwapFaderTimeCallSite, and takes a screenshot when its key is
+     *   pressed (ScreenShot::TakeScreenShot, __cdecl: name) at
+     *   SwapScreenshotCallSite;
+     * - TESWaterSystem::UpdateWaterSystem (0x004E1BC0) calls
+     *   UpdateActorsInWater, which keeps each wading actor's last position,
+     *   and UpdateWaterSounds (both __thiscall on the water system);
+     * - TESWaterSystem::UpdateWaterDisplacementSimulation (0x004E8EC0) draws
+     *   the wading stencil (RenderDisplacementWaterStencil, __thiscall), adds
+     *   each wading actor's offsets to two arrays (BSSimpleArray::Add,
+     *   __thiscall: item) and runs the displacement effect, which applies
+     *   the wading force and empties the arrays (ImageSpaceManager::
+     *   RenderEffect, __thiscall: effect, renderer, two textures, parameter,
+     *   flag);
+     * - TESWaterSystem::UpdateWaterNoise (0x004E3D60) draws each water type's
+     *   noise normal map with ImageSpaceManager::RenderEffect_2 (same
+     *   arguments).
+     */
+    constexpr uintptr_t TimerStepAfterMultiplier      = 0x0C;
+    constexpr uintptr_t FadeStepReadSites[]           = { 0x00B4E4DB, 0x00B4E85E, 0x00B4E945 };
+    constexpr uint8_t   FadeStepRead[]                = { 0xD9, 0x05, 0xA0, 0x63, 0x1F, 0x01 };
+    constexpr uintptr_t SwapFaderTimeCallSite         = 0x008700D2;
+    constexpr uintptr_t TimerRealTimeSeconds          = 0x007013E0;
+    constexpr uintptr_t SwapScreenshotCallSite        = 0x00870545;
+    constexpr uintptr_t TakeScreenshot                = 0x00878860;
+    constexpr uintptr_t WaterActorsCallSite           = 0x004E1FEC;
+    constexpr uintptr_t WaterUpdateActors             = 0x004E8A00;
+    constexpr uintptr_t WaterSoundsCallSite           = 0x004E1FFC;
+    constexpr uintptr_t WaterUpdateSounds             = 0x004E6A80;
+    constexpr uintptr_t WaterDisplaceStencilCallSite  = 0x004E8F49;
+    constexpr uintptr_t WaterDisplaceStencil          = 0x004E9550;
+    constexpr uintptr_t WaterDisplaceAddCallSites[]   = { 0x004E93AC, 0x004E93BD };
+    constexpr uintptr_t SimpleArrayAdd                = 0x006DB840;
+    constexpr uintptr_t WaterDisplaceRenderCallSite   = 0x004E9424;
+    constexpr uintptr_t ImageSpaceRenderEffect        = 0x00B97550;
+    constexpr uintptr_t WaterNoiseRenderCallSite      = 0x004E43FD;
+    constexpr uintptr_t ImageSpaceRenderEffect2       = 0x00B975F0;
+
+    /**
      * FaderManager::kFaders: three entries of 0x1C bytes, the black fader
      * below the menus, the black one above them and the white one. An entry
      * is shown while its root node (+0x10) is set; the alpha (float) is at
@@ -960,6 +1030,13 @@ namespace dxvk {
     constexpr uintptr_t RendererDepthClear         = 0x5E4;
 
     constexpr uint32_t  LockPickMenuId    = 0x3F6;
+
+    /**
+     * CompanionWheelMenu, the companion's orders. Its id is the class that
+     * CompanionWheelMenu::Create (0x00754DE0) checks the menu against
+     * (return_1075, 0x00755260).
+     */
+    constexpr uint32_t  CompanionWheelMenuId = 0x433;
 
     /**
      * The mini-games' scenes shown in the eye images, see
@@ -1440,6 +1517,37 @@ namespace dxvk {
     constexpr uintptr_t PlayerTempThirdPerson     = 0x64D;
 
     /**
+     * PlayerCharacter::GetCannibal (__thiscall, bool, vtable slot read by
+     * the GetIsInCannibalAction console command): the player is under AI
+     * control and its process's current package (BaseProcess vtable +0x22C)
+     * is of type 38, PACKAGE_TYPE_CANNIBAL (TESPackage::GetPackType, movsx
+     * [+0x20]). PlayerCharacter::InitiateCannibalPackage (0x009694D0) sets
+     * that control and the temporary third person; HighProcess::
+     * ProcessCannibal (0x00904DA0) clears the control once the idle is done.
+     * GOG database, findings/camera.md §8.8.
+     */
+    constexpr uintptr_t PlayerGetCannibal         = 0x00969760;
+    constexpr uint8_t   PlayerGetCannibalPrologue[] = {
+      0x55, 0x8B, 0xEC, 0x83, 0xEC, 0x0C, 0x89, 0x4D, 0xF8, 0x8B, 0x4D, 0xF8,
+    };
+
+    /**
+     * PlayerCharacter::Show1stPerson (__thiscall, bool first), which culls
+     * one of the player's two roots and shows the other, and stores which
+     * one is shown in bActually3rdPerson (PlayerThirdPerson, +0x64B). It
+     * refuses the first person while bTemp3rdPerson is set, and the camera
+     * update (UpdateFirstPersonZoom 0x00950290) calls it only once, when
+     * b3rdPerson goes back to 0: see findings/camera.md §8.7. The vanity
+     * camera flag (PlayerCharacter::bIsVanityMode) holds that call back too.
+     */
+    constexpr uintptr_t Show1stPerson         = 0x00951A10;
+    constexpr uint8_t   Show1stPersonPrologue[] = {
+      0x55, 0x8B, 0xEC, 0x6A, 0xFF, 0x68, 0x0B, 0x82, 0xF1, 0x00,
+      0x64, 0xA1, 0x00, 0x00, 0x00, 0x00, 0x50, 0x81, 0xEC, 0xB8, 0x00, 0x00, 0x00,
+    };
+    constexpr uintptr_t VanityModeActive      = 0x011E07B8;
+
+    /**
      * PlayerCharacter::p1stPersonAnimation, the first-person skeleton's
      * animation data, which PlayerCharacter::GetAnimation (0x00950A10, the
      * Actor vtable slot +0x1E4) gives in first person: scripts play their
@@ -1676,6 +1784,18 @@ namespace dxvk {
     constexpr uintptr_t HudSneakMeter = 0x130;
     constexpr uintptr_t HudSneakMeterStoreSite = 0x0076D419;
     constexpr uint8_t   HudSneakMeterStore[]   = { 0x8B, 0x0D, 0xC0, 0x96, 0x1D, 0x01, 0x89, 0x81, 0x30, 0x01, 0x00, 0x00 };
+
+    /**
+     * BreathMeter group: a 64 x 64 model tile (Interface\HUD\AirTimer01.NIF)
+     * that HUDMainMenu::UpdateBreathMeter (0x0077E4F0) fades in while the
+     * player's head is under water and winds down with the breath left.
+     * HUDMainMenu::Create stores it at the given site and puts it 80 units
+     * below the sneak meter, in the middle of the screen; nothing else
+     * moves it. See findings/hud.md §18.
+     */
+    constexpr uintptr_t HudBreathMeter = 0x148;
+    constexpr uintptr_t HudBreathMeterStoreSite = 0x0076E485;
+    constexpr uint8_t   HudBreathMeterStore[]   = { 0x8B, 0x15, 0xC0, 0x96, 0x1D, 0x01, 0x89, 0x82, 0x48, 0x01, 0x00, 0x00 };
 
     /**
      * HUDMainMenu fields holding the HUD groups shown on the hands: HitPoints
@@ -1945,6 +2065,18 @@ namespace dxvk {
      */
     constexpr uintptr_t InterfaceRealScreenWidth       = 0x00706E40;
     constexpr uintptr_t LoadingMenuScreenWidthCallSite = 0x0078965F;
+
+    /**
+     * RadialTile's hit test (vtable 0x01095750, slot 5 = Tile::Unk_05,
+     * __thiscall (float x, float y) in window pixels, returns bool, retn 8),
+     * called by InterfaceManager::PickMenus (0x007126C0) for the tile under
+     * the cursor. It scales both coordinates by the menus root's width over
+     * Interface::GetRealScreenWidth, then tests the angle and distance from
+     * the centre in user0..user5. Only the companion wheel's slices are
+     * radial tiles. ida-gog.
+     */
+    constexpr uintptr_t RadialTileContainsSlot = 0x01095764;
+    constexpr uintptr_t RadialTileContains     = 0x00A216B0;
 
     /**
      * BSTextureManager::LookupTextureParameters (0x00B6C2C0), cases
@@ -3200,6 +3332,15 @@ namespace dxvk {
     constexpr uintptr_t HudHotKeyWheel             = 0x1C8;
 
     /**
+     * HUDMainMenu::UpdateHotkeysWheel (0x0077DA60) reads the D-pad in
+     * gamepad mode through HotKeyWheel::HandleHotkeyInput(-1) (__thiscall,
+     * slot, ret 4): a direction held arms the wheel, its release equips or
+     * unequips the slot's item. See findings/quick-menu.md §2.
+     */
+    constexpr uintptr_t HotKeyWheelHandleInput     = 0x00701BD0;
+    constexpr uintptr_t HudHotKeyInputCallSite     = 0x0077DAE9;
+
+    /**
      * The Pip-Boy's inventory, see findings/quick-menu.md §3: whether a menu
      * is the top one (__cdecl, menu id), the InventoryMenu and its hotkey
      * wheel, shown while the gamepad's hotkey button (RB) is held.
@@ -3974,6 +4115,27 @@ namespace dxvk {
     constexpr uint32_t  WeaponFlag2NightScope        = 0x1000;
     constexpr uint32_t  WeaponFlag2ModScope          = 0x2000;
     constexpr uintptr_t SettingDefaultWorldFov       = 0x0120315C;
+
+    /**
+     * The model loader's delayed reference queue, see findings/performance.md
+     * (B4). Found in the GOG database, code identical to the Steam build.
+     *
+     * - ModelLoaderUpdateReferences: ModelLoader::UpdateReferencesToQueue,
+     *   __thiscall, walks every bucket of pDelayedQueue (5039) and returns
+     *   true once the walk is finished. Called by the IO manager's secondary
+     *   queue callback (ModelLoader::UpdateSecondaryQueueCallback 0x00446E40)
+     *   at ModelLoaderUpdateReferencesCallSite.
+     * - ModelLoaderDelayedQueue: ModelLoader + 0x0C, a
+     *   LockFreeMap<TESObjectREFR*, NiPointer<QueuedReference>>.
+     * - LockFreeMapCount: uiCount (+0x18), incremented by every insertion
+     *   once the node is linked (SetAt 0x0044D070) and decremented by every
+     *   removal once it is unlinked (RemoveAt 0x00528CE0), reset by RemoveAll.
+     */
+    constexpr uintptr_t ModelLoaderUpdateReferences         = 0x00448CC0;
+    constexpr uintptr_t ModelLoaderUpdateReferencesCallSite = 0x00446E62;
+    constexpr uintptr_t ModelLoaderDelayedQueue             = 0x0C;
+    constexpr uintptr_t LockFreeMapCount                    = 0x18;
+    constexpr uint8_t   ModelLoaderUpdateReferencesPrologue[] = { 0x55, 0x8B, 0xEC, 0x6A, 0xFF, 0x68, 0x40, 0xCD, 0xEE, 0x00 };
 
   }
 

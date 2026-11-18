@@ -17,8 +17,10 @@
 #include "vr_head_hud.h"
 #include "vr_options_file.h"
 #include "vr_math.h"
+#include "vr_menu_cursor.h"
 #include "vr_stereo_renderer.h"
 #include "vr_tree_leaves.h"
+#include "vr_water_reflection.h"
 #include "vr_weapon_types.h"
 
 namespace dxvk {
@@ -64,7 +66,8 @@ namespace dxvk {
     // HUD groups shown on the panel in front of the head
     constexpr uintptr_t HeadHudGroups[] = {
       VrGame::HudMessages, VrGame::HudQuestReminder, VrGame::HudSubtitles,
-      VrGame::HudRadiationMeter, VrGame::HudXpMeter, VrGame::HudSneakMeter };
+      VrGame::HudRadiationMeter, VrGame::HudXpMeter, VrGame::HudSneakMeter,
+      VrGame::HudBreathMeter };
 
     // HUD groups shown on the hands
     constexpr uintptr_t HandHudGroups[] = {
@@ -371,6 +374,8 @@ namespace dxvk {
 
     renderer->m_fadersOverlaid = renderer->m_faderOverlay.initialize() && VrFaderSize::install();
 
+    VrWaterReflection::install();
+
     renderer->m_roomscale = VrRoomscale::install();
 
     if (!renderer->m_roomscale)
@@ -454,6 +459,23 @@ namespace dxvk {
     if (!renderer->m_renderPasses)
       Logger::info("VR: The world render's passes were not found, they are drawn for each eye and not timed");
 
+    renderer->m_spikeLogWanted = passes.spikeLog && renderer->m_renderPasses;
+    renderer->m_cpuSamplesWanted = passes.cpuSamples;
+
+    if (passes.gpuTimings) {
+      renderer->m_gpuTimer = VrGpuTimer::create(device);
+
+      if (!renderer->m_gpuTimer)
+        Logger::warn("VR: The device has no timestamp queries, GPU timings are off");
+      else if (renderer->m_renderPasses)
+        renderer->m_renderPasses->setGpuTimer(renderer->m_gpuTimer.get());
+    }
+
+    renderer->m_repeatedPasses = VrRepeatedPasses::install();
+
+    if (!renderer->m_repeatedPasses)
+      Logger::info("VR: The game's timers were not found, time moves on in every eye's world pass");
+
     if (renderer->m_renderPasses) {
       renderer->m_foveation = VrFoveation::create(device, passes.foveationZones);
       renderer->m_foveationTestGaze = passes.foveationTestGaze;
@@ -511,7 +533,15 @@ namespace dxvk {
     if (g_stereoRenderer) {
       g_stereoRenderer->captureEye();
 
-      if (g_stereoRenderer->renderLayer(interfaceManager, arg0, arg1))
+      uint32_t eye = g_stereoRenderer->m_eye;
+      uint32_t token = eye != NoEye
+        ? g_stereoRenderer->gpuBegin(VrGpuSection::pass(eye, VrRenderPass::Interface))
+        : VrGpuTimer::NoToken;
+
+      bool drawn = g_stereoRenderer->renderLayer(interfaceManager, arg0, arg1);
+      g_stereoRenderer->gpuEnd(token);
+
+      if (drawn)
         return;
     }
 
@@ -595,9 +625,22 @@ namespace dxvk {
 
   void VrStereoRenderer::renderFrame(void* main) {
     m_mainThread   = GetCurrentThreadId();
+
+    if (m_cpuSamplesWanted) {
+      m_cpuSamplesWanted = false;
+      m_cpuSampler = VrCpuSampler::start(m_mainThread);
+
+      if (m_cpuSampler && m_renderPasses)
+        m_renderPasses->setCpuSampler(m_cpuSampler.get());
+    }
+
+    VrCpuPhaseScope framePhase(m_cpuSampler.get(), uint8_t(VrCpuPhase::Frame));
     m_swapped      = true;
     m_paced        = false;
     m_blockedInput = false;
+
+    if (m_repeatedPasses)
+      m_repeatedPasses->beginFrame();
 
     disableStaticMenuBackground();
 
@@ -650,9 +693,10 @@ namespace dxvk {
       return;
     }
 
-    VrFrameTiming timing = m_backend.waitFrame();
+    VrFrameTiming timing = waitFrame();
     VrD3D9Bridge::beginFrame(m_device, m_backend);
     m_paced = timing.paced;
+    countFrame(timing);
 
     if (!timing.shouldRender) {
       VrD3D9Bridge::submitEmptyFrame(m_device, m_backend, timing.predictedDisplayTime);
@@ -713,6 +757,12 @@ namespace dxvk {
 
     float dt = float(timing.predictedPeriod) * 1e-9f;
 
+    // Eating a corpse holds the stick from this frame's controls on
+    if (m_bodyView)
+      m_bodyView->updateMoveHold();
+
+    m_controls.setMoveHeld(m_bodyView && m_bodyView->holdsMove());
+
     updateControls(input, state, true, dt);
 
     if (m_controls.switchesPipBoyLight() && !m_loggedPipBoyLight) {
@@ -752,6 +802,8 @@ namespace dxvk {
       m_heldLook = holdsLook;
     }
 
+    bool moveHeld = m_bodyView && m_bodyView->holdsMove();
+
     m_viewMoved = m_bodyView && m_bodyView->movesView();
 
     // A mini-game on an object of the world has brought the player to it. It
@@ -765,7 +817,7 @@ namespace dxvk {
 
     if (m_roomscale && m_hasReference) {
       m_roomscale->update(m_reference, m_gameCameraPose, m_hasHeadPose ? &m_headPose : nullptr,
-        state == VrGameStateKind::InGame && m_controls.cameraFollowsHead() && !m_viewMoved);
+        state == VrGameStateKind::InGame && m_controls.cameraFollowsHead() && !m_viewMoved && !moveHeld);
     }
 
     updateNpcGaze();
@@ -791,7 +843,12 @@ namespace dxvk {
       ? m_hudMeters.place(vrComputeInterfaceSize(interfaceSize.width, interfaceSize.height).y)
       : VrHudMetersPlaced();
 
+    if (m_gpuTimer)
+      m_gpuTimer->beginFrame(m_frameId);
+
+    uint32_t scopeGpu = gpuBegin(VrGpuSection::part(VrGpuFramePart::Scope));
     renderScope(state, main, views);
+    gpuEnd(scopeGpu);
 
     m_minigameDrawn = { };
 
@@ -810,6 +867,9 @@ namespace dxvk {
     if (m_renderPasses)
       m_renderPasses->endFrame();
 
+    if (m_spikeLog && m_renderPasses)
+      m_spikeLog->setCpuPasses(m_frameId, m_renderPasses->lastFrame());
+
     m_renderCamera.restore(m_gameCamera);
     m_gameTarget = nullptr;
 
@@ -819,11 +879,16 @@ namespace dxvk {
         m_loggedFailure = true;
       }
 
+      if (m_gpuTimer)
+        m_gpuTimer->cancelFrame();
+
       VrD3D9Bridge::submitEmptyFrame(m_device, m_backend, timing.predictedDisplayTime);
       return;
     }
 
     IDirect3DTexture9* eyes[VrEyeCount] = { m_eyeTextures[0].ptr(), m_eyeTextures[1].ptr() };
+
+    uint32_t panelsGpu = gpuBegin(VrGpuSection::part(VrGpuFramePart::Panels));
 
     drawFaders(eyes);
 
@@ -851,6 +916,11 @@ namespace dxvk {
     else if (m_overPipBoy)
       hidePanel();
 
+    gpuEnd(panelsGpu);
+
+    if (m_gpuTimer)
+      m_gpuTimer->endFrame();
+
     if (!VrD3D9Bridge::submitStereoFrame(m_device, m_backend, eyes, views,
         timing.predictedDisplayTime) && !m_loggedFailure) {
       Logger::err("VR: The backend rejected a stereo frame");
@@ -868,9 +938,10 @@ namespace dxvk {
     // The runtime draws the panel. The game draws one frame, which
     // onPresent copies to the panel. Waiting still paces the game to the
     // headset and provides the head pose the panel is placed with.
-    VrFrameTiming timing = m_backend.waitFrame();
+    VrFrameTiming timing = waitFrame();
     VrD3D9Bridge::beginFrame(m_device, m_backend);
     m_paced = timing.paced;
+    countFrame(timing);
     VrInputState input = m_backend.pollInput(timing.predictedDisplayTime);
     trackHead(input);
 
@@ -942,6 +1013,7 @@ namespace dxvk {
     }
 
     m_controls.setDialogueShown(stereo && m_dialogueSpeaker);
+    m_controls.setCompanionWheelShown(stereo && VrMenuCursor::companionWheelShown());
     m_controls.setTerminalPanel(m_terminal ? m_terminal->placement() : nullptr);
     m_controls.update(input, state, m_hasReference ? &m_reference : nullptr, menuPanel(), dt);
 
@@ -1103,7 +1175,16 @@ namespace dxvk {
     if (m_renderPasses)
       m_renderPasses->beginEye(eye);
 
+    // The left eye's pass moves time on for the frame
+    bool repeat = eye != 0 && m_repeatedPasses;
+
+    if (repeat)
+      m_repeatedPasses->beginRepeat();
+
     g_originalSwap(main, nullptr);
+
+    if (repeat)
+      m_repeatedPasses->endRepeat();
 
     if (m_renderPasses)
       m_renderPasses->endEye();
@@ -1269,7 +1350,14 @@ namespace dxvk {
     if (m_renderPasses)
       m_renderPasses->setSceneScissor(&m_scopeRender->area());
 
+    // Drawn before the eyes, but the left eye's pass moves time on
+    if (m_repeatedPasses)
+      m_repeatedPasses->beginRepeat();
+
     m_scopeRender->render(main);
+
+    if (m_repeatedPasses)
+      m_repeatedPasses->endRepeat();
 
     if (m_renderPasses)
       m_renderPasses->setSceneScissor(nullptr);
@@ -1907,9 +1995,10 @@ namespace dxvk {
     int32_t type = -1;
     bool equipped = VrWeaponDrawn::equippedWeapon(type) != nullptr;
 
-    // No fist strikes while a script disabled fighting
+    // No fist strikes while a script disabled fighting, nor while swimming:
+    // the game refuses every attack in the water
     bool inGame = state == VrGameStateKind::InGame && m_hasReference && input.hasActions && m_weaponDrawn
-      && !VrWeaponDrawn::fightingDisabled();
+      && !VrWeaponDrawn::fightingDisabled() && !m_weaponDrawn->swimming();
     bool holstered = m_weaponDrawn && m_weaponDrawn->playerHolstered();
     bool wornOnFist = type == VrGame::WeaponTypeHandToHand;
 
@@ -2127,6 +2216,7 @@ namespace dxvk {
       || (gaze.state == VrPipBoyState::Changing && m_pipBoyGaze.isLooking());
 
     m_weaponHand->setPipBoyScale(m_pipBoyGrowth.update(grown, m_pipBoyScale, dt));
+    m_weaponHand->setPipBoyAngle(m_pipBoyAngle);
   }
 
 
@@ -2261,7 +2351,9 @@ namespace dxvk {
 
     logEyeCapture();
 
+    uint32_t copyGpu = gpuBegin(VrGpuSection::pass(m_eye, VrRenderPass::EyeCopy));
     m_eyeCopied[m_eye] = copyRenderTarget(m_eye);
+    gpuEnd(copyGpu);
 
     if (m_eyeCopied[m_eye] && m_scopeVisible) {
       Com<IDirect3DSurface9> eyeSurface;
@@ -2393,6 +2485,56 @@ namespace dxvk {
       Logger::info("VR: The eye is drawn with the headset's frustum");
       m_loggedEyeFrustum = true;
     }
+  }
+
+
+  VrFrameTiming VrStereoRenderer::waitFrame() {
+    VrCpuPhaseScope phase(m_cpuSampler.get(), uint8_t(VrCpuPhase::Wait));
+    return m_backend.waitFrame();
+  }
+
+
+  void VrStereoRenderer::countFrame(const VrFrameTiming& timing) {
+    if (m_spikeLog && timing.hasPreviousCycle)
+      m_spikeLog->setCycle(m_frameId, timing.previousCycle, timing.previousCycleEnd);
+
+    m_frameId += 1;
+
+    if (m_cpuSampler)
+      m_cpuSampler->setFrame(m_frameId);
+
+    double periodMs = double(timing.predictedPeriod) * 1e-6;
+
+    if (!m_spikeLogWanted || periodMs <= 0.0 || (m_spikeLog && m_spikeLogPeriodMs == periodMs))
+      return;
+
+    m_spikeLogPeriodMs = periodMs;
+    m_spikeLog = std::make_unique<VrSpikeLog>(periodMs, m_gpuTimer != nullptr,
+      [] (const std::string& line) { Logger::info(line); });
+
+    if (m_gpuTimer) {
+      m_gpuTimer->setFrameCallback([this] (uint64_t frameId, const VrGpuFrameTimes& times) {
+        m_spikeLog->setGpu(frameId, times);
+      });
+    }
+
+    if (m_cpuSampler) {
+      VrCpuSampler* sampler = m_cpuSampler.get();
+      m_spikeLog->setSpikeCallback([sampler] (uint64_t frameId) { sampler->markSpike(frameId); });
+    }
+
+    Logger::info(str::format("VR: Frames longer than the period of ", periodMs, " ms are logged one by one"));
+  }
+
+
+  uint32_t VrStereoRenderer::gpuBegin(VrGpuSection section) {
+    return m_gpuTimer ? m_gpuTimer->begin(section) : VrGpuTimer::NoToken;
+  }
+
+
+  void VrStereoRenderer::gpuEnd(uint32_t token) {
+    if (m_gpuTimer)
+      m_gpuTimer->end(token);
   }
 
 
@@ -2772,6 +2914,15 @@ namespace dxvk {
     VrInterfaceRect subtitles;
     bool hasSneak     = m_hudLayers.groupContent(VrGame::HudSneakMeter, sneak);
     bool hasSubtitles = m_hudLayers.groupContent(VrGame::HudSubtitles, subtitles);
+
+    // The breath meter shares the sneak meter's place: a model, which
+    // groupContent does not measure, so its group's rectangle is used
+    VrInterfaceRect breath;
+
+    if (m_hudMetersPlaced.breath && m_hudLayers.groupShownRect(VrGame::HudBreathMeter, breath)) {
+      sneak    = hasSneak ? vrUniteRects(sneak, breath) : breath;
+      hasSneak = true;
+    }
 
     float split = vrComputeHeadHudSplit(size.y, cornerBottom,
       hasSneak ? &sneak : nullptr, hasSubtitles ? &subtitles : nullptr);

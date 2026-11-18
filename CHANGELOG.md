@@ -1,5 +1,43 @@
 # Changelog
 
+## Unreleased
+
+- **Hands while swimming**: the game puts the weapon away in the water and animated the arms out of sight, so the hands vanished. Both hands now follow the controllers while swimming, as with a holstered weapon; they still grab objects, but cannot punch or attack, as in the game.
+
+## v0.20.0 (2026-11-18, since v0.19.1 `90dd1b8`)
+
+### Water and performance
+
+- **Water reflections lined up with the headset**: the reflections were read about 4.5 degrees too high with the eye's asymmetric view, so distant water reflected the hazy sky instead of the shore, turned grey beyond a fixed distance and moved with the head. They now match what is above the water.
+- **Water animated once per frame**: the water moved twice as fast as on a flat screen, and each eye saw a different step of it. It now advances once per frame.
+- **Work no longer repeated in the right eye and in scopes**: object fades, light and shadow fades, the eyes' adaptation to light, the loading screen's fader and the water's time-based work ran two or three times per frame (right eye, scope lens). They run once. The right eye also skips work that does not depend on the view (wading actors, the wading stencil effect, water sounds, the water noise map).
+- **Foveation keeps its shading rate map**: the map of the eye-tracked foveation was rebuilt whenever the eye's view moved even slightly (43772 times in a 20-minute session on the Steam Frame). It is now kept through small view drifts and rebuilt only when the view really changes (2 times in the same session), which makes the option clearly smoother.
+- **Profiling options for testers** (off by default): `d3d9.vrGpuTimings` logs the GPU time of each render pass, `d3d9.vrSpikeLog` logs the breakdown of each frame that misses its display period, and `d3d9.vrCpuSamples` samples where the game thread spends its time into `fnvvr\cpu_samples.txt`.
+- **Model loader idle cost**: every frame the game walked its 5039-slot queue of delayed models even when it was empty. The walk is now skipped when the queue holds nothing (same result, a little less time on the game thread).
+
+### Hands and controls
+
+- **No more weapon changes after menus**: closing a dialogue, the inventory or a container with the left stick still pushed could unequip the weapon or equip another hotkey item, because the game's own hotkey wheel read the menu's list navigation as a D-pad press. That wheel no longer reads the D-pad with the VR controllers; the quick wheel is unchanged.
+- **Settings > VR > Pip-Boy angle**: turns the Pip-Boy about your forearm (Normal, 15 to 90 degrees, `d3d9.vrPipBoyAngle`), so the screen faces your eyes with less wrist roll. Meant for controllers without tracking rings (Quest 3), which lose tracking when the wrist is rolled. The gaze and the light reach follow the drawn screen.
+
+### Menus
+
+- **Breath meter under water**: the oxygen gauge was never shown, so the air left while swimming could not be seen. It now fades in in front of your head, a little below the line of sight, when your head is under water.
+- **Companion wheel with the lasers**: the laser now hovers the slice it points at, and the triggers, A and X pick an order (X under the left laser, A under the right one, as in dialogues). A press the pointer does not take stays the gamepad's A, so the stick still works.
+
+### Other mods
+
+- **Titans of the New West**: the left arm's pose, the twist bone and the Pip-Boy are found again, the mod's extra "SC Hand" node no longer being taken for the forearm. Not checked in power armour yet.
+
+### Gameplay
+
+- **Cannibal in third person**: eating a corpse is seen again from behind your character, the view from the body's head being too rough. Moving no longer skips the animation: the stick and room-scale walking are held until it ends.
+
+### Mini-games
+
+- **Hands at the slot machines with a stool**: sitting down at a slot machine (the Tops' among others) hid both hands, so the lever could not be seen in the hand. They are drawn again while seated.
+- **Hands back after getting up from a seat**: getting up from a stool or a chair right after using it could leave the hands hidden until the next time you sat down. The game's first-person model is now put back.
+
 ## v0.19.1 (2026-11-15, since v0.19.0 `bbce83a`)
 
 ### Performance

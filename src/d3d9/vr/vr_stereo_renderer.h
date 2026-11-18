@@ -21,6 +21,9 @@
 #include "vr_game_camera.h"
 #include "vr_game_state.h"
 #include "vr_game_timer.h"
+#include "vr_gpu_timer.h"
+#include "vr_spike_log.h"
+#include "vr_cpu_sampler.h"
 #include "vr_hand_activate_pick.h"
 #include "vr_hand_hud.h"
 #include "vr_hud_layers.h"
@@ -52,6 +55,7 @@
 #include "vr_preview_window.h"
 #include "vr_prompt_icon.h"
 #include "vr_render_passes.h"
+#include "vr_repeated_passes.h"
 #include "vr_scope_game.h"
 #include "vr_scope_render.h"
 #include "vr_sky_anchor.h"
@@ -216,6 +220,17 @@ namespace dxvk {
      */
     void setPipBoyScale(float scale) {
       m_pipBoyScale = scale;
+    }
+
+    /**
+     * \brief Changes how far the Pip-Boy is turned about the forearm
+     *
+     * Called from the game's options page, on the game's thread.
+     *
+     * \param [in] degrees Turn towards the thumb, 0 for the game's placement
+     */
+    void setPipBoyAngle(float degrees) {
+      m_pipBoyAngle = degrees;
     }
 
     /**
@@ -519,7 +534,24 @@ namespace dxvk {
 
     // The game's frame timer, measured against real time
     std::unique_ptr<VrGameTimer> m_gameTimer;
+    // GPU time of the frame's parts (d3d9.vrGpuTimings), used by m_renderPasses
+    std::unique_ptr<VrGpuTimer> m_gpuTimer;
+    // Frames that miss their period (d3d9.vrSpikeLog), made at the first
+    // frame, once the period is known
+    std::unique_ptr<VrSpikeLog> m_spikeLog;
+    bool     m_spikeLogWanted = false;
+    // Where the game thread runs (d3d9.vrCpuSamples), started at the first
+    // frame on the game thread
+    std::unique_ptr<VrCpuSampler> m_cpuSampler;
+    bool     m_cpuSamplesWanted = false;
+    // Counts the waits for the runtime: the frame the next cycle belongs to
+    uint64_t m_frameId = 0;
+    double   m_spikeLogPeriodMs = 0.0;
     std::unique_ptr<VrRenderPasses> m_renderPasses;
+
+    // The world passes after the left eye's (right eye, scope lens) do not
+    // move time on or repeat work that does not depend on the view
+    std::unique_ptr<VrRepeatedPasses> m_repeatedPasses;
 
     // Shading at full rate only where the eyes look, see vr_foveation.h
     std::unique_ptr<VrFoveation> m_foveation;
@@ -565,6 +597,9 @@ namespace dxvk {
     // read it at the game's size
     VrPipBoyGrowth      m_pipBoyGrowth;
     float               m_pipBoyScale = 1.0f;
+    // Turn of the Pip-Boy about the forearm, so that its screen faces the
+    // eyes with less wrist roll (controllers lose tracking when rolled)
+    float               m_pipBoyAngle = 0.0f;
     bool                m_loggedPipBoyLight = false;
 
     // Thread that runs the game's main loop, and whether Main::Swap ran
@@ -747,6 +782,17 @@ namespace dxvk {
     void logEyeCapture();
 
     void captureEye();
+
+    // Waits for the backend's next frame, as the sampler's wait phase
+    VrFrameTiming waitFrame();
+
+    // Starts a frame: hands the cycle the wait ended to the spike log
+    void countFrame(const VrFrameTiming& timing);
+
+    // Sections of the GPU timings, nothing without d3d9.vrGpuTimings
+    uint32_t gpuBegin(VrGpuSection section);
+
+    void gpuEnd(uint32_t token);
 
     bool copyRenderTarget(uint32_t eye);
 

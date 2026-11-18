@@ -22,12 +22,14 @@
 #include "vr_game_settings.h"
 #include "vr_game_space.h"
 #include "vr_gamepad_head.h"
+#include "vr_game_hotkeys.h"
 #include "vr_gamepad_hook.h"
 #include "vr_large_address.h"
 #include "vr_live_casino.h"
 #include "vr_engine_patches.h"
 #include "vr_game_heap.h"
 #include "vr_fast_math.h"
+#include "vr_loader_queue.h"
 #include "vr_sound_focus.h"
 #include "vr_game_window.h"
 #include "vr_interface_shape.h"
@@ -181,6 +183,8 @@ namespace dxvk {
     options.smoothTurnSpeed = turn.smoothSpeed;
     options.pipBoyScale     = std::min(std::max(config.getOption<float>("d3d9.vrPipBoyScale", options.pipBoyScale),
       VrPipBoyScaleMin), vrPipBoyStepToScale(VrPipBoyScaleSteps - 1));
+    options.pipBoyAngle     = std::min(std::max(config.getOption<float>("d3d9.vrPipBoyAngle", options.pipBoyAngle),
+      0.0f), vrPipBoyStepToAngle(VrPipBoyAngleSteps - 1));
     options.manualReload    = config.getOption<bool>("d3d9.vrManualReload", options.manualReload);
     options.physicalSneak   = config.getOption<bool>("d3d9.vrPhysicalSneak", options.physicalSneak);
     options.scopeLens       = config.getOption<bool>("d3d9.vrScopes", options.scopeLens);
@@ -213,8 +217,10 @@ namespace dxvk {
       gamepad.controllers = config.getOption<bool>("d3d9.vrControllers", true);
 
       // The controllers point at the menu panel with the game's cursor
-      if ((gamepad.hidePad || gamepad.controllers) && VrGamepadHook::install(gamepad) && gamepad.controllers)
+      if ((gamepad.hidePad || gamepad.controllers) && VrGamepadHook::install(gamepad) && gamepad.controllers) {
         VrMenuCursor::install();
+        VrGameHotKeys::muteHudGamepadWheel();
+      }
     }
 
     bool weaponInHand = config.getOption<bool>("d3d9.vrWeaponInHand", true);
@@ -229,6 +235,9 @@ namespace dxvk {
     passes.handsDepthTest = config.getOption<bool>("d3d9.vrHandsDepthTest", passes.handsDepthTest);
     passes.scopeResolution = uint32_t(std::max<int32_t>(0,
       config.getOption<int32_t>("d3d9.vrScopeResolution", int32_t(passes.scopeResolution))));
+    passes.gpuTimings = config.getOption<bool>("d3d9.vrGpuTimings", passes.gpuTimings);
+    passes.spikeLog   = config.getOption<bool>("d3d9.vrSpikeLog", passes.spikeLog);
+    passes.cpuSamples = config.getOption<bool>("d3d9.vrCpuSamples", passes.cpuSamples);
     passes.foveationZones.fullDegrees = std::min(std::max(config.getOption<float>("d3d9.vrFoveationFullAngle",
       passes.foveationZones.fullDegrees), 1.0f), 89.0f);
     passes.foveationZones.halfDegrees = std::min(std::max(config.getOption<float>("d3d9.vrFoveationHalfAngle",
@@ -263,6 +272,7 @@ namespace dxvk {
       timer, passes, developer, swing));
     g_vrSystem->m_texts = vrReadTexts();
     g_vrSystem->m_pipBoyScale = options.pipBoyScale;
+    g_vrSystem->m_pipBoyAngle = options.pipBoyAngle;
     g_vrSystem->m_manualReload = options.manualReload;
     g_vrSystem->m_handPush = config.getOption<bool>("d3d9.vrHandPush", true);
     g_vrSystem->m_eyeAspect = config.getOption<bool>("d3d9.vrEyeAspect", true);
@@ -294,6 +304,8 @@ namespace dxvk {
     VrSoundFocus::install();
     if (config.getOption<bool>("d3d9.vrFastMath", true))
       VrFastMath::install();
+    if (config.getOption<bool>("d3d9.vrLoaderQueueSkip", true))
+      VrLoaderQueue::install();
     if (config.getOption<bool>("d3d9.vrEnginePatches", true))
       VrEnginePatches::install(config.getOption<std::string>("d3d9.vrEnginePatchGroups", "all"));
     if (config.getOption<bool>("d3d9.vrGameHeap", true))
@@ -368,6 +380,7 @@ namespace dxvk {
     m_turnConfig.smoothSpeed = options.smoothTurnSpeed;
 
     m_pipBoyScale = options.pipBoyScale;
+    m_pipBoyAngle = options.pipBoyAngle;
     m_manualReload = options.manualReload;
     m_sneakConfig.physical = options.physicalSneak;
     m_scopes = options.scopeLens;
@@ -380,6 +393,7 @@ namespace dxvk {
       m_stereoRenderer->setFoveationEnabled(m_foveation);
       m_stereoRenderer->setTurnConfig(m_turnConfig);
       m_stereoRenderer->setPipBoyScale(m_pipBoyScale);
+      m_stereoRenderer->setPipBoyAngle(m_pipBoyAngle);
       m_stereoRenderer->setManualReload(m_manualReload);
       m_stereoRenderer->setSneakConfig(m_sneakConfig);
     }
@@ -445,6 +459,7 @@ namespace dxvk {
 
     if (m_stereoRenderer) {
       m_stereoRenderer->setPipBoyScale(m_pipBoyScale);
+      m_stereoRenderer->setPipBoyAngle(m_pipBoyAngle);
       m_stereoRenderer->setMinigamesEnabled(m_immersiveMinigames);
       m_stereoRenderer->setScopesEnabled(m_scopes);
       m_stereoRenderer->setManualReload(m_manualReload);
