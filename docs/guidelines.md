@@ -165,8 +165,7 @@ headset model, VR runtime.
 - Upstream moves fast (many commits per day, AI-assisted). Keep fork changes small and easy to
   rebase onto a new upstream state; merge `upstream/master` into `coop-compat` (or rebase short
   branches) regularly instead of letting long divergent branches pile up. Changes offered upstream
-  must be small, tested and explained by the maintainer in their own words (upstream ignores
-  low-effort AI contributions).
+  must be small, tested and explained by the maintainer in their own words.
 - **No AI attribution in commits or PRs** (no `Co-Authored-By: <AI agent>` trailers, no "generated
   with" lines). Commits are authored by the repository owner only.
 - Check before every push: nothing from the "never commit" list, no binaries, no local paths.
@@ -184,9 +183,14 @@ Proposed until the maintainer decides. Bug fixes and test results do not need AD
 
 - Coordination with df4l (FNVVR) and Zyrcxies (co-op) is the maintainer's decision; agents never
   open issues, PRs or comments in other projects on the maintainer's behalf.
-- FNVVR's PR template says contributions the author cannot explain, including AI-generated
-  summaries, are ignored. Anything offered upstream must be reviewed and explained by the
-  maintainer; keep it small, in upstream's code style and with upstream's commit message style.
+- FNVVR has no contribution rules of its own. Its PR and issue templates are inherited from DXVK
+  (the PR template, by DXVK's author, says contributions the author cannot explain, including
+  AI-generated summaries, are ignored); FNVVR's author works with AI assistance himself and asks for
+  bug reports with a log on Discord or GitHub. Scope: features that do not fit the mod are refused
+  as bloat. Anything offered upstream must be reviewed and explained by the maintainer; keep it
+  small, in upstream's code style and with upstream's commit message style.
+- This fork's own `.github/` templates are still the inherited DXVK ones (they ask for Wine
+  versions and apitrace files); adapting them is a to-do.
 - Upstream discussion happens mostly on the FNVVR Discord (linked in the README). The co-op mod has
   its own Discord and Nexus page.
 - Do not report problems that only occur with this fork as regular bugs upstream.
