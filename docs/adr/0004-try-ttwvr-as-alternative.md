@@ -20,10 +20,16 @@ maintainer's reading of its Discord server; none of it is verified first-hand ye
 - **Built-in multiplayer**: competitive modes (free-for-all, team deathmatch, server browser, bots)
   and **drop-in co-op** in the host's world, with co-op saves kept apart from the normal ones;
   players report joining other people's worlds, and other players can affect the host's NPCs.
-- Its source code is not public as far as we found (no repository by the author; third-party
-  projects pin exact DLL hashes). A permission by the author ("anyone may do anything with the mod
-  as long as nobody posts it as their own work") is reported by one of those projects but not seen
-  by us.
+- Its source code is not public (no repository by the author; third-party projects pin exact DLL
+  hashes). On its Discord (2026-11-12) the author answered a question about publishing the source
+  on GitHub with "after i am finished with it myself, yes". A permission by the author ("anyone may
+  do anything with the mod as long as nobody posts it as their own work") is reported by one of
+  the third-party projects but not seen by us.
+- The release package of version 1.1.7 (read, not run) holds the plugin DLL, its own DXVK 3.1.1
+  build, OpenVR and OpenXR support, DLSS/FSR, local speech recognition, data tables and meshes; no
+  source. Its log messages describe campaign co-op: the host's quest stages, objectives, variables
+  and globals are sent to and kept in sync with the guests, guests' characters are saved with the
+  host's save, and the network layer has LAN, an internet server list and NAT traversal.
 
 If TTWVR's co-op covers what we want, it could replace most of the work this fork plans. If it does
 not, it is still a useful reference for VR and networking in the same engine.
@@ -38,9 +44,10 @@ Try both before investing in compatibility fixes:
    every player needs VR, connection in a home network, stability over long sessions, the headset
    setup (Pico 4 over Virtual Desktop), effort to install and keep running, and how far problems
    can be fixed by us (open source vs. closed binary).
-4. Read TTWVR's code as far as it is available: whatever its release package contains (scripts,
-   plugins, configuration). Disassembling or decompiling its DLL only with the author's permission
-   confirmed first-hand; any such material stays outside git (guidelines, "Data hygiene").
+4. Read TTWVR's source once the author publishes it (announced for "after i am finished with it");
+   until then only what its release package contains. No disassembling or decompiling of its DLL
+   without the author's permission confirmed first-hand; any such material stays outside git
+   (guidelines, "Data hygiene").
 
 The outcome is a new ADR that either confirms ADR 0001's path, switches to TTWVR, or keeps both.
 
