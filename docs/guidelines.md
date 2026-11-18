@@ -185,7 +185,7 @@ Proposed until the maintainer decides. Bug fixes and test results do not need AD
   open issues, PRs or comments in other projects on the maintainer's behalf.
 - FNVVR has no contribution rules of its own. Its PR and issue templates are inherited from DXVK
   (the PR template, by DXVK's author, says contributions the author cannot explain, including
-  AI-generated summaries, are ignored); FNVVR's author works with AI assistance himself and asks for
+  AI-generated summaries, are ignored); FNVVR's author also works with AI assistance and asks for
   bug reports with a log on Discord or GitHub. Scope: features that do not fit the mod are refused
   as bloat. Anything offered upstream must be reviewed and explained by the maintainer; keep it
   small, in upstream's code style and with upstream's commit message style.
