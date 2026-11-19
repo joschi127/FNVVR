@@ -25,3 +25,4 @@ reverse-engineering material.
 | [0002](0002-headless-ai-testing-first.md) | Headless, agent-run testing first | Proposed |
 | [0003](0003-coop-markers-in-vr.md) | Co-op name markers in VR: drawn by FNVVR in the direction of the friend | Proposed |
 | [0004](0004-try-ttwvr-as-alternative.md) | Try Tale of Two Realities (TTWVR) as an alternative before committing to FNVVR + True Co-op | Proposed |
+| [0005](0005-small-coop-fork-for-vr.md) | A small public fork of the co-op mod for VR and gamepad fixes (FNVVR-Coop-Compat) | Accepted |

@@ -72,6 +72,18 @@ FNVVR draws co-op markers itself (C). The co-op mod's flat markers are hidden in
 The correct depth (marker at the friend, scaled with distance) can become an option later; the
 interface does not change for it.
 
+## Test results (2026-11-19)
+
+First sessions with the host in VR (Pico 4 over Virtual Desktop, SteamVR) and `fakefriend` as second player,
+without any marker code in FNVVR:
+
+- The co-op name plate is visible and points roughly in the direction of the friend; it does not jitter with head
+  movement. Close up it sits well; at a larger distance it is noticeably off, but still usable.
+- So the flat-camera placement is good enough to start playing. This ADR stays Proposed and is taken up again only
+  if the placement bothers in real sessions.
+- FNVVR's upstream author does not want co-op-specific code in FNVVR (df4l/FNVVR#16). If markers need work, C2
+  (co-op writes the position, in [FNVVR-Coop-Compat](0005-small-coop-fork-for-vr.md)) is preferred over C1.
+
 ## Unknowns
 
 - How FNVVR tells a stand-in from other actors in C1 (base form copied from `0x00120EB1` at run

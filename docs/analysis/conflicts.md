@@ -69,12 +69,17 @@ switch those patch groups off (`d3d9.vrEnginePatchGroups`) to bisect a crash.
 - Recommendation for the co-op setup: `Borderless=0`. Fix candidates (co-op side): pick the game's
   real main window (by class/thread) for the subclass, and let push-to-talk work without foreground
   (or via an NVSE key query). Test: chat line opens and accepts text; push-to-talk transmits.
+- **Observed 2026-11-19:** quitting through SteamVR's "Exit game" (FNVVR logs no quit request from SteamVR)
+  ends with a crash in a co-op thread after the swap chain's surface is gone, and co-op writes a crash dump.
+  Quitting from the game's menu ends cleanly. Open: whether the same happens without co-op.
 
 ### 3.2 World-anchored co-op markers (confirmed in code, medium)
 - Name plates, "DOWNED" and chat bubbles are positioned with JohnnyGuitar's `WorldToScreen` for the
   game's flat camera and drawn as HUD tiles. FNVVR re-projects the HUD onto a panel in front of the
   head and renders the world per eye: the markers end up on the HUD panel at flat-camera positions,
   **not over the friend in the 3D world**.
+- **Test 2026-11-19 (host in VR, `fakefriend`):** the name plate is visible, roughly in the friend's direction and
+  steady with head movement; at larger distance it is noticeably off. Usable to start playing, see ADR 0003.
 - Fix candidates: FNVVR could offer world-anchored HUD elements (the hook point would be the co-op
   tiles), or co-op could place markers through a VR-aware projection if one is exposed. Needs a
   design decision (ADR) because it touches the interface between the mods. Test: capture with a
@@ -89,6 +94,8 @@ switch those patch groups off (`d3d9.vrEnginePatchGroups`) to bisect a crash.
   whether FNVVR still detects these menus as menus (its menu detection reads the menu state, not the
   pause) and whether its Pip-Boy live render copes with a world that moves. Test: open Pip-Boy and
   escape menu in a co-op session, check panels, head tracking and that the world keeps moving.
+- **Test 2026-11-19 (host in VR, `fakefriend` walking, simulated 150 ms ping):** Pip-Boy, VATS, a container and a
+  dialogue work in VR, the world and the friend keep moving. Resolved for these menus.
 - VATS: co-op removes the slow-motion and suppresses the VATS camera path (G15/G16) so playback
   stays in the player's view; FNVVR drives the camera from the headset. **Likely** compatible (no
   camera path to fight), test VATS once.
@@ -106,8 +113,10 @@ switch those patch groups off (`d3d9.vrEnginePatchGroups`) to bisect a crash.
   the body direction, not where the VR player looks. Acceptable for a first version.
 - FNVVR fires projectiles from the hand (`Projectile::Create 0x005245BD`, player only) and melee from
   the hand. If co-op replicates shots higher up (weapon fire / attack events), friends may see shots
-  leave the head direction. **Open**: check co-op's replication point for player attacks. FNVVR's
-  grab/push of other actors is not synced by co-op.
+  leave the head direction. **Checked in code:** hits are detected by the shooter's own game and sent as
+  target + damage, so hand-aimed shots count where they land; the other players only see a shot count played as
+  the stand-in's fire animation in its body direction (cosmetic). Confirmed in a test: the host's shots reach the
+  friend's side. FNVVR's grab/push of other actors is not synced by co-op.
 - Co-op teleports and pulls the player (doors, fast travel, "pull everyone", downed state) without a
   fade: comfort issue in VR; FNVVR could fade on large player position jumps.
 
@@ -116,6 +125,14 @@ switch those patch groups off (`d3d9.vrEnginePatchGroups`) to bisect a crash.
   mouse movement is zeroed and the laser drives the cursor. Co-op's MCM page, chat and IP entry need
   text input: reachable through FNVVR's injected keyboard/console path at best. Test: Host/Join from
   the main menu with VR controllers only; join by IP with typed address.
+- **Confirmed 2026-11-19:** reviving a downed friend, dragging them and giving them a Stimpak are impossible with
+  the VR controllers. Co-op checks these with xNVSE's `IsControlPressed`, which reads the keyboard and the mouse
+  only (xNVSE 6.4.9), while FNVVR presents the controllers as a gamepad; the prompts name E and Z. Also affects
+  every flat gamepad player. Fixed on the co-op side in FNVVR-Coop-Compat ([ADR 0005](../adr/0005-small-coop-fork-for-vr.md)):
+  the controls also read the game's polled gamepad state (`0x011F35A8`) through the game's gamepad bindings
+  (`OSInputGlobals` + `0x1BE8`), and the prompts name the bound key or button. Game test pending.
+- **Confirmed 2026-11-19:** the co-op MCM page cannot be operated in VR (entries open, options and the scroll bar
+  do not react to A or the trigger). Workaround: set values in `Data/Config/NVCoop.ini` (re-read every 2 s).
 
 ### 3.7 Memory (likely, medium)
 - Both are 32-bit in one process: FNVVR (DXVK, heap replacement, 4GB patch offered) and co-op ("far
@@ -160,7 +177,5 @@ switch those patch groups off (`d3d9.vrEnginePatchGroups`) to bisect a crash.
 
 ## 6. Open questions
 
-- Where exactly co-op replicates the local player's attacks (3.5).
 - Whether any co-op prologue detour lies inside an FNVVR inline engine patch (1, TODO).
-- Whether FNVVR's menu detection still works with RTM's live menus (3.3).
 - Which window co-op's subclass picks when FNVVR hides the game window (3.1).
