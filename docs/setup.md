@@ -12,6 +12,16 @@ installed so both run in the same game.
   (see the test-state rules in the guidelines).
 - Started with `nvse_loader.exe` while Steam is running (True Co-op needs Steam open).
 - Borderless window recommended (True Co-op: full screen can fail to come back after alt-tab).
+- **4 GB patch on `FalloutNV.exe` is required for FNVVR on Windows**, also without True Co-op (FNVVR offers
+  it in the main menu as "Use 4 GB"; the FNV 4GB Patcher does the same). Without it the game only has
+  2 GB of address space: on an AMD Radeon RX 7900 XTX it crashed in the 32-bit Vulkan driver right after
+  start (with FNVVR's game heap on) or hung when opening menus, V.A.T.S. or tutorials ("Failed to end
+  command buffer"). Proton gives 32-bit games 4 GB by default, so Linux players do not see this.
+- Started outside Steam's launcher: Steam can start another installed edition of the game (here the
+  PCR edition, whose install script rewrites the registry path the launcher uses). Start
+  `FalloutNV.exe` directly with a `steam_appid.txt` containing `22380` next to it.
+- FNVVR needs the 32-bit `openvr_api.dll` next to `FalloutNV.exe` (shipped in FNVVR releases; for own
+  builds it can be taken from SteamVR's `bin\win32`).
 
 ## Requirements of True Co-op (everyone in a co-op session)
 
