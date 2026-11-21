@@ -2719,6 +2719,16 @@ namespace dxvk {
     constexpr uint32_t  TraitTextureAtlas   = 0xFF9;
 
     /**
+     * The image tile's file (VrPipBoyIcons): trait "filename", a string
+     * relative to textures\, as named in the public tile trait lists of
+     * xNVSE and JIP LN NVSE (GameTiles.h). The gamepad button images are
+     * interface\shared\button\general_button_<button>.dds and
+     * glow_general_button_<button>.dds, 64x64, cut from the texture atlas
+     * named in TraitTextureAtlas.
+     */
+    constexpr uint32_t  TraitFilename       = 0xFCC;
+
+    /**
      * Developer mode (VrDeveloperMode), see findings/developer-mode.md.
      * SetGodMode (__cdecl, bool) is what the console's tgm calls. The data
      * handler's object list (+0x04) chains every loaded TESObject through

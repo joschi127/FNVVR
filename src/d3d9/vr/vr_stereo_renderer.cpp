@@ -273,6 +273,7 @@ namespace dxvk {
 
     renderer->m_hudAvailable = renderer->m_hudLayers.initialize();
     renderer->m_tileTextureRetry.initialize();
+    renderer->m_pipBoyIcons.initialize();
 
     if (!renderer->m_hudAvailable)
       Logger::info("VR: The HUD layout was not found, the HUD is not shown in the headset");
@@ -664,6 +665,9 @@ namespace dxvk {
     m_tileTextureRetry.update();
 
     VrGameStateKind state = readGameState();
+
+    // The grips page through the open Pip-Boy, see VrControls
+    m_pipBoyIcons.update(state == VrGameStateKind::PipBoy);
 
     if (m_comfortSettings)
       m_comfortSettings->update(state == VrGameStateKind::InGame, m_weaponHand && m_weaponHand->hidesModel());

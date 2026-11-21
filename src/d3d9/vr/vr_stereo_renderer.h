@@ -61,6 +61,7 @@
 #include "vr_sky_anchor.h"
 #include "vr_text_field_keyboard.h"
 #include "vr_tile_texture_retry.h"
+#include "vr_pipboy_icons.h"
 #include "vr_weapon_hand.h"
 
 namespace dxvk {
@@ -363,6 +364,7 @@ namespace dxvk {
     // draws the HUD elements the game still shows.
     VrHudLayers            m_hudLayers;
     VrTileTextureRetry     m_tileTextureRetry;
+    VrPipBoyIcons          m_pipBoyIcons;
     VrHudMeters            m_hudMeters;
     bool              m_hudMetersAvailable = false;
     VrHudMetersPlaced m_hudMetersPlaced;
