@@ -65,6 +65,20 @@ Facts from True Co-op's description that the compatibility work has to keep in m
 - Don't use the console during co-op (desyncs); test scripts that use console commands run outside a
   co-op session or on the host only, and must say so.
 
+## Load order on several PCs
+
+- New Vegas orders plugins (`.esm`/`.esp`) by the **files' modification dates**; `plugins.txt` only says
+  which are active. True Co-op refuses a friend whose order differs from the host's ("the load order is
+  different from plugin N").
+- Copying a game folder or extracting an archive can change those dates: zip stores them with 2 s
+  precision, and a fresh install can give several DLC files the same second. Equal dates make the order
+  arbitrary, so two PCs with identical files can still load them in a different order.
+- Install scripts therefore set the plugins' dates explicitly after copying: strictly increasing in the
+  host's order (one minute apart is enough), on every PC, with the game closed (a running game locks the
+  files). Check the result in `NVCoop.log` ("Load order (N): ...") on both sides.
+- Without that, True Co-op offers to fix a friend's order when joining ("Mods: asking whether to fix
+  ours"); it keeps a backup of the old state and asks for a restart.
+
 ## Saves, characters and settings in co-op
 
 How True Co-op 0.1.11 handles saves and characters, read from its source (`src/linked_saves.cpp`,
