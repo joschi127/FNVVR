@@ -81,7 +81,7 @@ Facts from True Co-op's description that the compatibility work has to keep in m
 
 ## Saves, characters and settings in co-op
 
-Changes of the co-op fork (reviving and dragging with gamepads and VR controllers, dragging at arm's length,
+Changes of FNVVR-Coop-Compat (reviving and dragging with gamepads and VR controllers, dragging at arm's length,
 Quick start, menus) and their settings are described in
 [FNVVR-Coop-Compat docs/behaviour.md](https://github.com/joschi127/FNVVR-Coop-Compat/blob/vr-compat/docs/behaviour.md).
 

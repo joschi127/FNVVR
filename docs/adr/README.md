@@ -4,7 +4,7 @@ Decisions about this fork that shape the code or the project and are hard to rev
 one: see [Architecture decision records](../guidelines.md#architecture-decision-records) in the
 guidelines.
 
-Decisions about the co-op side (behaviour of the small co-op fork) live in its own repository:
+Decisions about the co-op side live in FNVVR-Coop-Compat:
 [joschi127/FNVVR-Coop-Compat docs/adr](https://github.com/joschi127/FNVVR-Coop-Compat/blob/vr-compat/docs/adr/README.md).
 
 ## How to add one

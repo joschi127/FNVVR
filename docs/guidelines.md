@@ -64,7 +64,7 @@ Rules:
 - **Never copy code from the co-op mod into FNVVR.** Its licence requires derived works to use the
   same licence, which FNVVR (zlib) cannot. Reading it to understand behaviour is fine; record what
   was learned as facts (addresses, call order, hooks used), not as copied code. Code from FNVVR may
-  go into a co-op fork with the zlib notice kept.
+  go into FNVVR-Coop-Compat with the zlib notice kept.
 - Interfaces between the mods (detecting each other, shared hooks, call order) are documented in
   both repositories and kept as small as possible.
 
@@ -200,9 +200,9 @@ not rewritten; a change of mind is a new ADR that supersedes it. Open questions 
 Proposed until the maintainer decides. Bug fixes and test results do not need ADRs.
 
 - Index and list of this repository's ADRs: [docs/adr/README.md](adr/README.md).
-- Decisions about the co-op side (behaviour of the co-op fork) are ADRs in that fork:
+- Decisions about the co-op side are ADRs in FNVVR-Coop-Compat:
   [joschi127/FNVVR-Coop-Compat docs/adr/README.md](https://github.com/joschi127/FNVVR-Coop-Compat/blob/vr-compat/docs/adr/README.md);
-  how its changes behave in play: [docs/behaviour.md](https://github.com/joschi127/FNVVR-Coop-Compat/blob/vr-compat/docs/behaviour.md).
+  how FNVVR-Coop-Compat's changes behave in play: [docs/behaviour.md](https://github.com/joschi127/FNVVR-Coop-Compat/blob/vr-compat/docs/behaviour.md).
 - Plan behaviour changes with the maintainer before coding.
 
 ## Upstream relationship
