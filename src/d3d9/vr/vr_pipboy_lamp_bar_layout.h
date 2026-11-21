@@ -33,10 +33,10 @@ namespace dxvk {
     static constexpr float    StripBottom = 205.0f / 1024.0f;
     /// The knobs' centres (Stats, Items, Data), and their radius as a share of the width
     static constexpr float    KnobX0      = 0.257f;
-    // From the headset: the knobs sit a little left of their labels'
-    // centres, the further right the more
-    static constexpr float    KnobX1      = 0.491f;
-    static constexpr float    KnobX2      = 0.728f;
+    // From two headset tests (0.500/0.746 a little right, 0.491/0.728 a
+    // little left) and the rings' centres measured on the texture
+    static constexpr float    KnobX1      = 0.4955f;
+    static constexpr float    KnobX2      = 0.737f;
     static constexpr float    KnobY       = 0.65f;
     static constexpr float    KnobRadius  = 0.075f;
     /// The tabs' letters, covered with the tab's colour for the grips' names
