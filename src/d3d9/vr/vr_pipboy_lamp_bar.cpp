@@ -18,10 +18,15 @@ namespace dxvk {
     const VrColour TabMetal = { 0.35f, 0.38f, 0.38f, 1.0f };
     const VrColour TabInk   = { 0.08f, 0.08f, 0.08f, 1.0f };
     const VrColour White    = { 1.0f, 1.0f, 1.0f, 1.0f };
-    // The lamps are red, with a lighter core and a soft glow
-    const VrColour Lamp     = { 0.95f, 0.12f, 0.06f, 1.0f };
-    const VrColour LampCore = { 1.0f, 0.6f, 0.45f, 1.0f };
-    const VrColour LampGlow = { 1.0f, 0.1f, 0.05f, 0.55f };
+    // The lamps as on the Pip-Boy's arm: a dull orange glass with a darker
+    // rim while off, a bright orange one with a yellow core and a soft glow
+    // while on
+    const VrColour LampOff     = { 0.55f, 0.25f, 0.11f, 1.0f };
+    const VrColour LampOffRim  = { 0.30f, 0.13f, 0.06f, 1.0f };
+    const VrColour LampOn      = { 1.0f, 0.50f, 0.12f, 1.0f };
+    const VrColour LampOnRim   = { 0.85f, 0.30f, 0.06f, 1.0f };
+    const VrColour LampOnCore  = { 1.0f, 0.88f, 0.55f, 1.0f };
+    const VrColour LampOnGlow  = { 1.0f, 0.45f, 0.10f, 0.6f };
 
     constexpr float FullTurn = 6.2831853f;
 
@@ -60,18 +65,25 @@ namespace dxvk {
     paintTab(list, Layout::LeftTabLeft,  Layout::LeftTabRight,  "LG", font);
     paintTab(list, Layout::RightTabLeft, Layout::RightTabRight, "RG", font);
 
-    if (view == VrPipBoyView::None)
-      return;
-
-    // A lit lamp in the knob: a bright core and a soft glow around it
+    // A lamp in each knob, the open view's lit
     const float knobs[3] = { Layout::KnobX0, Layout::KnobX1, Layout::KnobX2 };
-    float cx     = knobs[uint32_t(view) - 1] * width;
     float cy     = Layout::KnobY * height;
     float radius = Layout::KnobRadius * width;
+    float glass  = 0.85f * radius;
 
-    list.fillGlow(cx, cy, 0.3f * radius, 1.5f * radius, LampGlow, LampGlow.faded(0.0f));
-    list.fillSector(cx, cy, 0.0f, 0.42f * radius, 0.0f, FullTurn, Lamp);
-    list.fillSector(cx, cy, 0.0f, 0.2f * radius, 0.0f, FullTurn, LampCore);
+    for (uint32_t i = 0; i < 3; i++) {
+      float cx = knobs[i] * width;
+      bool  on = uint32_t(view) == i + 1;
+
+      if (on)
+        list.fillGlow(cx, cy, glass, 1.7f * radius, LampOnGlow, LampOnGlow.faded(0.0f));
+
+      list.fillSector(cx, cy, 0.0f, glass, 0.0f, FullTurn, on ? LampOnRim : LampOffRim);
+      list.fillGlow(cx, cy, 0.0f, 0.82f * glass, on ? LampOnCore : LampOff, on ? LampOn : LampOff);
+
+      if (on)
+        list.fillSector(cx, cy, 0.0f, 0.3f * glass, 0.0f, FullTurn, LampOnCore);
+    }
   }
 
 
