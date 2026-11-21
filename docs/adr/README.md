@@ -12,9 +12,10 @@ Decisions about the co-op side live in FNVVR-Coop-Compat:
 1. Copy [template.md](template.md) to `NNNN-short-title.md` with the next free number.
 2. Fill in context, decision and consequences. Keep it short; link to code, docs, issues or commits
    instead of repeating them.
-3. Status `Proposed` while it is open, `Accepted` once the maintainer agrees. An accepted ADR is not
-   rewritten: a later change is a new ADR that supersedes it, and the old one gets status
-   `Superseded by NNNN`.
+3. Status `Proposed` while it is open, `Accepted` once the maintainer agrees. This is a hobby
+   project, so ADRs are handled lightly: an ADR may be updated with test results, clarifications and
+   small adjustments (say what changed and when). A real change of mind is a new ADR that supersedes
+   the old one (`Superseded by NNNN`).
 4. Add it to the list below in the same commit.
 
 Committed ADRs follow the data hygiene rules of the guidelines: no local paths, logs or

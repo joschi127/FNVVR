@@ -195,9 +195,10 @@ Temporary builds and large files go to `tmp/` (ignored), not into the source tre
 ## Architecture decision records
 
 Decisions that are hard to reverse (architecture, supported game versions, the relationship of the
-two mods, scope, workflow) are recorded as ADRs in [docs/adr/](adr/README.md). An accepted ADR is
-not rewritten; a change of mind is a new ADR that supersedes it. Open questions are ADRs with status
-Proposed until the maintainer decides. Bug fixes and test results do not need ADRs.
+two mods, scope, workflow) are recorded as ADRs in [docs/adr/](adr/README.md). This is a hobby
+project, so ADRs are handled lightly: they may be updated with test results, clarifications and small
+adjustments; a real change of mind is a new ADR that supersedes the old one. Open questions are ADRs
+with status Proposed until the maintainer decides. Bug fixes do not need ADRs.
 
 - Index and list of this repository's ADRs: [docs/adr/README.md](adr/README.md).
 - Decisions about the co-op side are ADRs in FNVVR-Coop-Compat:
