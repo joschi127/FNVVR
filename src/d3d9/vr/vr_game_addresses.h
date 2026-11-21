@@ -2673,6 +2673,9 @@ namespace dxvk {
     constexpr uintptr_t CaravanSceneRoot              = 0x011D91E4;
     constexpr uint32_t  ShadePropertyType             = 3;
     constexpr uintptr_t ShaderPropertyTextures        = 0xAC;
+    /** BSShaderPPLightingProperty's vtable, the lit shader property whose textures are at
+     *  ShaderPropertyTextures (public class lists of JIP LN NVSE, class_vtbls.h) */
+    constexpr uintptr_t LitShaderPropertyVtable       = 0x010AE0D0;
     constexpr uintptr_t TextureRendererData           = 0x24;
     constexpr uintptr_t TextureDataD3DTexture         = 0x64;
 

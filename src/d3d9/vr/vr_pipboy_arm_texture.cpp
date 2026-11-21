@@ -6,6 +6,7 @@
 
 #include "vr_game_addresses.h"
 #include "vr_game_images.h"
+#include "vr_game_memory.h"
 #include "vr_game_nodes.h"
 #include "vr_pipboy_arm_texture.h"
 
@@ -45,6 +46,12 @@ namespace dxvk {
     }
 
     constexpr uint32_t Ink = 0xFF262826;
+
+    // Enough for the fields read through it
+    template<typename T>
+    bool readablePointer(T* pointer) {
+      return pointer && VrGameMemory::readable(reinterpret_cast<uintptr_t>(pointer), 0x100);
+    }
 
     uint32_t average(uint32_t a, uint32_t b, uint32_t c, uint32_t d) {
       uint32_t result = 0;
@@ -149,11 +156,19 @@ namespace dxvk {
     vrVisitGameObjects(reinterpret_cast<uintptr_t>(device), MaxDepth, [this] (uintptr_t object, uint32_t) {
       uint8_t* property = reinterpret_cast<GetPropertyFn>(VrGame::ObjectGetProperty)(
         reinterpret_cast<void*>(object), nullptr, VrGame::ShadePropertyType);
-      auto     textures = property ? *reinterpret_cast<uint8_t***>(property + VrGame::ShaderPropertyTextures) : nullptr;
-      uint8_t* base     = textures ? textures[0] : nullptr;
-      uint8_t* data     = base ? *reinterpret_cast<uint8_t**>(base + VrGame::TextureRendererData) : nullptr;
 
-      if (!data)
+      // Only the lit shader property keeps its textures there: the others
+      // of the model (the screen's, the glow's) hold other values, which
+      // read as pointers crashed the game
+      if (!readablePointer(property)
+       || *reinterpret_cast<uintptr_t*>(property) != VrGame::LitShaderPropertyVtable)
+        return;
+
+      auto     textures = *reinterpret_cast<uint8_t***>(property + VrGame::ShaderPropertyTextures);
+      uint8_t* base     = readablePointer(textures) ? textures[0] : nullptr;
+      uint8_t* data     = readablePointer(base) ? *reinterpret_cast<uint8_t**>(base + VrGame::TextureRendererData) : nullptr;
+
+      if (!readablePointer(data))
         return;
 
       void** slot = reinterpret_cast<void**>(data + VrGame::TextureDataD3DTexture);
