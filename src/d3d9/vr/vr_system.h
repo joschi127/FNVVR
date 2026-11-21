@@ -106,6 +106,8 @@ namespace dxvk {
     float                                m_pipBoyAngle = 0.0f;
     bool                                 m_pipBoyPanel = false;
     bool                                 m_immersiveMinigames = true;
+    float                                m_pipBoyCropWidth  = 0.87f;
+    float                                m_pipBoyCropHeight = 0.87f;
     bool                                 m_manualReload = true;
     bool                                 m_scopes = true;
     bool                                 m_roomscale = false;

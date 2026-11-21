@@ -93,9 +93,11 @@ namespace dxvk {
     Terminal,
     /// The values of Caravan's tracks, lying on the mat
     CaravanValues,
+    /// How to close the Pip-Boy shown on the menu panel, above its corner
+    PipBoyHint,
   };
 
-  constexpr uint32_t VrPanelCount = 9;
+  constexpr uint32_t VrPanelCount = 10;
 
   /**
    * \brief What a panel's pose is relative to

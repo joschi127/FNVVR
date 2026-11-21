@@ -33,6 +33,7 @@
 #include "vr_hand_throw.h"
 #include "vr_holster.h"
 #include "vr_ammo_label.h"
+#include "vr_pipboy_hint.h"
 #include "vr_caravan_values.h"
 #include "vr_game_images.h"
 #include "vr_quick_wheel.h"
@@ -247,6 +248,19 @@ namespace dxvk {
     }
 
     /**
+     * rief Sets the part of the Pip-Boy's texture the panel shows
+     *
+     * The game draws the Pip-Boy's menus into the top left of the texture.
+     *
+     * \param [in] width Share of the texture's width, from the left
+     * \param [in] height Share of its height, from the top
+     */
+    void setPipBoyPanelCrop(float width, float height) {
+      m_pipBoyCropWidth  = width;
+      m_pipBoyCropHeight = height;
+    }
+
+    /**
      * \brief Turns the mini-games' scenes in the eye images on or off
      *
      * Off, they stay on the menu panel. See VrMinigames.
@@ -457,6 +471,7 @@ namespace dxvk {
     VrGameImages                        m_gameImages;
     std::unique_ptr<VrQuickWheel>       m_quickWheel;
     std::unique_ptr<VrAmmoLabel>        m_ammoLabel;
+    std::unique_ptr<VrPipBoyHint>       m_pipBoyHint;
     std::unique_ptr<VrCaravanValues>    m_caravanValues;
     // The left hand held ammunition at the last frame, and the reload
     // button was down
@@ -619,6 +634,12 @@ namespace dxvk {
     bool                m_pipBoyPanel = false;
     bool                m_pipBoyPanelDrawn = false;
     bool                m_pipBoyOnPanel = false;
+    float               m_pipBoyCropWidth  = 0.87f;
+    float               m_pipBoyCropHeight = 0.87f;
+    // The head's last pose while it looked ahead, not at the Pip-Boy: the
+    // panel showing it is placed ahead of the player, not towards the wrist
+    VrPose              m_lookAheadPose;
+    bool                m_hasLookAheadPose = false;
     bool                m_loggedPipBoyPanel = false;
     bool                m_loggedPipBoyPanelFailure = false;
     bool                m_loggedPipBoyLight = false;
@@ -836,6 +857,8 @@ namespace dxvk {
     void renderMenuScenes();
 
     bool copyPipBoyScreen(IDirect3DSurface9* target);
+
+    void showPipBoyHint();
 
     void drawMinigame();
 

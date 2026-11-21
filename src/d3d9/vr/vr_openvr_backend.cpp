@@ -88,12 +88,12 @@ namespace dxvk {
     constexpr std::array<const char*, VrPanelCount> PanelOverlayKeys  = {
       "fnvvr.panel", "fnvvr.hud.head", "fnvvr.hud.wrist", "fnvvr.hud.prompt", "fnvvr.hud.charge",
       "fnvvr.hud.ammo", "fnvvr.quickwheel", "fnvvr.terminal",
-      "fnvvr.caravan.values" };
+      "fnvvr.caravan.values", "fnvvr.pipboy.hint" };
     constexpr std::array<const char*, VrPanelCount> PanelOverlayNames = {
       "Fallout: New Vegas", "Fallout: New Vegas HUD", "Fallout: New Vegas wrist HUD",
       "Fallout: New Vegas interaction prompt", "Fallout: New Vegas power attack charge",
       "Fallout: New Vegas ammunition", "Fallout: New Vegas quick wheel", "Fallout: New Vegas console",
-      "Fallout: New Vegas Caravan values" };
+      "Fallout: New Vegas Caravan values", "Fallout: New Vegas Pip-Boy hint" };
 
     // Overlay key and name of each hand's laser, indexed by VrHand. Lasers
     // are drawn over the panels.

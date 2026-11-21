@@ -24,6 +24,8 @@ namespace dxvk {
 
     VrPointerState g_state;
     bool g_pipBoyPanel = false;
+    float g_pipBoyCropWidth  = 1.0f;
+    float g_pipBoyCropHeight = 1.0f;
 
     using ScreenSizeFn = int32_t (__cdecl*)();
 
@@ -74,8 +76,8 @@ namespace dxvk {
         float height = float(reinterpret_cast<ScreenSizeFn>(VrGame::GameScreenHeight)());
         float aspect = float(VrInterfaceShape::renderedMenuPickAspect());
 
-        field<float>(interfaceManager, VrGame::InterfacePipBoyMouseX)     = g_state.cursor.x * height * aspect;
-        field<float>(interfaceManager, VrGame::InterfacePipBoyMouseY)     = g_state.cursor.y * height;
+        field<float>(interfaceManager, VrGame::InterfacePipBoyMouseX)     = g_state.cursor.x * g_pipBoyCropWidth  * height * aspect;
+        field<float>(interfaceManager, VrGame::InterfacePipBoyMouseY)     = g_state.cursor.y * g_pipBoyCropHeight * height;
         field<bool>(interfaceManager,  VrGame::InterfaceOverPipBoyScreen) = true;
         field<bool>(interfaceManager,  VrGame::InterfaceOverRenderedMenu) = true;
       }
@@ -152,8 +154,10 @@ namespace dxvk {
   }
 
 
-  void VrMenuCursor::setPipBoyPanel(bool shown) {
-    g_pipBoyPanel = shown;
+  void VrMenuCursor::setPipBoyPanel(bool shown, float cropWidth, float cropHeight) {
+    g_pipBoyPanel      = shown;
+    g_pipBoyCropWidth  = cropWidth;
+    g_pipBoyCropHeight = cropHeight;
   }
 
 }

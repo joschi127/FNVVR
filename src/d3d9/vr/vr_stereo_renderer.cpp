@@ -103,6 +103,10 @@ namespace dxvk {
     // the panel follows, in radians
     constexpr float MaxSpeakerPanelPitch = 0.7853982f;
 
+    // Lowest the head may look and still look ahead, as the sine of the
+    // angle below level (25 degrees), see updatePipBoyGaze
+    constexpr float MaxLookAheadDrop = 0.4226183f;
+
     // Frames, counted once the Pip-Boy is closed, during which the game's
     // Pip-Boy control cannot reopen it after the gaze pressed back
     constexpr uint32_t PipBoyBackReleaseFrames = 3;
@@ -341,6 +345,8 @@ namespace dxvk {
     renderer->m_chargeRing = std::make_unique<VrChargeRing>(*renderer->m_painter, backend);
     renderer->m_quickWheel = std::make_unique<VrQuickWheel>(*renderer->m_painter, backend, renderer->m_gameImages);
     renderer->m_ammoLabel  = std::make_unique<VrAmmoLabel>(*renderer->m_painter, backend, renderer->m_gameImages);
+    renderer->m_pipBoyHint = std::make_unique<VrPipBoyHint>(*renderer->m_painter, backend, renderer->m_gameImages,
+      texts.text("pipboy.close", "Close"));
     renderer->m_caravanValues = std::make_unique<VrCaravanValues>(*renderer->m_painter, backend, renderer->m_gameImages);
 
     if (VrGameConsole::install())
@@ -953,7 +959,12 @@ namespace dxvk {
     // at the panel does not close the Pip-Boy: the back button does
     m_menuOverPipBoy = m_overPipBoy && m_menuRendered;
     m_pipBoyOnPanel  = m_overPipBoy && m_menuRendered && m_pipBoyPanelDrawn;
-    VrMenuCursor::setPipBoyPanel(m_pipBoyOnPanel);
+    VrMenuCursor::setPipBoyPanel(m_pipBoyOnPanel, m_pipBoyCropWidth, m_pipBoyCropHeight);
+
+    if (m_pipBoyOnPanel && m_panelShown && m_pipBoyHint)
+      showPipBoyHint();
+    else if (m_pipBoyHint)
+      m_pipBoyHint->hide();
 
     if (m_preview)
       m_preview->present(eyes);
@@ -2169,6 +2180,17 @@ namespace dxvk {
           float                 dt) {
     m_closePipBoy = false;
 
+    // The head bends down before it turns to the wrist: only a pose that
+    // looks about level and not at the Pip-Boy counts as looking ahead
+    if (input.isHeadTracked && state == VrGameStateKind::InGame && !m_pipBoyGaze.isLooking()) {
+      VrVector3 forward = vrRotate(input.headPose.orientation, VrVector3 { 0.0f, 0.0f, -1.0f });
+
+      if (forward.y > -MaxLookAheadDrop) {
+        m_lookAheadPose    = input.headPose;
+        m_hasLookAheadPose = true;
+      }
+    }
+
     if (!m_pipBoyGazeAvailable)
       return;
 
@@ -2734,6 +2756,17 @@ namespace dxvk {
   }
 
 
+  void VrStereoRenderer::showPipBoyHint() {
+    D3DSURFACE_DESC desc = { };
+
+    if (FAILED(m_menuTexture->GetLevelDesc(0, &desc)) || !desc.Width)
+      return;
+
+    float height = m_panelWidth * float(desc.Height) / float(desc.Width);
+    m_pipBoyHint->show(m_panelPose, m_panelWidth, height);
+  }
+
+
   bool VrStereoRenderer::copyPipBoyScreen(IDirect3DSurface9* target) {
     // The Pip-Boy's menus are drawn into their texture before the world,
     // whose wrist screen shows it: the interface pass then draws the menus
@@ -2741,8 +2774,17 @@ namespace dxvk {
     Com<IDirect3DSurface9> screen;
     D3DSURFACE_DESC desc = { };
 
-    if (!pipBoyScreenSurface(screen) || FAILED(screen->GetDesc(&desc))
-     || FAILED(m_device->StretchRect(screen.ptr(), nullptr, target, nullptr, D3DTEXF_LINEAR))) {
+    // Only the top left part of the texture holds the menus
+    RECT used = { };
+
+    bool found = pipBoyScreenSurface(screen) && SUCCEEDED(screen->GetDesc(&desc));
+
+    if (found) {
+      used.right  = LONG(std::max(1.0f, std::round(float(desc.Width)  * m_pipBoyCropWidth)));
+      used.bottom = LONG(std::max(1.0f, std::round(float(desc.Height) * m_pipBoyCropHeight)));
+    }
+
+    if (!found || FAILED(m_device->StretchRect(screen.ptr(), &used, target, nullptr, D3DTEXF_LINEAR))) {
       if (!m_loggedPipBoyPanelFailure) {
         Logger::warn("VR: The Pip-Boy's screen texture was not found, the Pip-Boy is not shown on the panel");
         m_loggedPipBoyPanelFailure = true;
@@ -2757,8 +2799,8 @@ namespace dxvk {
       makeMenuSceneOpaque(false);
 
     if (!m_loggedPipBoyPanel) {
-      Logger::info(str::format("VR: The Pip-Boy's screen is shown on the panel, from a ",
-        desc.Width, "x", desc.Height, " texture"));
+      Logger::info(str::format("VR: The Pip-Boy's screen is shown on the panel, from the top left ",
+        used.right, "x", used.bottom, " of a ", desc.Width, "x", desc.Height, " texture"));
       m_loggedPipBoyPanel = true;
     }
 
@@ -3434,6 +3476,17 @@ namespace dxvk {
     // sit lower than the eyes. The middle of the dialogue menu is left
     // free for the speaker's face, so it is put on the line to the head.
     VrVector3 head;
+
+    // The Pip-Boy is opened looking at the wrist: its panel is put where
+    // the head looked before, at the head's place now
+    if (m_overPipBoy && m_pipBoyPanel && m_hasHeadPose && m_hasLookAheadPose) {
+      VrPose ahead = m_headPose;
+      ahead.orientation = m_lookAheadPose.orientation;
+
+      m_panelPose = vrComputePanelPose(ahead, m_panelConfig.hudDistance);
+      m_panelPlacedWithHead = true;
+      return;
+    }
 
     if (!m_dialogueSpeaker || !m_hasHeadPose || !m_hasReference
      || !vrFindActorHead(reinterpret_cast<uintptr_t>(m_dialogueSpeaker), head)) {
