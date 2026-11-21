@@ -94,7 +94,7 @@ without any marker code in FNVVR:
 - How to draw: an OpenVR overlay per marker (like FNVVR's panels) or a quad rendered into both eye
   images (allows occlusion and per-eye correct placement); readability at distance.
 - Whether to show an arrow at the edge of the head panel for friends behind the player.
-- Whether upstream FNVVR wants co-op-specific code; it may stay in this fork.
+- Whether df4l's FNVVR wants co-op-specific code; it may stay in FNVVR.
 
 ## Consequences
 
@@ -102,7 +102,7 @@ without any marker code in FNVVR:
   off by default, kept separate so it rebases easily onto upstream.
 - The prototype depends on co-op internals and has to be checked after each co-op update; the C2
   interface removes that dependency.
-- C2 needs a change in the co-op mod and therefore a decision on the co-op fork or contact with its
+- C2 needs a change in the co-op mod and therefore a decision on FNVVR-Coop-Compat or contact with its
   author.
 - Test: in the harness of [ADR 0002](0002-headless-ai-testing-first.md) with `fakefriend` standing in
   view and behind the player; captures must show the marker over or in the direction of the friend.

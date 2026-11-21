@@ -6,7 +6,7 @@
 
 ## Context
 
-The goal of this fork is playing *Fallout: New Vegas* in VR together with friends. The plan so far
+The goal of FNVVR (this repository) is playing *Fallout: New Vegas* in VR together with friends. The plan so far
 is FNVVR plus the separate co-op mod New Vegas True Co-op ([ADR 0001](0001-two-separate-mods-that-cooperate.md)),
 which needs compatibility work in one or both mods ([conflicts.md](../analysis/conflicts.md)).
 
@@ -31,7 +31,7 @@ maintainer's reading of its Discord server; none of it is verified first-hand ye
   and globals are sent to and kept in sync with the guests, guests' characters are saved with the
   host's save, and the network layer has LAN, an internet server list and NAT traversal.
 
-If TTWVR's co-op covers what we want, it could replace most of the work this fork plans. If it does
+If TTWVR's co-op covers what we want, it could replace most of the work planned for FNVVR. If it does
 not, it is still a useful reference for VR and networking in the same engine.
 
 ## Decision (proposed)
@@ -56,5 +56,5 @@ The outcome is a new ADR that either confirms ADR 0001's path, switches to TTWVR
 - TTWVR needs Fallout 3 (with its DLC) and a TTW installation in addition to New Vegas; that is
   extra setup, kept separate from the FNVVR test install and its backups.
 - Compatibility work on FNVVR + True Co-op beyond the planned first tests waits for the comparison.
-- If TTWVR is chosen, this fork's role shrinks to notes and tools; if FNVVR + True Co-op is chosen,
+- If TTWVR is chosen, FNVVR's role shrinks to notes and tools; if FNVVR + True Co-op is chosen,
   TTWVR serves as a reference for behaviour (no code is taken from it).

@@ -39,7 +39,8 @@ source public under the same licence.
 - Both players need the identical modified `NVCoop.dll` (co-op compares NVSE plugins between players); the
   install packages for test PCs carry it once it has passed a game test.
 - Upstream co-op releases arrive as one source drop per version and have to be merged into `vr-compat`; keep the
-  fork's changes few and marked (`FNVVR-Coop-Compat:` comments) so this stays easy.
-- The fork depends on facts about the game's input object (gamepad state and control bindings); they are the same
+  FNVVR-Coop-Compat's changes few and marked (`FNVVR-Coop-Compat:` comments) so this stays easy.
+- FNVVR-Coop-Compat depends on facts about the game's input object (gamepad state and control bindings); they are the same
   facts FNVVR uses and are documented in both repositories.
-- Code never moves from the fork into FNVVR (licence); FNVVR code may move into the fork with its zlib notice.
+- Code never moves from FNVVR-Coop-Compat into FNVVR (licence); FNVVR code may move into FNVVR-Coop-Compat with its
+  zlib notice.

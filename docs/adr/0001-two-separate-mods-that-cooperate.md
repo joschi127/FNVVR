@@ -6,7 +6,7 @@
 
 ## Context
 
-The goal of this fork is to play *Fallout: New Vegas* in VR with FNVVR and in co-op with
+The goal of FNVVR (joschi127/FNVVR, a fork of df4l's FNVVR) is to play *Fallout: New Vegas* in VR with FNVVR and in co-op with
 "New Vegas True Co-op" at the same time, stable. The two mods are different kinds of software:
 
 - FNVVR is a 32-bit `d3d9.dll`, a fork of DXVK with the VR layer built in, zlib licence, built with
@@ -25,9 +25,9 @@ cycle, and losing the ability to take each upstream's updates.
 FNVVR and the co-op mod stay two separate mods that work together. Compatibility work is done in
 each mod's own repository:
 
-- FNVVR side: this fork (`joschi127/FNVVR`), changes kept small and upstream-friendly so they can be
+- FNVVR side: FNVVR (`joschi127/FNVVR`), changes kept small and upstream-friendly so they can be
   offered to df4l.
-- Co-op side: issues to the co-op author, or our own fork of
+- Co-op side: issues to the co-op author, or our own fork (since ADR 0005: FNVVR-Coop-Compat) of
   [Zyrcxies/NewVegasCoop](https://github.com/Zyrcxies/NewVegasCoop) when changes are needed there.
   A published fork must follow its licence (credit, "modified, not the official mod", same
   licence, full source).
