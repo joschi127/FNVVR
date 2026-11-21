@@ -47,7 +47,7 @@ namespace dxvk {
     static constexpr float    RightTabLeft  = 0.850f;
     static constexpr float    RightTabRight = 0.955f;
     /// Width of the bar, as a share of the panel's width
-    static constexpr float    WidthShare  = 0.5f;
+    static constexpr float    WidthShare  = 0.375f;
     /// Space between the panel's bottom edge and the bar, in metres
     static constexpr float    Gap         = 0.01f;
   };
