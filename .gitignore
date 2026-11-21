@@ -9,3 +9,6 @@ FNVVR_old/
 /local/
 CLAUDE.local.md
 /.claude/settings.local.json
+
+# Temporary builds, staging and large binaries (never commit)
+/tmp/
