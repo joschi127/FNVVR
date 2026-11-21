@@ -45,6 +45,8 @@ recorded in `local/NOTES.md`, never in this repository.
   `local/` and are kept out by the allow-list.
 - The same rules as for this repository apply to anything that might later be shared: tokens and
   credentials never go into either repository.
+- Work directly on `main` in the `local/` repository and avoid branches where possible: commit and
+  push notes as they change, so every machine sees one current state.
 
 ## The two mods
 
