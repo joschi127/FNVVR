@@ -1,0 +1,61 @@
+# 0006: The Pip-Boy on a panel in VR, with a lamp bar and the VR controllers' buttons
+
+- Status: Accepted
+- Date: 2026-11-21
+- Decided by: the maintainer
+
+## Context
+
+FNVVR shows the Pip-Boy on the left forearm, as the game's model. In the first headset sessions it was hard to read and
+to operate there: the screen is small, the wrist has to be held still and turned towards the eyes, and the stick's
+directions do not follow a turned wrist. Upstream offers a larger Pip-Boy (`d3d9.vrPipBoyScale`) and a turn about the
+forearm (`d3d9.vrPipBoyAngle`); both helped a little.
+
+On a gamepad the Pip-Boy pages through its main views (Stats, Items, Data) with LT and RT. With VR controllers the
+triggers are the lasers' clicks in menus, and the grips press LB and RB. LT and RT are painted on the Pip-Boy arm's
+texture (the gamepad variant, `textures\pipboy3000\xbox\pipboyarm01.dds`), next to the three tab knobs with their lamps;
+they are not menu images.
+
+This is a change for this fork only. It is not proposed to df4l (FNVVR's author refuses features that do not fit the
+mod as bloat); whether that changes after more play is the maintainer's decision.
+
+## Decision
+
+**Pip-Boy panel** (Settings > VR > "Pip-Boy on panel", `d3d9.vrPipBoyPanel`, off by default):
+- The Pip-Boy is still opened by looking at the wrist and pressing the button. While it is open, the texture the game
+  draws its menus into is copied onto the flat menu panel the other menus use. The wrist keeps its screen.
+- The panel is placed straight ahead: where the head looked before it bent down to the wrist, at the head's place.
+- Only the part of the texture that holds the menus is shown (`d3d9.vrPipBoyPanelCropWidth` / `CropHeight`), with a
+  black border per side (`d3d9.vrPipBoyPanelMarginLeft` / `Top` / `Right` / `Bottom`) so that the menus' own frame
+  stands clear of the panel's edge. These are tuning values in `dxvk.conf`.
+- Looking away does not close it (looking at the panel would); B closes it.
+- A sign above the panel's top right corner shows B and "Close", square with a frame in the HUD's colour like the
+  game's message boxes. It is clicked with the laser as well.
+- The lasers point at the panel; the laser's point becomes the point the Pip-Boy picks its tiles at
+  (InterfaceManager's Pip-Boy point, as named in public layouts of the game). The triggers click. A message box over
+  the Pip-Boy takes the laser as other menus do.
+- **Lamp bar** ("lamp bar", German "Leiste mit Lampen") directly below the panel: the strip of the Pip-Boy arm with
+  STATS, ITEMS and DATA and their three knobs, read at run time from the player's own game texture (no game asset is
+  shipped), the active view's knob lit with the game's button glow, and arrow tabs with the grips' names (LG, RG) in
+  place of LT and RT. The knobs are clicked with the laser to switch the view.
+
+**Buttons in VR, panel or not:**
+- While the Pip-Boy is open, the grips page through the main views (they press LT and RT) and the triggers press LB
+  and RB unless the lasers take them. A real gamepad and other menus are unchanged.
+- The Pip-Boy shows the VR controllers' buttons: menu images of LT/RT show the grips, LB/RB the triggers. The LT and RT
+  painted on the arm's texture show the grips as well while VR is on, so that the wrist is right with the panel turned
+  off; how is planned with the maintainer before it is built.
+- With the panel, the larger Pip-Boy and the turned Pip-Boy are not needed: both test PCs use size 1.0 and angle 0.
+
+## Consequences
+
+- Several game structures are used that FNVVR did not use before: the Pip-Boy's menu texture, InterfaceManager's
+  Pip-Boy point, the tile traits `filename` and `texatlas`. The facts come from public sources (xNVSE, JIP LN NVSE,
+  commonlibnv, a public decompilation), recorded as facts, no code copied. Removing the copy protection of the game's
+  executable to analyse it is not done.
+- The grip images are loose files in `Data\textures\interface\shared\button\`, drawn by
+  `src/d3d9/vr/tools/make_grip_icons.py`; the install of a test PC has to put them there.
+- Each part is its own commit, so the laser or the buttons can be taken back alone.
+- Tested in the headset on 2026-11-21 (runs c11): the panel is readable, the grips page, the laser clicks entries,
+  B closes, the option turns the panel on and off. Open: the placement straight ahead, the border values, the
+  grip images, the lamp bar, the wrist's painted buttons.
