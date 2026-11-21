@@ -111,6 +111,23 @@ namespace dxvk {
   }
 
 
+  void vrSwapShouldersAndTriggers(VrPadState& pad) {
+    bool leftShoulder  = (pad.buttons & VrGamepadButton::LeftShoulder)  != 0;
+    bool rightShoulder = (pad.buttons & VrGamepadButton::RightShoulder) != 0;
+
+    pad.buttons &= uint16_t(~(VrGamepadButton::LeftShoulder | VrGamepadButton::RightShoulder));
+
+    if (pad.leftTrigger)
+      pad.buttons |= VrGamepadButton::LeftShoulder;
+
+    if (pad.rightTrigger)
+      pad.buttons |= VrGamepadButton::RightShoulder;
+
+    pad.leftTrigger  = leftShoulder  ? 0xFF : 0;
+    pad.rightTrigger = rightShoulder ? 0xFF : 0;
+  }
+
+
   VrPadState vrComputePadState(
     const VrActionState&        actions,
           VrInputContext        context,

@@ -374,6 +374,8 @@ namespace dxvk {
     bool                        m_companionWheelShown = false;
     bool                        m_menuBack = false;
     bool                        m_menuBackDown = false;
+    // The Pip-Boy is open: the grips press LT and RT, see vrSwapShouldersAndTriggers
+    bool                        m_pipBoyOpen = false;
 
     bool                        m_systemKeyboardShown = false;
 

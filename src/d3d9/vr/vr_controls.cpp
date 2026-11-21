@@ -71,6 +71,8 @@ namespace dxvk {
       m_sneak->update(input.isHeadTracked ? &input.headPose.position.y : nullptr, inGame, dt);
     }
 
+    m_pipBoyOpen = state == VrGameStateKind::PipBoy;
+
     if (m_systemKeyboardShown && m_context == VrInputContext::Menu)
       updateSystemKeyboard(input);
     else if (m_terminalPanel && m_context == VrInputContext::Menu && input.hasActions)
@@ -195,6 +197,12 @@ namespace dxvk {
 
     VrMenuNavigation navigation = m_hotKeyWheelShown ? VrMenuNavigation::HotKeyWheel : VrMenuNavigation::List;
     VrPadState pad = vrComputePadState(actions, m_context, gameBindings(), navigation);
+
+    // The grips page through the Pip-Boy's main views, see
+    // vrSwapShouldersAndTriggers. Only the VR controllers: a real gamepad
+    // does not go through here.
+    if (m_pipBoyOpen && m_context == VrInputContext::Menu)
+      vrSwapShouldersAndTriggers(pad);
 
     if (minigame)
       vrApplyMinigamePad(pad, m_minigamePad);

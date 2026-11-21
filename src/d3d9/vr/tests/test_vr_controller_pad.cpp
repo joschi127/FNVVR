@@ -31,6 +31,21 @@ namespace {
 }
 
 
+TEST_CASE(pipboy_swaps_the_grips_with_the_triggers) {
+  VrActionState actions;
+  actions.setPressed(VrAction::MenuPrevious,     true);
+  actions.setPressed(VrAction::MenuRightTrigger, true);
+
+  VrPadState pad = vrComputePadState(actions, VrInputContext::Menu, nullptr);
+  vrSwapShouldersAndTriggers(pad);
+
+  CHECK(pad.leftTrigger == 0xFF);
+  CHECK(pad.rightTrigger == 0);
+  CHECK(!(pad.buttons & VrGamepadButton::LeftShoulder));
+  CHECK(pad.buttons & VrGamepadButton::RightShoulder);
+}
+
+
 TEST_CASE(game_actions_press_the_bound_inputs) {
   Bindings bindings;
   VrActionState actions;

@@ -163,4 +163,13 @@ namespace dxvk {
    */
   void vrApplyMinigamePad(VrPadState& pad, const VrMinigamePad& minigame);
 
+  /**
+   * rief Swaps the shoulder buttons with the triggers
+   *
+   * The Pip-Boy pages through its main views with LT and RT. In VR the
+   * grips, which press LB and RB in menus, page through them instead, and
+   * the triggers press LB and RB, unless the lasers take them as clicks.
+   */
+  void vrSwapShouldersAndTriggers(VrPadState& pad);
+
 }
