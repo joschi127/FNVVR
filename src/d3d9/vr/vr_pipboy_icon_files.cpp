@@ -13,6 +13,8 @@ namespace dxvk {
       bool        loose;
     };
 
+    constexpr char LooseFolder[] = "interface\\shared\\button\\";
+
     constexpr Replacement Replacements[] = {
       { "general_button_lt.dds",      "fnvvr_button_lgrip.dds",      true  },
       { "general_button_rt.dds",      "fnvvr_button_rgrip.dds",      true  },
@@ -40,7 +42,9 @@ namespace dxvk {
 
     for (const Replacement& entry : Replacements) {
       if (name == entry.from) {
-        replaced = path.substr(0, start) + entry.to;
+        // The menus name the atlas images by their file alone; a loose
+        // image needs its path under textures\, where it is installed
+        replaced = entry.loose ? std::string(LooseFolder) + entry.to : path.substr(0, start) + entry.to;
         loose    = entry.loose;
         return true;
       }
