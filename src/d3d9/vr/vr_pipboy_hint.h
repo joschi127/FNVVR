@@ -11,26 +11,47 @@ namespace dxvk {
    * \brief Layout of the sign that tells how to close the Pip-Boy's panel
    */
   struct VrPipBoyHintLayout {
-    constexpr static uint32_t ImageWidth  = 320;
-    constexpr static uint32_t ImageHeight = 96;
-    /// Width of the sign, as a share of the panel's width
-    constexpr static float    WidthShare  = 0.16f;
+    constexpr static uint32_t ImageWidth  = 296;
+    constexpr static uint32_t ImageHeight = 150;
+    /// Width of the sign, as a share of the panel's width: the size the
+    /// game's menus on the Pip-Boy's screen give a button of this size
+    constexpr static float    WidthShare  = 0.12f;
     /// Space between the panel's top edge and the sign, in metres
     constexpr static float    Gap         = 0.01f;
+
+    // The game's text button with a gamepad button (its menus' text_box
+    // prefab, as the container menu's Exit), in the menus' units
+
+    /// Height of the image (its width is 148)
+    constexpr static float    Units           = 75.0f;
+    /// Space around the text in the frame, both sides together
+    constexpr static float    HorizontalSpace = 20.0f;
+    /// Space above and below the text, together
+    constexpr static float    VerticalSpace   = 15.0f;
+    /// The button's image, and how far it overlaps the frame's right end
+    constexpr static float    ButtonSize      = 75.0f;
+    constexpr static float    ButtonOverlap   = 17.0f;
+    /// Space at the image's right edge
+    constexpr static float    Edge            = 2.0f;
+    constexpr static float    LineThickness   = 2.0f;
+    constexpr static float    LineBrightness  = 200.0f / 255.0f;
+    /// Text and button while no laser is on it
+    constexpr static float    IdleAlpha       = 128.0f / 255.0f;
   };
 
   /**
-   * \brief Draws the sign: the B button as the game's button images show it,
-   *    and what it does
+   * \brief Draws the sign as the game draws its text buttons: what B does,
+   *    in a frame while a laser is on it, and the B button's image
    *
    * \param [out] list Paint list of the layout's size
    * \param [in] action What B does, "Close"
    * \param [in] colour The HUD's colour
    * \param [in] font Font of the text, or \c nullptr to draw no text
-   * \param [in] hovered Whether a laser is on it, which frames it
+   * \param [in] button The game's B button image, or \c nullptr to draw none
+   * \param [in] hovered Whether a laser is on it, which frames and lights it
    */
   void vrPaintPipBoyHint(VrPaintList& list, const std::string& action,
-    const VrColour& colour, const VrPaintFont* font, bool hovered);
+    const VrColour& colour, const VrPaintFont* font, const VrImage* button, bool hovered);
 
   /**
    * \brief The sign above the top right corner of the panel that shows the

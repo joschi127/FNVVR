@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstring>
 
 #include "../../util/log/log.h"
@@ -9,41 +10,70 @@ namespace dxvk {
 
   namespace {
 
+    using Layout = VrPipBoyHintLayout;
+
+    // The dark of the menus' background the game's buttons stand on
     const VrColour Plate = { 0.0f, 0.0f, 0.0f, 0.7f };
 
-    constexpr float FullTurn = 6.2831853f;
+    // The game's B button, as its menus show it with a gamepad
+    constexpr char ButtonImage[] = "interface\\shared\\button\\general_button_b.dds";
+
+    // Without the font, the frame is as wide as with "Close"
+    constexpr float TextWidthWithoutFont = 65.0f;
+    constexpr float LineHeightWithoutFont = 31.0f;
 
   }
 
 
   void vrPaintPipBoyHint(VrPaintList& list, const std::string& action,
-      const VrColour& colour, const VrPaintFont* font, bool hovered) {
+      const VrColour& colour, const VrPaintFont* font, const VrImage* button, bool hovered) {
     float width  = float(list.width());
     float height = float(list.height());
+    float unit   = height / Layout::Units;
 
     list.clear();
     list.fillRect(0.0f, 0.0f, width, height, Plate);
 
-    // Square corners, and a thin frame in the HUD's colour while a laser
-    // is on it, as the game's own buttons have
+    // From the right: the button's image, and the frame its left part
+    // overlaps, around the text
+    float textWidth  = font ? VrPaintList::measureText(*font, action, 1.0f) : TextWidthWithoutFont;
+    float lineHeight = font ? font->metrics.lineHeight() : LineHeightWithoutFont;
+
+    float buttonRight = width - Layout::Edge * unit;
+    float buttonLeft  = buttonRight - Layout::ButtonSize * unit;
+    float boxRight    = buttonLeft + Layout::ButtonOverlap * unit;
+    float boxLeft     = std::max(0.0f, boxRight - (textWidth + Layout::HorizontalSpace) * unit);
+    float boxHeight   = (lineHeight + Layout::VerticalSpace) * unit;
+    float boxTop      = 0.5f * (height - boxHeight);
+    float boxBottom   = boxTop + boxHeight;
+
+    // The text and the button are dimmed until a laser is on the sign,
+    // which also frames it
+    VrColour ink = colour.faded(hovered ? 1.0f : Layout::IdleAlpha);
+
     if (hovered) {
-      float frame = 0.025f * height;
-      list.fillRect(0.0f, 0.0f, width, frame, colour);
-      list.fillRect(0.0f, height - frame, width, height, colour);
-      list.fillRect(0.0f, frame, frame, height - frame, colour);
-      list.fillRect(width - frame, frame, width, height - frame, colour);
+      VrColour line = { colour.r * Layout::LineBrightness, colour.g * Layout::LineBrightness,
+        colour.b * Layout::LineBrightness, colour.a };
+      float t = Layout::LineThickness * unit;
+      list.fillRect(boxLeft, boxTop, boxRight, boxTop + t, line);
+      list.fillRect(boxLeft, boxBottom - t, boxRight, boxBottom, line);
+      list.fillRect(boxLeft, boxTop + t, boxLeft + t, boxBottom - t, line);
+      list.fillRect(boxRight - t, boxTop + t, boxRight, boxBottom - t, line);
     }
 
-    // The button: a ring around its letter, as on the game's button images
-    float cx = 0.5f * height;
-    float cy = 0.5f * height;
-    list.fillSector(cx, cy, 0.29f * height, 0.35f * height, 0.0f, FullTurn, colour);
+    if (button) {
+      float top = 0.5f * (height - Layout::ButtonSize * unit);
+      list.drawImage(*button, VrPaintImageUse::Shape, buttonLeft, top, buttonRight, top + Layout::ButtonSize * unit,
+        0.0f, 0.0f, 1.0f, 1.0f, ink);
+    }
 
-    if (!font)
-      return;
-
-    list.drawTextBlock(*font, "B", cx, cy, 0.4f * height, 1.0f, 0.5f, 1, colour);
-    list.drawTextBlock(*font, action, 0.5f * (height + width), cy, width - 1.15f * height, 1.0f, 0.5f, 1, colour);
+    if (font) {
+      // Right-aligned in the frame, the capitals centred in its height
+      float textRight = boxRight - 0.5f * Layout::HorizontalSpace * unit;
+      float capitals  = font->metrics.glyph('A').ascent;
+      float baseline  = 0.5f * (boxTop + boxBottom) + 0.5f * capitals * unit;
+      list.drawText(*font, action, textRight - textWidth * unit, baseline, unit, ink);
+    }
   }
 
 
@@ -59,7 +89,8 @@ namespace dxvk {
       return;
 
     if (!m_drawn || hovered != m_hovered) {
-      vrPaintPipBoyHint(m_list, m_action, VrGameImages::hudColour(), m_images.font(), hovered);
+      vrPaintPipBoyHint(m_list, m_action, VrGameImages::hudColour(), m_images.font(),
+        m_images.picture(ButtonImage), hovered);
       m_hovered = hovered;
 
       if (!m_panel.paint(m_list)) {

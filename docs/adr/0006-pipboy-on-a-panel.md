@@ -29,8 +29,9 @@ mod as bloat); whether that changes after more play is the maintainer's decision
   black border per side (`d3d9.vrPipBoyPanelMarginLeft` / `Top` / `Right` / `Bottom`) so that the menus' own frame
   stands clear of the panel's edge. These are tuning values in `dxvk.conf`.
 - Looking away does not close it (looking at the panel would); B closes it.
-- A sign above the panel's top right corner shows B and "Close", square with a frame in the HUD's colour like the
-  game's message boxes. It is clicked with the laser as well.
+- A sign above the panel's top right corner shows "Close" and the game's B button image, drawn like the game's own
+  text buttons (its menus' `text_box` prefab, as the container menu's Exit): text and button dimmed until a laser is
+  on it, then lit, with a thin frame around the text and the game's focus sound. It is clicked with the laser as well.
 - The lasers point at the panel; the laser's point becomes the point the Pip-Boy picks its tiles at
   (InterfaceManager's Pip-Boy point, as named in public layouts of the game). The triggers click. A message box over
   the Pip-Boy takes the laser as other menus do.
