@@ -11,17 +11,19 @@ namespace dxvk {
 
     using Layout = VrPipBoyLampBarLayout;
 
-    // The arm's gamepad texture, with the LT and RT tabs, and the glow the
-    // game puts on the knob of the open view
-    constexpr char ArmTexture[]  = "pipboy3000\\xbox\\pipboyarm01.dds";
-    constexpr char GlowTexture[] = "pipboy3000\\pipboybtnglow01.dds";
+    // The arm's gamepad texture, with the LT and RT tabs
+    constexpr char ArmTexture[] = "pipboy3000\\xbox\\pipboyarm01.dds";
 
     const VrColour Plate    = { 0.17f, 0.18f, 0.17f, 1.0f };
     const VrColour TabMetal = { 0.35f, 0.38f, 0.38f, 1.0f };
     const VrColour TabInk   = { 0.08f, 0.08f, 0.08f, 1.0f };
     const VrColour White    = { 1.0f, 1.0f, 1.0f, 1.0f };
-    // The game's glow is orange: the lamps are red
-    const VrColour Lamp     = { 1.0f, 0.45f, 0.35f, 1.0f };
+    // The lamps are red, with a lighter core and a soft glow
+    const VrColour Lamp     = { 0.95f, 0.12f, 0.06f, 1.0f };
+    const VrColour LampCore = { 1.0f, 0.6f, 0.45f, 1.0f };
+    const VrColour LampGlow = { 1.0f, 0.1f, 0.05f, 0.55f };
+
+    constexpr float FullTurn = 6.2831853f;
 
     void paintTab(VrPaintList& list, float left, float right, const char* name, const VrPaintFont* font) {
       float width  = float(list.width());
@@ -41,7 +43,7 @@ namespace dxvk {
   }
 
 
-  void vrPaintPipBoyLampBar(VrPaintList& list, const VrImage* arm, const VrImage* glow,
+  void vrPaintPipBoyLampBar(VrPaintList& list, const VrImage* arm,
       VrPipBoyView view, const VrPaintFont* font) {
     float width  = float(list.width());
     float height = float(list.height());
@@ -58,16 +60,18 @@ namespace dxvk {
     paintTab(list, Layout::LeftTabLeft,  Layout::LeftTabRight,  "LG", font);
     paintTab(list, Layout::RightTabLeft, Layout::RightTabRight, "RG", font);
 
-    if (view == VrPipBoyView::None || !glow)
+    if (view == VrPipBoyView::None)
       return;
 
+    // A lit lamp in the knob: a bright core and a soft glow around it
     const float knobs[3] = { Layout::KnobX0, Layout::KnobX1, Layout::KnobX2 };
-    float cx   = knobs[uint32_t(view) - 1] * width;
-    float cy   = Layout::KnobY * height;
-    float half = 1.6f * Layout::KnobRadius * width;
+    float cx     = knobs[uint32_t(view) - 1] * width;
+    float cy     = Layout::KnobY * height;
+    float radius = Layout::KnobRadius * width;
 
-    list.drawImage(*glow, VrPaintImageUse::Picture, cx - half, cy - half, cx + half, cy + half,
-      0.0f, 0.0f, 1.0f, 1.0f, Lamp);
+    list.fillGlow(cx, cy, 0.3f * radius, 1.5f * radius, LampGlow, LampGlow.faded(0.0f));
+    list.fillSector(cx, cy, 0.0f, 0.42f * radius, 0.0f, FullTurn, Lamp);
+    list.fillSector(cx, cy, 0.0f, 0.2f * radius, 0.0f, FullTurn, LampCore);
   }
 
 
@@ -88,8 +92,7 @@ namespace dxvk {
 
     if (!m_drawn || view != m_view) {
       const VrImage* arm  = m_images.picture(ArmTexture);
-      const VrImage* glow = m_images.picture(GlowTexture);
-      vrPaintPipBoyLampBar(m_list, arm, glow, view, m_images.font());
+      vrPaintPipBoyLampBar(m_list, arm, view, m_images.font());
 
       if (!m_panel.paint(m_list)) {
         Logger::err("VR: Failed to draw the Pip-Boy's lamp bar, it is not shown");

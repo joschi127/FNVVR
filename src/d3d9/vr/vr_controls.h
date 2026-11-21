@@ -217,6 +217,20 @@ namespace dxvk {
     }
 
     /**
+     * \brief Pages the open Pip-Boy through its main views
+     *
+     * Presses RT (forward) or LT (back) once per step, each held for a few
+     * frames and released for a few, as the grips do. Steps still to do
+     * are dropped once the Pip-Boy closes.
+     *
+     * \param [in] steps Views forward, negative for back
+     */
+    void pagePipBoy(int32_t steps) {
+      m_pipBoyPageSteps = steps;
+      m_pipBoyPageFrames = 0;
+    }
+
+    /**
      * \brief Makes the left hand's reload button activate
      *
      * \param [in] left Whether the interaction prompt is at the left hand,
@@ -376,6 +390,9 @@ namespace dxvk {
     bool                        m_menuBackDown = false;
     // The Pip-Boy is open: the grips press LT and RT, see vrSwapShouldersAndTriggers
     bool                        m_pipBoyOpen = false;
+    // Steps of pagePipBoy still to press, and the frames into the current one
+    int32_t                     m_pipBoyPageSteps  = 0;
+    uint32_t                    m_pipBoyPageFrames = 0;
 
     bool                        m_systemKeyboardShown = false;
 

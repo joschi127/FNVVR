@@ -11,11 +11,10 @@ namespace dxvk {
    *
    * \param [out] list Paint list of the layout's size
    * \param [in] arm The arm's texture, or \c nullptr for a plain plate
-   * \param [in] glow The game's button glow, or \c nullptr
    * \param [in] view The view whose knob is lit
    * \param [in] font Font of the grips' names, or \c nullptr
    */
-  void vrPaintPipBoyLampBar(VrPaintList& list, const VrImage* arm, const VrImage* glow,
+  void vrPaintPipBoyLampBar(VrPaintList& list, const VrImage* arm,
     VrPipBoyView view, const VrPaintFont* font);
 
   /**

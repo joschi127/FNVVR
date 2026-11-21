@@ -28,7 +28,6 @@ namespace dxvk {
     float g_pipBoyCropWidth  = 1.0f;
     float g_pipBoyCropHeight = 1.0f;
     VrPanelMargins g_pipBoyInside = { 0.0f, 0.0f, 1.0f, 1.0f };
-    uint32_t g_pipBoyView = 0;
 
     // The point on the Pip-Boy's screen, from 0 to 1, under a point of the
     // panel that shows its crop between two edges
@@ -79,13 +78,6 @@ namespace dxvk {
       }
 
       reinterpret_cast<UpdateCursorFn>(VrGame::UpdateCursor)(interfaceManager, unused);
-
-      // A knob of the lamp bar: Idle opens the view set here, as for the
-      // knobs on the Pip-Boy's model
-      if (g_pipBoyView) {
-        field<int32_t>(interfaceManager, VrGame::InterfacePipBoyViewToSet) = int32_t(g_pipBoyView);
-        g_pipBoyView = 0;
-      }
 
       // The panel shows the Pip-Boy's screen whole: the laser's point on it
       // is the point on the screen the game picks the Pip-Boy's tiles at
@@ -171,11 +163,6 @@ namespace dxvk {
 
   void VrMenuCursor::update(const VrPointerState& state) {
     g_state = state;
-  }
-
-
-  void VrMenuCursor::requestPipBoyView(uint32_t view) {
-    g_pipBoyView = view;
   }
 
 

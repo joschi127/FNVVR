@@ -1988,13 +1988,11 @@ namespace dxvk {
     constexpr uintptr_t InterfaceOverRenderedMenu   = 0x170;
 
     /**
-     * InterfaceManager's Pip-Boy view to set (iPipboyMenuToSet, int, +0x4B8):
-     * 1 Stats, 2 Items, 3 Data; Idle opens it, as the knobs on the
-     * Pip-Boy's model do. The views' menus, as the public menu lists of
-     * xNVSE name them: StatsMenu 1003, InventoryMenu 1002 (InventoryMenuId),
-     * MapMenu 1023.
+     * The Pip-Boy's views' menus, as the public menu lists of xNVSE name
+     * them: StatsMenu 1003, InventoryMenu 1002 (InventoryMenuId), MapMenu
+     * 1023. (Setting InterfaceManager's iPipboyMenuToSet, +0x4B8, from the
+     * VR layer did not switch the view in the headset test.)
      */
-    constexpr uintptr_t InterfacePipBoyViewToSet    = 0x4B8;
     constexpr uint32_t  StatsMenuId                 = 0x3EB;
     constexpr uint32_t  MapMenuId                   = 0x3FF;
     constexpr uintptr_t NodeLocalTranslate   = 0x58;

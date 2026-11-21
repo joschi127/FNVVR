@@ -11,6 +11,10 @@ namespace dxvk {
 
   namespace {
 
+    // Frames a page press of the lamp bar is held, and then released
+    constexpr uint32_t PagePressFrames = 3;
+
+
     const uint8_t* gameBindings() {
       auto input = *reinterpret_cast<const uint8_t* const*>(VrGame::InputGlobals);
       return input ? input + VrGame::InputControllerBindings : nullptr;
@@ -203,6 +207,26 @@ namespace dxvk {
     // does not go through here.
     if (m_pipBoyOpen && m_context == VrInputContext::Menu)
       vrSwapShouldersAndTriggers(pad);
+
+    // A knob of the lamp bar: a press of LT or RT per view to go, held for
+    // PagePressFrames and released for as many, which the game sees as the
+    // gamepad's
+    if (!m_pipBoyOpen)
+      m_pipBoyPageSteps = 0;
+
+    if (m_pipBoyPageSteps && m_context == VrInputContext::Menu) {
+      if (m_pipBoyPageFrames < PagePressFrames) {
+        if (m_pipBoyPageSteps > 0)
+          pad.rightTrigger = 0xFF;
+        else
+          pad.leftTrigger = 0xFF;
+      }
+
+      if (++m_pipBoyPageFrames >= 2 * PagePressFrames) {
+        m_pipBoyPageSteps += m_pipBoyPageSteps > 0 ? -1 : 1;
+        m_pipBoyPageFrames = 0;
+      }
+    }
 
     if (minigame)
       vrApplyMinigamePad(pad, m_minigamePad);

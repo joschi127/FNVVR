@@ -2856,9 +2856,15 @@ namespace dxvk {
 
     VrPipBoyView view = vrPipBoyLampBarKnobAt(barX, barY);
 
-    if (view != VrPipBoyView::None) {
-      VrMenuCursor::requestPipBoyView(uint32_t(view));
-      Logger::info(str::format("VR: The Pip-Boy's knob ", uint32_t(view), " on the lamp bar is clicked"));
+    // The game's own "view to set" did not switch the view from here: the
+    // knob pages to it with LT and RT, as the grips do
+    VrPipBoyView current = currentPipBoyView();
+
+    if (view != VrPipBoyView::None && current != VrPipBoyView::None && view != current) {
+      int32_t steps = int32_t(view) - int32_t(current);
+      m_controls.pagePipBoy(steps);
+      Logger::info(str::format("VR: The Pip-Boy's knob ", uint32_t(view), " on the lamp bar is clicked, ",
+        steps, " page(s) from ", uint32_t(current)));
     }
   }
 
