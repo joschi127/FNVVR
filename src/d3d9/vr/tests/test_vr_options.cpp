@@ -158,6 +158,22 @@ TEST_CASE(options_parser_limits_the_pipboy_angle) {
 }
 
 
+TEST_CASE(options_round_trip_the_pipboy_panel) {
+  VrOptions options;
+  CHECK(!options.pipBoyPanel);
+
+  VrOptions written;
+  written.pipBoyPanel = true;
+
+  VrOptions read;
+  vrParseOptions(vrFormatOptions(written), read);
+  CHECK(read.pipBoyPanel);
+
+  vrParseOptions("PipBoyPanel=0", read);
+  CHECK(!read.pipBoyPanel);
+}
+
+
 TEST_CASE(pipboy_angle_positions) {
   CHECK_NEAR(vrPipBoyStepToAngle(0), 0.0f, 1e-6);
   CHECK_NEAR(vrPipBoyStepToAngle(3), 45.0f, 1e-6);

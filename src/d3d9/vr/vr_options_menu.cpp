@@ -237,6 +237,23 @@ namespace dxvk {
     }
 
 
+    void __cdecl onPipBoyPanelChanged(void* option) {
+      if (!optionsInitialised()) {
+        optionValue(option)   = g_options.pipBoyPanel ? 1u : 0u;
+        optionDefault(option) = 0u;
+        return;
+      }
+
+      bool panel = optionValue(option) != 0;
+
+      if (panel == g_options.pipBoyPanel)
+        return;
+
+      g_options.pipBoyPanel = panel;
+      notifyChanged();
+    }
+
+
     void __cdecl onScopeChanged(void* option) {
       if (!optionsInitialised()) {
         optionValue(option)   = g_options.scopeLens ? 1u : 0u;
@@ -387,6 +404,8 @@ namespace dxvk {
         g_texts.text("option.pipboy.angle.normal", PipBoyAngleNames[0]),
         PipBoyAngleNames[1], PipBoyAngleNames[2], PipBoyAngleNames[3],
         PipBoyAngleNames[4], PipBoyAngleNames[5], PipBoyAngleNames[6]);
+      appendUserOption(g_texts.text("option.pipboy.panel", "Pip-Boy on panel"), &onPipBoyPanelChanged,
+        ToggleType, ToggleValues, ArrowSpacing, off, on);
       appendUserOption(g_texts.text("option.reload", "Manual reload"), &onReloadChanged,
         ToggleType, ToggleValues, ArrowSpacing, off, on);
       appendUserOption(g_texts.text("option.sneak", "Sneak"), &onSneakChanged, ToggleType, ToggleValues, ArrowSpacing,

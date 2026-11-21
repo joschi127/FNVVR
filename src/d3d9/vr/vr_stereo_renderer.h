@@ -234,6 +234,18 @@ namespace dxvk {
     }
 
     /**
+     * rief Shows the open Pip-Boy's screen on the menu panel as well
+     *
+     * The wrist keeps its screen. The panel shows the texture the game
+     * draws the Pip-Boy's menus into, and the gaze no longer closes the
+     * Pip-Boy while it is shown: the back button does. Called from the
+     * game's options page, on the game's thread.
+     */
+    void setPipBoyPanel(bool enabled) {
+      m_pipBoyPanel = enabled;
+    }
+
+    /**
      * \brief Turns the mini-games' scenes in the eye images on or off
      *
      * Off, they stay on the menu panel. See VrMinigames.
@@ -600,6 +612,13 @@ namespace dxvk {
     // Turn of the Pip-Boy about the forearm, so that its screen faces the
     // eyes with less wrist roll (controllers lose tracking when rolled)
     float               m_pipBoyAngle = 0.0f;
+    // The open Pip-Boy's screen is copied onto the menu panel, see
+    // copyPipBoyScreen
+    bool                m_pipBoyPanel = false;
+    bool                m_pipBoyPanelDrawn = false;
+    bool                m_pipBoyOnPanel = false;
+    bool                m_loggedPipBoyPanel = false;
+    bool                m_loggedPipBoyPanelFailure = false;
     bool                m_loggedPipBoyLight = false;
 
     // Thread that runs the game's main loop, and whether Main::Swap ran
@@ -813,6 +832,8 @@ namespace dxvk {
             uint32_t              arg1);
 
     void renderMenuScenes();
+
+    bool copyPipBoyScreen(IDirect3DSurface9* target);
 
     void drawMinigame();
 

@@ -55,6 +55,23 @@ namespace dxvk {
       uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4,
       uint32_t a5, uint32_t a6, uint32_t a7, uint32_t a8);
 
+    // The surface of the texture the open Pip-Boy's menus are drawn into:
+    // InterfaceFxTexture (NiPointer<BSRenderedTexture>) -> NiRenderedTexture
+    // -> its renderer data -> the device's texture. Main::Swap gives the
+    // texture back at the end of each frame.
+    bool pipBoyScreenSurface(Com<IDirect3DSurface9>& surface) {
+      auto rendered = *reinterpret_cast<uint8_t* const*>(VrGame::InterfaceFxTexture);
+      auto texture  = rendered ? *reinterpret_cast<uint8_t* const*>(rendered + VrGame::RenderedTextureFirst) : nullptr;
+      auto data     = texture ? *reinterpret_cast<uint8_t* const*>(texture + VrGame::TextureRendererData) : nullptr;
+      auto base     = data ? *reinterpret_cast<IDirect3DBaseTexture9* const*>(data + VrGame::TextureDataD3DTexture) : nullptr;
+
+      Com<IDirect3DTexture9> d3dTexture;
+
+      return base && base->GetType() == D3DRTYPE_TEXTURE
+          && SUCCEEDED(base->QueryInterface(__uuidof(IDirect3DTexture9), reinterpret_cast<void**>(&d3dTexture)))
+          && SUCCEEDED(d3dTexture->GetSurfaceLevel(0, &surface));
+    }
+
     // PlaceCamera is __thiscall without arguments
     using PlaceCameraFn = void (__fastcall*)(void* main, void* unused);
 
@@ -679,6 +696,7 @@ namespace dxvk {
     m_hudRendered  = false;
     m_handHudRendered = false;
     m_menuRendered = false;
+    m_pipBoyPanelDrawn = false;
     m_overPipBoy   = state == VrGameStateKind::PipBoy;
     m_menuDrawn    = !m_overPipBoy;
     m_dialogueSpeaker = m_controls.takeDialogueSpeaker();
@@ -927,7 +945,10 @@ namespace dxvk {
       m_loggedFailure = true;
     }
 
+    // Also set while the panel shows the Pip-Boy's screen, so that looking
+    // at the panel does not close the Pip-Boy: the back button does
     m_menuOverPipBoy = m_overPipBoy && m_menuRendered;
+    m_pipBoyOnPanel  = m_overPipBoy && m_menuRendered && m_pipBoyPanelDrawn;
 
     if (m_preview)
       m_preview->present(eyes);
@@ -2579,7 +2600,7 @@ namespace dxvk {
       case VrGameStateKind::Menu:
         return InterfaceLayer::Menu;
       case VrGameStateKind::PipBoy:
-        return m_hudLayers.menusFound() ? InterfaceLayer::Menu : InterfaceLayer::None;
+        return m_hudLayers.menusFound() || m_pipBoyPanel ? InterfaceLayer::Menu : InterfaceLayer::None;
       default:
         return InterfaceLayer::None;
     }
@@ -2637,7 +2658,8 @@ namespace dxvk {
 
     if (layer == InterfaceLayer::Menu && m_menuScenes.isAnyOpen())
       renderMenuScenes();
-    else
+    else if (!(layer == InterfaceLayer::Menu && m_overPipBoy && m_pipBoyPanel
+            && copyPipBoyScreen(drawSurface.ptr())))
       m_device->Clear(0, nullptr, D3DCLEAR_TARGET, D3DCOLOR_ARGB(0, 0, 0, 0), 1.0f, 0);
 
     // The other HUD groups were culled by isolateHud when the interface
@@ -2664,7 +2686,7 @@ namespace dxvk {
     else if (layer == InterfaceLayer::HandHud)
       m_handHudRendered = rendered;
     else
-      m_menuRendered = rendered && m_menuDrawn;
+      m_menuRendered = rendered && (m_menuDrawn || m_pipBoyPanelDrawn);
 
     m_device->SetRenderTarget(0, renderTarget.ptr());
     m_device->SetDepthStencilSurface(depthStencil.ptr());
@@ -2704,6 +2726,39 @@ namespace dxvk {
     m_device->SetDepthStencilSurface(m_menuDepth.ptr());
     makeMenuSceneOpaque(depthKept);
     m_device->SetDepthStencilSurface(nullptr);
+  }
+
+
+  bool VrStereoRenderer::copyPipBoyScreen(IDirect3DSurface9* target) {
+    // The Pip-Boy's menus are drawn into their texture before the world,
+    // whose wrist screen shows it: the interface pass then draws the menus
+    // that are not on the Pip-Boy, such as message boxes, over the copy
+    Com<IDirect3DSurface9> screen;
+    D3DSURFACE_DESC desc = { };
+
+    if (!pipBoyScreenSurface(screen) || FAILED(screen->GetDesc(&desc))
+     || FAILED(m_device->StretchRect(screen.ptr(), nullptr, target, nullptr, D3DTEXF_LINEAR))) {
+      if (!m_loggedPipBoyPanelFailure) {
+        Logger::warn("VR: The Pip-Boy's screen texture was not found, the Pip-Boy is not shown on the panel");
+        m_loggedPipBoyPanelFailure = true;
+      }
+
+      return false;
+    }
+
+    // The alpha the game leaves in the texture is not usable: the panel is
+    // opaque, as the wrist screen is
+    if (createMenuSceneResources())
+      makeMenuSceneOpaque(false);
+
+    if (!m_loggedPipBoyPanel) {
+      Logger::info(str::format("VR: The Pip-Boy's screen is shown on the panel, from a ",
+        desc.Width, "x", desc.Height, " texture"));
+      m_loggedPipBoyPanel = true;
+    }
+
+    m_pipBoyPanelDrawn = true;
+    return true;
   }
 
 
@@ -3334,7 +3389,9 @@ namespace dxvk {
     Com<IDirect3DSurface9> backBuffer;
     D3DSURFACE_DESC desc = { };
 
-    if (!m_panelShown
+    // The panel's copy of the Pip-Boy's screen does not take the laser:
+    // the Pip-Boy picks its cursor on the wrist's screen
+    if (!m_panelShown || m_pipBoyOnPanel
      || FAILED(m_device->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &backBuffer))
      || FAILED(backBuffer->GetDesc(&desc)) || !desc.Width)
       return nullptr;

@@ -24,6 +24,8 @@ namespace dxvk {
     float pipBoyScale     = 1.0f;
     /// Turn of the Pip-Boy about the forearm towards the thumb, in degrees
     float pipBoyAngle     = 0.0f;
+    /// Show the open Pip-Boy's screen on the menu panel as well
+    bool  pipBoyPanel     = false;
     /// Reload the weapons with the hands, see findings/reload.md
     bool  manualReload    = true;
     /// Sneak by crouching instead of with the sneak button, see findings/sneak.md

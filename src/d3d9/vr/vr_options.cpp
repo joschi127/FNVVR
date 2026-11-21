@@ -13,6 +13,7 @@ namespace dxvk {
     constexpr char SmoothTurnSpeedName[] = "smoothturnspeed";
     constexpr char PipBoyScaleName[]     = "pipboyscale";
     constexpr char PipBoyAngleName[]     = "pipboyangle";
+    constexpr char PipBoyPanelName[]     = "pipboypanel";
     constexpr char ManualReloadName[]    = "manualreload";
     constexpr char PhysicalSneakName[]   = "physicalsneak";
     constexpr char RoomscaleName[]       = "roomscale";
@@ -168,6 +169,8 @@ namespace dxvk {
         parseFloat(value, VrPipBoyScaleMin, vrPipBoyStepToScale(VrPipBoyScaleSteps - 1), options.pipBoyScale);
       else if (name == PipBoyAngleName)
         parseAngle(value, vrPipBoyStepToAngle(VrPipBoyAngleSteps - 1), options.pipBoyAngle);
+      else if (name == PipBoyPanelName)
+        parseBool(value, options.pipBoyPanel);
       else if (name == ManualReloadName)
         parseBool(value, options.manualReload);
       else if (name == PhysicalSneakName)
@@ -190,6 +193,9 @@ namespace dxvk {
     text += "SmoothTurnSpeed=" + formatFloat(options.smoothTurnSpeed) + "\n";
     text += "PipBoyScale=" + formatFloat(options.pipBoyScale) + "\n";
     text += "PipBoyAngle=" + formatFloat(options.pipBoyAngle) + "\n";
+    text += "PipBoyPanel=";
+    text += options.pipBoyPanel ? "1" : "0";
+    text += "\n";
     text += "ManualReload=";
     text += options.manualReload ? "1" : "0";
     text += "\n";
