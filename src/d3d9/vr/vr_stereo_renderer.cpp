@@ -14,6 +14,7 @@
 #include "vr_game_text_edit.h"
 #include "vr_game_memory.h"
 #include "vr_game_nodes.h"
+#include "vr_game_sound.h"
 #include "vr_head_hud.h"
 #include "vr_options_file.h"
 #include "vr_math.h"
@@ -106,6 +107,9 @@ namespace dxvk {
     // Lowest the head may look and still look ahead, as the sine of the
     // angle below level (15 degrees), see updatePipBoyGaze
     constexpr float MaxLookAheadDrop = 0.2588190f;
+
+    // The sound the game's menus play when the cursor comes onto a button
+    constexpr char FocusSound[] = "UIMenuFocus";
 
     // Frames, counted once the Pip-Boy is closed, during which the game's
     // Pip-Boy control cannot reopen it after the gaze pressed back
@@ -1074,6 +1078,7 @@ namespace dxvk {
       m_controls.setPointerSurface(&m_pipBoyExtras);
     } else {
       m_pipBoyExtrasTrigger = false;
+      m_pipBoyHintHovered   = false;
     }
 
     if (m_textFieldKeyboard) {
@@ -2803,7 +2808,7 @@ namespace dxvk {
     float width  = m_panelWidth;
     float height = width * float(desc.Height) / float(desc.Width);
 
-    m_pipBoyHint->show(m_panelPose, width, height);
+    m_pipBoyHint->show(m_panelPose, width, height, m_pipBoyHintHovered);
     m_pipBoyLampBar->show(m_panelPose, width, height, currentPipBoyView());
 
     // One rectangle in the panel's plane from the bar's bottom to the
@@ -2826,9 +2831,6 @@ namespace dxvk {
     bool pressed = surface.hit && surface.trigger && !m_pipBoyExtrasTrigger;
     m_pipBoyExtrasTrigger = surface.hit && surface.trigger;
 
-    if (!pressed || !m_pipBoyExtrasShown)
-      return;
-
     // Back from the surface's point to the panel's plane, in metres from
     // its centre, +Y up
     float width  = m_pipBoyExtras.width;
@@ -2836,11 +2838,23 @@ namespace dxvk {
     float x = (surface.uv.x - 0.5f) * width;
     float y = (0.5f - surface.uv.y) * m_pipBoyExtras.height + m_pipBoyExtrasCentre;
 
-    // The sign, right-aligned above the panel
+    // The sign, right-aligned above the panel: framed, with the game's
+    // focus sound, while a laser is on it
     float signWidth  = VrPipBoyHintLayout::WidthShare * width;
     float signBottom = 0.5f * height + VrPipBoyHintLayout::Gap;
+    bool  onSign     = surface.hit && m_pipBoyExtrasShown && x >= 0.5f * width - signWidth && y >= signBottom;
 
-    if (x >= 0.5f * width - signWidth && y >= signBottom) {
+    if (onSign && !m_pipBoyHintHovered && !vrPlayInterfaceSound(FocusSound) && !m_loggedFocusSound) {
+      Logger::warn(str::format("VR: The sound ", FocusSound, " was not found, the Pip-Boy's close sign is silent"));
+      m_loggedFocusSound = true;
+    }
+
+    m_pipBoyHintHovered = onSign;
+
+    if (!pressed || !m_pipBoyExtrasShown)
+      return;
+
+    if (onSign) {
       m_pipBoyCloseClicked = true;
       Logger::info("VR: The Pip-Boy's close sign is clicked");
       return;

@@ -27,9 +27,10 @@ namespace dxvk {
    * \param [in] action What B does, "Close"
    * \param [in] colour The HUD's colour
    * \param [in] font Font of the text, or \c nullptr to draw no text
+   * \param [in] hovered Whether a laser is on it, which frames it
    */
   void vrPaintPipBoyHint(VrPaintList& list, const std::string& action,
-    const VrColour& colour, const VrPaintFont* font);
+    const VrColour& colour, const VrPaintFont* font, bool hovered);
 
   /**
    * \brief The sign above the top right corner of the panel that shows the
@@ -50,8 +51,9 @@ namespace dxvk {
      * \param [in] panel The panel's pose in tracking space, +Y up
      * \param [in] width The panel's width, in metres
      * \param [in] height The panel's height, in metres
+     * \param [in] hovered Whether a laser is on the sign
      */
-    void show(const VrPose& panel, float width, float height);
+    void show(const VrPose& panel, float width, float height, bool hovered);
 
     void hide();
 
@@ -70,6 +72,7 @@ namespace dxvk {
     bool           m_drawn  = false;
     bool           m_failed = false;
     bool           m_repaint = false;
+    bool           m_hovered = false;
     VrPose         m_shownPose = { };
     float          m_shownWidth = 0.0f;
 

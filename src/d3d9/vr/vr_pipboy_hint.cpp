@@ -17,20 +17,22 @@ namespace dxvk {
 
 
   void vrPaintPipBoyHint(VrPaintList& list, const std::string& action,
-      const VrColour& colour, const VrPaintFont* font) {
+      const VrColour& colour, const VrPaintFont* font, bool hovered) {
     float width  = float(list.width());
     float height = float(list.height());
 
-    // Square corners and a frame in the HUD's colour, as the game's own
-    // message boxes have
-    float frame = 0.05f * height;
-
     list.clear();
     list.fillRect(0.0f, 0.0f, width, height, Plate);
-    list.fillRect(0.0f, 0.0f, width, frame, colour);
-    list.fillRect(0.0f, height - frame, width, height, colour);
-    list.fillRect(0.0f, frame, frame, height - frame, colour);
-    list.fillRect(width - frame, frame, width, height - frame, colour);
+
+    // Square corners, and a thin frame in the HUD's colour while a laser
+    // is on it, as the game's own buttons have
+    if (hovered) {
+      float frame = 0.025f * height;
+      list.fillRect(0.0f, 0.0f, width, frame, colour);
+      list.fillRect(0.0f, height - frame, width, height, colour);
+      list.fillRect(0.0f, frame, frame, height - frame, colour);
+      list.fillRect(width - frame, frame, width, height - frame, colour);
+    }
 
     // The button: a ring around its letter, as on the game's button images
     float cx = 0.5f * height;
@@ -52,12 +54,13 @@ namespace dxvk {
     m_action(std::move(action)) { }
 
 
-  void VrPipBoyHint::show(const VrPose& panel, float width, float height) {
+  void VrPipBoyHint::show(const VrPose& panel, float width, float height, bool hovered) {
     if (m_failed)
       return;
 
-    if (!m_drawn) {
-      vrPaintPipBoyHint(m_list, m_action, VrGameImages::hudColour(), m_images.font());
+    if (!m_drawn || hovered != m_hovered) {
+      vrPaintPipBoyHint(m_list, m_action, VrGameImages::hudColour(), m_images.font(), hovered);
+      m_hovered = hovered;
 
       if (!m_panel.paint(m_list)) {
         Logger::err("VR: Failed to draw the Pip-Boy's close sign, it is not shown");

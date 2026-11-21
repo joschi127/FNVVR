@@ -485,6 +485,8 @@ namespace dxvk {
     bool                m_pipBoyExtrasShown   = false;
     bool                m_pipBoyExtrasTrigger = false;
     bool                m_pipBoyCloseClicked  = false;
+    bool                m_pipBoyHintHovered   = false;
+    bool                m_loggedFocusSound    = false;
     float               m_pipBoyExtrasCentre  = 0.0f;
     float               m_pipBoyExtrasPanelHeight = 0.0f;
     std::unique_ptr<VrCaravanValues>    m_caravanValues;
