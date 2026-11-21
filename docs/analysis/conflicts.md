@@ -133,6 +133,13 @@ switch those patch groups off (`d3d9.vrEnginePatchGroups`) to bisect a crash.
   (`OSInputGlobals` + `0x1BE8`), and the prompts name the bound key or button. Game test pending.
 - **Confirmed 2026-11-19:** the co-op MCM page cannot be operated in VR (entries open, options and the scroll bar
   do not react to A or the trigger). Workaround: set values in `Data/Config/NVCoop.ini` (re-read every 2 s).
+- **Found and fixed 2026-11-21 (co-op side, not VR-specific):** after co-op's Quick start the first-person camera
+  stayed rolled about 90° sideways and the third-person view could not be switched; the state was kept in saves.
+  It also happens flat with FNVVR switched off. Cause: Quick start asked while the tutorial's script package still
+  held the player on Doc's bed with its animated camera, and left from there without the standing-up part. Fixed in
+  FNVVR-Coop-Compat (`d9fc963`, 0.1.11+fnvvr.2): the question comes at tutorial stage 55, once the player is up and
+  walking. **Tested in game, works**: name, sex and face in the intro, rest of the house skipped, camera upright.
+  Saves made with the old Quick start stay rolled; no console command fixed them.
 
 ### 3.7 Memory (likely, medium)
 - Both are 32-bit in one process: FNVVR (DXVK, heap replacement, 4GB patch offered) and co-op ("far
