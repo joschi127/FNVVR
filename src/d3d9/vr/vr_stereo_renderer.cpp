@@ -347,6 +347,7 @@ namespace dxvk {
     renderer->m_ammoLabel  = std::make_unique<VrAmmoLabel>(*renderer->m_painter, backend, renderer->m_gameImages);
     renderer->m_pipBoyHint = std::make_unique<VrPipBoyHint>(*renderer->m_painter, backend, renderer->m_gameImages,
       texts.text("pipboy.close", "Close"));
+    renderer->m_pipBoyLampBar = std::make_unique<VrPipBoyLampBar>(*renderer->m_painter, backend, renderer->m_gameImages);
     renderer->m_caravanValues = std::make_unique<VrCaravanValues>(*renderer->m_painter, backend, renderer->m_gameImages);
 
     if (VrGameConsole::install())
@@ -948,10 +949,17 @@ namespace dxvk {
     // whole frame on the GPU (5 ms)
     bool pipBoyHint = m_overPipBoy && m_menuRendered && m_pipBoyPanelDrawn && m_panelShown;
 
-    if (pipBoyHint && m_pipBoyHint)
-      showPipBoyHint();
-    else if (m_pipBoyHint)
-      m_pipBoyHint->hide();
+    if (pipBoyHint && m_pipBoyHint && m_pipBoyLampBar) {
+      showPipBoyExtras();
+    } else {
+      m_pipBoyExtrasShown = false;
+
+      if (m_pipBoyHint)
+        m_pipBoyHint->hide();
+
+      if (m_pipBoyLampBar)
+        m_pipBoyLampBar->hide();
+    }
 
     gpuEnd(panelsGpu);
 
@@ -1049,6 +1057,14 @@ namespace dxvk {
       m_controls.setMinigamePad(m_minigames->pad());
       m_controls.setPointerSurface(m_minigames->surface());
       m_menuScenes.leaveToEyes(m_minigames->menuId(), m_minigames->showsRenderedMenu());
+    }
+
+    // The sign and the lamp bar around the Pip-Boy's panel take the lasers
+    if (m_pipBoyExtrasShown && m_pipBoyOnPanel) {
+      clickPipBoyExtras();
+      m_controls.setPointerSurface(&m_pipBoyExtras);
+    } else {
+      m_pipBoyExtrasTrigger = false;
     }
 
     if (m_textFieldKeyboard) {
@@ -2185,7 +2201,8 @@ namespace dxvk {
     const VrInputState&         input,
           VrGameStateKind       state,
           float                 dt) {
-    m_closePipBoy = false;
+    m_closePipBoy = m_pipBoyCloseClicked;
+    m_pipBoyCloseClicked = false;
 
     // The head bends down before it turns to the wrist: only a pose that
     // looks about level and not at the Pip-Boy counts as looking ahead
@@ -2768,14 +2785,91 @@ namespace dxvk {
   }
 
 
-  void VrStereoRenderer::showPipBoyHint() {
+  void VrStereoRenderer::showPipBoyExtras() {
     D3DSURFACE_DESC desc = { };
 
     if (FAILED(m_menuTexture->GetLevelDesc(0, &desc)) || !desc.Width)
       return;
 
-    float height = m_panelWidth * float(desc.Height) / float(desc.Width);
-    m_pipBoyHint->show(m_panelPose, m_panelWidth, height);
+    float width  = m_panelWidth;
+    float height = width * float(desc.Height) / float(desc.Width);
+
+    m_pipBoyHint->show(m_panelPose, width, height);
+    m_pipBoyLampBar->show(m_panelPose, width, height, currentPipBoyView());
+
+    // One rectangle in the panel's plane from the bar's bottom to the
+    // sign's top: the lasers point at it where the panel is not in the way
+    float top    = 0.5f * height + VrPipBoyHintLayout::Gap + VrPipBoyHint::heightFor(width);
+    float bottom = -(0.5f * height + VrPipBoyLampBarLayout::Gap + VrPipBoyLampBar::heightFor(width));
+
+    m_pipBoyExtras.pose = m_panelPose;
+    m_pipBoyExtras.pose.position = vrTransformPoint(m_panelPose, VrVector3 { 0.0f, 0.5f * (top + bottom), 0.0f });
+    m_pipBoyExtras.width  = width;
+    m_pipBoyExtras.height = top - bottom;
+    m_pipBoyExtrasCentre  = 0.5f * (top + bottom);
+    m_pipBoyExtrasPanelHeight = height;
+    m_pipBoyExtrasShown   = true;
+  }
+
+
+  void VrStereoRenderer::clickPipBoyExtras() {
+    const VrPointerSurfaceState& surface = m_controls.pointerSurfaceState();
+    bool pressed = surface.hit && surface.trigger && !m_pipBoyExtrasTrigger;
+    m_pipBoyExtrasTrigger = surface.hit && surface.trigger;
+
+    if (!pressed || !m_pipBoyExtrasShown)
+      return;
+
+    // Back from the surface's point to the panel's plane, in metres from
+    // its centre, +Y up
+    float width  = m_pipBoyExtras.width;
+    float height = m_pipBoyExtrasPanelHeight;
+    float x = (surface.uv.x - 0.5f) * width;
+    float y = (0.5f - surface.uv.y) * m_pipBoyExtras.height + m_pipBoyExtrasCentre;
+
+    // The sign, right-aligned above the panel
+    float signWidth  = VrPipBoyHintLayout::WidthShare * width;
+    float signBottom = 0.5f * height + VrPipBoyHintLayout::Gap;
+
+    if (x >= 0.5f * width - signWidth && y >= signBottom) {
+      m_pipBoyCloseClicked = true;
+      Logger::info("VR: The Pip-Boy's close sign is clicked");
+      return;
+    }
+
+    // The lamp bar, centred below the panel
+    float barWidth  = VrPipBoyLampBarLayout::WidthShare * width;
+    float barHeight = VrPipBoyLampBar::heightFor(width);
+    float barTop    = -(0.5f * height + VrPipBoyLampBarLayout::Gap);
+
+    float barX = x / barWidth + 0.5f;
+    float barY = (barTop - y) / barHeight;
+
+    VrPipBoyView view = vrPipBoyLampBarKnobAt(barX, barY);
+
+    if (view != VrPipBoyView::None) {
+      VrMenuCursor::requestPipBoyView(uint32_t(view));
+      Logger::info(str::format("VR: The Pip-Boy's knob ", uint32_t(view), " on the lamp bar is clicked"));
+    }
+  }
+
+
+  VrPipBoyView VrStereoRenderer::currentPipBoyView() const {
+    using IsMenuActiveFn = bool (__cdecl*)(uint32_t menuId, uint32_t unused);
+    auto active = [] (uint32_t id) {
+      return reinterpret_cast<IsMenuActiveFn>(VrGame::IsMenuActive)(id, 0);
+    };
+
+    if (active(VrGame::StatsMenuId))
+      return VrPipBoyView::Stats;
+
+    if (active(VrGame::InventoryMenuId))
+      return VrPipBoyView::Items;
+
+    if (active(VrGame::MapMenuId))
+      return VrPipBoyView::Data;
+
+    return VrPipBoyView::None;
   }
 
 

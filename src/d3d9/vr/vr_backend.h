@@ -95,9 +95,11 @@ namespace dxvk {
     CaravanValues,
     /// How to close the Pip-Boy shown on the menu panel, above its corner
     PipBoyHint,
+    /// The Pip-Boy's knobs and lamps, below the menu panel that shows it
+    PipBoyLampBar,
   };
 
-  constexpr uint32_t VrPanelCount = 10;
+  constexpr uint32_t VrPanelCount = 11;
 
   /**
    * \brief What a panel's pose is relative to

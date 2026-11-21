@@ -55,6 +55,12 @@ namespace dxvk {
 
     void hide();
 
+    /// Height of the sign above a panel of that width, in metres
+    static float heightFor(float panelWidth) {
+      return VrPipBoyHintLayout::WidthShare * panelWidth
+        * float(VrPipBoyHintLayout::ImageHeight) / float(VrPipBoyHintLayout::ImageWidth);
+    }
+
   private:
 
     VrPaintPanel   m_panel;

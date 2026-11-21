@@ -34,6 +34,7 @@
 #include "vr_holster.h"
 #include "vr_ammo_label.h"
 #include "vr_pipboy_hint.h"
+#include "vr_pipboy_lamp_bar.h"
 #include "vr_caravan_values.h"
 #include "vr_game_images.h"
 #include "vr_quick_wheel.h"
@@ -475,6 +476,15 @@ namespace dxvk {
     std::unique_ptr<VrQuickWheel>       m_quickWheel;
     std::unique_ptr<VrAmmoLabel>        m_ammoLabel;
     std::unique_ptr<VrPipBoyHint>       m_pipBoyHint;
+    std::unique_ptr<VrPipBoyLampBar>    m_pipBoyLampBar;
+    // The rectangle around the panel that holds the sign and the lamp bar,
+    // which the lasers click, and the trigger held on it in the last frame
+    VrPanelPlacement    m_pipBoyExtras;
+    bool                m_pipBoyExtrasShown   = false;
+    bool                m_pipBoyExtrasTrigger = false;
+    bool                m_pipBoyCloseClicked  = false;
+    float               m_pipBoyExtrasCentre  = 0.0f;
+    float               m_pipBoyExtrasPanelHeight = 0.0f;
     std::unique_ptr<VrCaravanValues>    m_caravanValues;
     // The left hand held ammunition at the last frame, and the reload
     // button was down
@@ -868,7 +878,11 @@ namespace dxvk {
 
     bool copyPipBoyScreen(IDirect3DSurface9* target);
 
-    void showPipBoyHint();
+    void showPipBoyExtras();
+
+    void clickPipBoyExtras();
+
+    VrPipBoyView currentPipBoyView() const;
 
     void drawMinigame();
 

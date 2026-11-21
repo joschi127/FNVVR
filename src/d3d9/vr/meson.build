@@ -65,6 +65,7 @@ vr_src = files([
   'vr_block_heap.cpp',
   'vr_foveation_map.cpp',
   'vr_pipboy_icon_files.cpp',
+  'vr_pipboy_lamp_bar_layout.cpp',
 ])
 
 # Parts that depend on DXVK and Vulkan, only built into d3d9.dll
@@ -155,6 +156,7 @@ vr_dxvk_src = files([
   'vr_tile_texture_retry.cpp',
   'vr_pipboy_icons.cpp',
   'vr_pipboy_hint.cpp',
+  'vr_pipboy_lamp_bar.cpp',
   'vr_weapon_drawn.cpp',
   'vr_weapon_hand.cpp',
   'vr_weapon_parts.cpp',
@@ -211,6 +213,7 @@ if add_languages('cpp', native: true, required: false)
     'tests/test_vr_pipboy_gaze.cpp',
     'tests/test_vr_pipboy_size.cpp',
     'tests/test_vr_pipboy_icons.cpp',
+    'tests/test_vr_pipboy_lamp_bar.cpp',
     'tests/test_vr_forearm_cut.cpp',
     'tests/test_vr_hand_hud.cpp',
     'tests/test_vr_head_hud.cpp',

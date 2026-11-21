@@ -1986,6 +1986,17 @@ namespace dxvk {
     constexpr uintptr_t InterfacePipBoyMouseY       = 0x4B0;
     constexpr uintptr_t InterfaceOverPipBoyScreen   = 0x4B4;
     constexpr uintptr_t InterfaceOverRenderedMenu   = 0x170;
+
+    /**
+     * InterfaceManager's Pip-Boy view to set (iPipboyMenuToSet, int, +0x4B8):
+     * 1 Stats, 2 Items, 3 Data; Idle opens it, as the knobs on the
+     * Pip-Boy's model do. The views' menus, as the public menu lists of
+     * xNVSE name them: StatsMenu 1003, InventoryMenu 1002 (InventoryMenuId),
+     * MapMenu 1023.
+     */
+    constexpr uintptr_t InterfacePipBoyViewToSet    = 0x4B8;
+    constexpr uint32_t  StatsMenuId                 = 0x3EB;
+    constexpr uint32_t  MapMenuId                   = 0x3FF;
     constexpr uintptr_t NodeLocalTranslate   = 0x58;
 
     /**

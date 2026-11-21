@@ -71,6 +71,13 @@ namespace dxvk {
     static void setPipBoyPanel(bool shown, float cropWidth, float cropHeight,
       const VrPanelMargins& inside);
 
+    /**
+     * \brief Opens a main view of the Pip-Boy on the game's next update
+     *
+     * \param [in] view 1 Stats, 2 Items, 3 Data (VrPipBoyView)
+     */
+    static void requestPipBoyView(uint32_t view);
+
   };
 
 }
