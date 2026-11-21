@@ -18,15 +18,18 @@ namespace dxvk {
     const VrColour TabMetal = { 0.35f, 0.38f, 0.38f, 1.0f };
     const VrColour TabInk   = { 0.08f, 0.08f, 0.08f, 1.0f };
     const VrColour White    = { 1.0f, 1.0f, 1.0f, 1.0f };
-    // The lamps as on the Pip-Boy's arm: a dull orange glass with a darker
-    // rim while off, a bright orange one with a yellow core and a soft glow
-    // while on
-    const VrColour LampOff     = { 0.55f, 0.25f, 0.11f, 1.0f };
-    const VrColour LampOffRim  = { 0.30f, 0.13f, 0.06f, 1.0f };
-    const VrColour LampOn      = { 1.0f, 0.50f, 0.12f, 1.0f };
-    const VrColour LampOnRim   = { 0.85f, 0.30f, 0.06f, 1.0f };
-    const VrColour LampOnCore  = { 1.0f, 0.88f, 0.55f, 1.0f };
-    const VrColour LampOnGlow  = { 1.0f, 0.45f, 0.10f, 0.6f };
+    // The lamps as on the Pip-Boy's arm: orange glass the knob shows
+    // through a little, with a darker rim and a soft shine; the lit one
+    // bright, with a yellow core and a glow over its ring. Tuned on
+    // previews of the bar against the arm's lamps.
+    const VrColour LampOffCore = { 0.80f, 0.45f, 0.22f, 0.45f };
+    const VrColour LampOffMid  = { 0.58f, 0.26f, 0.10f, 0.52f };
+    const VrColour LampOffRim  = { 0.30f, 0.12f, 0.04f, 0.62f };
+    const VrColour LampOnCore  = { 1.00f, 0.93f, 0.66f, 0.92f };
+    const VrColour LampOnMid   = { 1.00f, 0.55f, 0.12f, 0.85f };
+    const VrColour LampOnRim   = { 0.80f, 0.30f, 0.05f, 0.85f };
+    const VrColour LampOnGlow  = { 1.00f, 0.55f, 0.15f, 0.50f };
+    const VrColour LampShine   = { 1.00f, 1.00f, 1.00f, 0.30f };
 
     constexpr float FullTurn = 6.2831853f;
 
@@ -69,20 +72,18 @@ namespace dxvk {
     const float knobs[3] = { Layout::KnobX0, Layout::KnobX1, Layout::KnobX2 };
     float cy     = Layout::KnobY * height;
     float radius = Layout::KnobRadius * width;
-    float glass  = 0.85f * radius;
+    float glass  = 0.8f * radius;
 
     for (uint32_t i = 0; i < 3; i++) {
       float cx = knobs[i] * width;
       bool  on = uint32_t(view) == i + 1;
 
       if (on)
-        list.fillGlow(cx, cy, glass, 1.7f * radius, LampOnGlow, LampOnGlow.faded(0.0f));
+        list.fillGlow(cx, cy, glass, 1.6f * radius, LampOnGlow, LampOnGlow.faded(0.0f));
 
       list.fillSector(cx, cy, 0.0f, glass, 0.0f, FullTurn, on ? LampOnRim : LampOffRim);
-      list.fillGlow(cx, cy, 0.0f, 0.82f * glass, on ? LampOnCore : LampOff, on ? LampOn : LampOff);
-
-      if (on)
-        list.fillSector(cx, cy, 0.0f, 0.3f * glass, 0.0f, FullTurn, LampOnCore);
+      list.fillGlow(cx, cy, 0.0f, 0.85f * glass, on ? LampOnCore : LampOffCore, on ? LampOnMid : LampOffMid);
+      list.fillGlow(cx - 0.32f * glass, cy - 0.36f * glass, 0.0f, 0.28f * glass, LampShine, LampShine.faded(0.0f));
     }
   }
 
