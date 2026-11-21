@@ -65,6 +65,32 @@ Facts from True Co-op's description that the compatibility work has to keep in m
 - Don't use the console during co-op (desyncs); test scripts that use console commands run outside a
   co-op session or on the host only, and must say so.
 
+## Saves, characters and settings in co-op
+
+How True Co-op 0.1.11 handles saves and characters, read from its source (`src/linked_saves.cpp`,
+`src/main.cpp`, CHANGELOG); not all of it is tested yet:
+
+- **Each player keeps their own saves and their own character** (level, XP, perks, inventory). The
+  host plays in a normal save; friends join the host's running game. While joined, the host's world
+  counts: quests, world state and fast travel points are matched to the host's.
+- **Linked saves:** when the host saves during a session, every friend's game saves too, under a name
+  linked to the host's save. When the host later loads that save, each friend's game loads its
+  matching save.
+- **Joining without a matching save** (for example after the host played alone and saved since): the
+  friend's load menu opens with "pick the character to bring into the host's game". The friend picks
+  one of their own saves, normally their newest, and joins with that character as saved. With no saves
+  at all, the friend starts a new game and joins once out of Doc Mitchell's house.
+- **Host loads a save the friend has no match for** during a session: the friend keeps their current
+  character ("No save matching the host's here: keeping your character").
+- So the host can play the same save alone in between. A friend who was not there joins with their
+  last character: they get the host's world, but no XP or items from sessions they missed.
+- **Co-op balanced and friendly fire** are per-PC settings for all games (`Data/Config/NVCoop.ini`,
+  `bCoopBalanced`, `bFriendlyFire`, or the MCM page), not stored in saves; both are off by default and
+  can be changed any time. In a session the host's settings count for everyone. A new game asks once
+  and its answer changes the PC-wide setting. Co-op balanced also applies when playing alone (more
+  damage to the player, less XP). Friendly fire off means players cannot hurt each other.
+- The co-op MCM page cannot be operated in VR; change these values in the INI (re-read every 2 s).
+
 ## VR runtime
 
 - FNVVR needs **OpenVR (SteamVR)**. With a Pico 4 over Virtual Desktop, SteamVR is the runtime (not
