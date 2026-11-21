@@ -35,6 +35,7 @@
 #include "vr_ammo_label.h"
 #include "vr_pipboy_hint.h"
 #include "vr_pipboy_lamp_bar.h"
+#include "vr_pipboy_arm_texture.h"
 #include "vr_caravan_values.h"
 #include "vr_game_images.h"
 #include "vr_quick_wheel.h"
@@ -477,6 +478,7 @@ namespace dxvk {
     std::unique_ptr<VrAmmoLabel>        m_ammoLabel;
     std::unique_ptr<VrPipBoyHint>       m_pipBoyHint;
     std::unique_ptr<VrPipBoyLampBar>    m_pipBoyLampBar;
+    std::unique_ptr<VrPipBoyArmTexture> m_pipBoyArmTexture;
     // The rectangle around the panel that holds the sign and the lamp bar,
     // which the lasers click, and the trigger held on it in the last frame
     VrPanelPlacement    m_pipBoyExtras;

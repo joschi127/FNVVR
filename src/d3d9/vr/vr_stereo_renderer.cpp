@@ -348,6 +348,7 @@ namespace dxvk {
     renderer->m_pipBoyHint = std::make_unique<VrPipBoyHint>(*renderer->m_painter, backend, renderer->m_gameImages,
       texts.text("pipboy.close", "Close"));
     renderer->m_pipBoyLampBar = std::make_unique<VrPipBoyLampBar>(*renderer->m_painter, backend, renderer->m_gameImages);
+    renderer->m_pipBoyArmTexture = std::make_unique<VrPipBoyArmTexture>(device);
     renderer->m_caravanValues = std::make_unique<VrCaravanValues>(*renderer->m_painter, backend, renderer->m_gameImages);
 
     if (VrGameConsole::install())
@@ -885,10 +886,18 @@ namespace dxvk {
     if (m_minigames)
       m_minigames->bendChallengerArm();
 
+    // The arm's tabs name the grips while the eyes are drawn, see
+    // VrPipBoyArmTexture
+    if (m_pipBoyArmTexture && m_weaponHand)
+      m_pipBoyArmTexture->beginDraw(m_weaponHand->pipBoyDevice(), m_gameImages);
+
     for (uint32_t eye = 0; eye < VrEyeCount; eye++) {
       m_eyeCopied[eye] = false;
       renderEye(eye, views[eye], main);
     }
+
+    if (m_pipBoyArmTexture)
+      m_pipBoyArmTexture->endDraw();
 
     if (m_minigames)
       m_minigames->restoreChallengerArm();

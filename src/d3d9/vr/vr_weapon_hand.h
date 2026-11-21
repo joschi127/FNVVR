@@ -336,6 +336,12 @@ namespace dxvk {
     }
 
     /**
+     * \brief Root of the Pip-Boy model on the left forearm, found again in
+     *    the player's first-person skeleton, or \c nullptr
+     */
+    uint8_t* pipBoyDevice();
+
+    /**
      * \brief Sets the size of the Pip-Boy on the left forearm
      *
      * The Pip-Boy grows about the point of the forearm's axis below the

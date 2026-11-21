@@ -44,7 +44,9 @@ mod as bloat); whether that changes after more play is the maintainer's decision
   and RB unless the lasers take them. A real gamepad and other menus are unchanged.
 - The Pip-Boy shows the VR controllers' buttons: menu images of LT/RT show the grips, LB/RB the triggers. The LT and RT
   painted on the arm's texture show the grips as well while VR is on, so that the wrist is right with the panel turned
-  off; how is planned with the maintainer before it is built.
+  off: while the eyes are drawn, the arm's base map is swapped for a copy of the player's own gamepad texture with
+  LG and RG on the tabs, and the game's own is put back right after (as FNVVR already does with the terminal's
+  keyboard), so the game without VR and the gamepad keep LT and RT.
 - With the panel, the larger Pip-Boy and the turned Pip-Boy are not needed: both test PCs use size 1.0 and angle 0.
 
 ## Consequences

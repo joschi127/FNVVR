@@ -1946,6 +1946,13 @@ namespace dxvk {
   }
 
 
+  uint8_t* VrWeaponHand::pipBoyDevice() {
+    uint8_t* object = player();
+    uint8_t* root   = object ? field<uint8_t*>(object, VrGame::PlayerFirstPersonRoot) : nullptr;
+    return root ? findPipBoy(root).device : nullptr;
+  }
+
+
   VrWeaponHand::PipBoyNodes VrWeaponHand::findPipBoy(uint8_t* root) {
     PipBoyNodes nodes;
     nodes.hand    = findObject(root, VrGame::LeftHandNodeName);

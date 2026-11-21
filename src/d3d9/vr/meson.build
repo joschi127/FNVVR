@@ -157,6 +157,7 @@ vr_dxvk_src = files([
   'vr_pipboy_icons.cpp',
   'vr_pipboy_hint.cpp',
   'vr_pipboy_lamp_bar.cpp',
+  'vr_pipboy_arm_texture.cpp',
   'vr_weapon_drawn.cpp',
   'vr_weapon_hand.cpp',
   'vr_weapon_parts.cpp',
