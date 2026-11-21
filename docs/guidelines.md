@@ -30,6 +30,22 @@ Machine-specific paths, the current state and the to-do list live outside git, u
 The notes may contain local paths and machine details; that is why they stay out of git. Their
 language is the maintainer's choice; committed files are in English.
 
+**Keeping `local/` safe (optional):** `local/` may be its own private git repository, separate from
+this one, pushed to a private remote of the maintainer's choice (for example a bare repository on a
+home server). That keeps the notes available on several machines and in backups. Its remote is
+recorded in `local/NOTES.md`, never in this repository.
+
+- `local/` holds text only: notes, scripts, run records, checksum lists. Its own `.gitignore` is an
+  allow-list: everything is ignored except text types (`.md`, `.txt`, `.sh`, `.ps1`, `.py`, `.tsv`,
+  `.sha256`, `.patch`), and copies of user data (documents folder, settings) are excluded even if
+  they are text.
+- Large binaries and temporary files do not go into `local/` at all: builds, staging folders,
+  downloaded packages and third-party DLLs go to `tmp/` in the repository root, which this
+  repository ignores. Backups, saves, logs and crash dumps that belong to a run may stay under
+  `local/` and are kept out by the allow-list.
+- The same rules as for this repository apply to anything that might later be shared: tokens and
+  credentials never go into either repository.
+
 ## The two mods
 
 | | FNVVR (this repository) | New Vegas True Co-op |
@@ -153,6 +169,8 @@ Never commit (keep under `local/`):
 
 The test setup may be named at the level needed to interpret a result: GPU vendor or model,
 headset model, VR runtime.
+
+Temporary builds and large files go to `tmp/` (ignored), not into the source tree or `local/`.
 
 ## Git workflow
 
