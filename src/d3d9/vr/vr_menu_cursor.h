@@ -65,9 +65,11 @@ namespace dxvk {
      *
      * The laser on the panel then places the point the Pip-Boy picks its
      * tiles at, see VrStereoRenderer::setPipBoyPanel. The panel shows the
-     * top left part of the screen given by the crop's shares.
+     * top left part of the screen given by the crop's shares, inside a
+     * border of the insets' shares of the panel on each side.
      */
-    static void setPipBoyPanel(bool shown, float cropWidth, float cropHeight);
+    static void setPipBoyPanel(bool shown, float cropWidth, float cropHeight,
+      float insetLeft, float insetTop);
 
   };
 

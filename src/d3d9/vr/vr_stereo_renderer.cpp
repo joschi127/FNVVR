@@ -104,8 +104,8 @@ namespace dxvk {
     constexpr float MaxSpeakerPanelPitch = 0.7853982f;
 
     // Lowest the head may look and still look ahead, as the sine of the
-    // angle below level (25 degrees), see updatePipBoyGaze
-    constexpr float MaxLookAheadDrop = 0.4226183f;
+    // angle below level (15 degrees), see updatePipBoyGaze
+    constexpr float MaxLookAheadDrop = 0.2588190f;
 
     // Frames, counted once the Pip-Boy is closed, during which the game's
     // Pip-Boy control cannot reopen it after the gaze pressed back
@@ -944,6 +944,15 @@ namespace dxvk {
     else if (m_overPipBoy)
       hidePanel();
 
+    // Given before the eyes' images: after them, the copy waits for their
+    // whole frame on the GPU (5 ms)
+    bool pipBoyHint = m_overPipBoy && m_menuRendered && m_pipBoyPanelDrawn && m_panelShown;
+
+    if (pipBoyHint && m_pipBoyHint)
+      showPipBoyHint();
+    else if (m_pipBoyHint)
+      m_pipBoyHint->hide();
+
     gpuEnd(panelsGpu);
 
     if (m_gpuTimer)
@@ -959,12 +968,10 @@ namespace dxvk {
     // at the panel does not close the Pip-Boy: the back button does
     m_menuOverPipBoy = m_overPipBoy && m_menuRendered;
     m_pipBoyOnPanel  = m_overPipBoy && m_menuRendered && m_pipBoyPanelDrawn;
-    VrMenuCursor::setPipBoyPanel(m_pipBoyOnPanel, m_pipBoyCropWidth, m_pipBoyCropHeight);
-
-    if (m_pipBoyOnPanel && m_panelShown && m_pipBoyHint)
-      showPipBoyHint();
-    else if (m_pipBoyHint)
-      m_pipBoyHint->hide();
+    // A menu over the Pip-Boy, such as a message box, is picked at the
+    // cursor as on the other menus
+    VrMenuCursor::setPipBoyPanel(m_pipBoyOnPanel && !m_menuDrawn, m_pipBoyCropWidth, m_pipBoyCropHeight,
+      m_pipBoyInsetLeft, m_pipBoyInsetTop);
 
     if (m_preview)
       m_preview->present(eyes);
@@ -2185,8 +2192,13 @@ namespace dxvk {
     if (input.isHeadTracked && state == VrGameStateKind::InGame && !m_pipBoyGaze.isLooking()) {
       VrVector3 forward = vrRotate(input.headPose.orientation, VrVector3 { 0.0f, 0.0f, -1.0f });
 
+      // The head starts to turn to the wrist before it bends down: the
+      // pose kept is the oldest of the last frames, about 0.35 s back
       if (forward.y > -MaxLookAheadDrop) {
-        m_lookAheadPose    = input.headPose;
+        m_lookAheadPoses[m_lookAheadNext] = input.headPose;
+        m_lookAheadNext  = (m_lookAheadNext + 1) % m_lookAheadPoses.size();
+        m_lookAheadCount = std::min<size_t>(m_lookAheadCount + 1, m_lookAheadPoses.size());
+        m_lookAheadPose  = m_lookAheadPoses[m_lookAheadCount < m_lookAheadPoses.size() ? 0 : m_lookAheadNext];
         m_hasLookAheadPose = true;
       }
     }
@@ -2784,7 +2796,24 @@ namespace dxvk {
       used.bottom = LONG(std::max(1.0f, std::round(float(desc.Height) * m_pipBoyCropHeight)));
     }
 
-    if (!found || FAILED(m_device->StretchRect(screen.ptr(), &used, target, nullptr, D3DTEXF_LINEAR))) {
+    // A thin black border all around, of the same width on each side
+    D3DSURFACE_DESC targetDesc = { };
+    RECT inside = { };
+
+    if (found && SUCCEEDED(target->GetDesc(&targetDesc))) {
+      float margin = m_pipBoyMargin * float(targetDesc.Width);
+      inside.left   = LONG(std::round(margin));
+      inside.top    = LONG(std::round(margin));
+      inside.right  = LONG(targetDesc.Width)  - inside.left;
+      inside.bottom = LONG(targetDesc.Height) - inside.top;
+
+      m_pipBoyInsetLeft = float(inside.left) / float(targetDesc.Width);
+      m_pipBoyInsetTop  = float(inside.top)  / float(targetDesc.Height);
+      m_device->Clear(0, nullptr, D3DCLEAR_TARGET, D3DCOLOR_ARGB(0xFF, 0, 0, 0), 1.0f, 0);
+    }
+
+    if (!found || inside.right <= inside.left || inside.bottom <= inside.top
+     || FAILED(m_device->StretchRect(screen.ptr(), &used, target, &inside, D3DTEXF_LINEAR))) {
       if (!m_loggedPipBoyPanelFailure) {
         Logger::warn("VR: The Pip-Boy's screen texture was not found, the Pip-Boy is not shown on the panel");
         m_loggedPipBoyPanelFailure = true;

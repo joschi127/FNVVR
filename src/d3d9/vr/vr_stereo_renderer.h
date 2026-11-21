@@ -254,10 +254,12 @@ namespace dxvk {
      *
      * \param [in] width Share of the texture's width, from the left
      * \param [in] height Share of its height, from the top
+     * \param [in] margin Black border around it, as a share of the panel's width
      */
-    void setPipBoyPanelCrop(float width, float height) {
+    void setPipBoyPanelCrop(float width, float height, float margin) {
       m_pipBoyCropWidth  = width;
       m_pipBoyCropHeight = height;
+      m_pipBoyMargin     = margin;
     }
 
     /**
@@ -636,10 +638,18 @@ namespace dxvk {
     bool                m_pipBoyOnPanel = false;
     float               m_pipBoyCropWidth  = 0.87f;
     float               m_pipBoyCropHeight = 0.87f;
+    // Black border around the copy, as a share of the panel's width, and
+    // where the copy starts on the panel
+    float               m_pipBoyMargin     = 0.008f;
+    float               m_pipBoyInsetLeft  = 0.0f;
+    float               m_pipBoyInsetTop   = 0.0f;
     // The head's last pose while it looked ahead, not at the Pip-Boy: the
     // panel showing it is placed ahead of the player, not towards the wrist
     VrPose              m_lookAheadPose;
     bool                m_hasLookAheadPose = false;
+    std::array<VrPose, 32> m_lookAheadPoses = { };
+    size_t              m_lookAheadNext  = 0;
+    size_t              m_lookAheadCount = 0;
     bool                m_loggedPipBoyPanel = false;
     bool                m_loggedPipBoyPanelFailure = false;
     bool                m_loggedPipBoyLight = false;

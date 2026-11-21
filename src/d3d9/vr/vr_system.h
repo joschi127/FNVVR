@@ -108,6 +108,7 @@ namespace dxvk {
     bool                                 m_immersiveMinigames = true;
     float                                m_pipBoyCropWidth  = 0.87f;
     float                                m_pipBoyCropHeight = 0.87f;
+    float                                m_pipBoyMargin     = 0.008f;
     bool                                 m_manualReload = true;
     bool                                 m_scopes = true;
     bool                                 m_roomscale = false;

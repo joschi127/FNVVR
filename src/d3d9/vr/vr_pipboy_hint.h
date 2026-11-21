@@ -63,6 +63,9 @@ namespace dxvk {
     std::string    m_action;
     bool           m_drawn  = false;
     bool           m_failed = false;
+    bool           m_repaint = false;
+    VrPose         m_shownPose = { };
+    float          m_shownWidth = 0.0f;
 
   };
 

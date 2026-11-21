@@ -1,3 +1,5 @@
+#include <cstring>
+
 #include "../../util/log/log.h"
 
 #include "vr_math.h"
@@ -19,8 +21,16 @@ namespace dxvk {
     float width  = float(list.width());
     float height = float(list.height());
 
+    // Square corners and a frame in the HUD's colour, as the game's own
+    // message boxes have
+    float frame = 0.05f * height;
+
     list.clear();
-    list.fillRoundedRect(0.0f, 0.0f, width, height, 0.2f * height, Plate);
+    list.fillRect(0.0f, 0.0f, width, height, Plate);
+    list.fillRect(0.0f, 0.0f, width, frame, colour);
+    list.fillRect(0.0f, height - frame, width, height, colour);
+    list.fillRect(0.0f, frame, frame, height - frame, colour);
+    list.fillRect(width - frame, frame, width, height - frame, colour);
 
     // The button: a ring around its letter, as on the game's button images
     float cx = 0.5f * height;
@@ -57,7 +67,8 @@ namespace dxvk {
       }
 
       // The font may only be known once the game has loaded it
-      m_drawn = m_images.font() != nullptr;
+      m_drawn   = m_images.font() != nullptr;
+      m_repaint = true;
     }
 
     float signWidth  = VrPipBoyHintLayout::WidthShare * width;
@@ -72,7 +83,15 @@ namespace dxvk {
     VrPose pose = panel;
     pose.position = vrTransformPoint(panel, offset);
 
+    // The runtime keeps the image and the place: given again only when it moves
+    if (m_panel.shown() && !m_repaint && signWidth == m_shownWidth
+     && std::memcmp(&pose, &m_shownPose, sizeof(pose)) == 0)
+      return;
+
     m_panel.show(pose, signWidth);
+    m_shownPose  = pose;
+    m_shownWidth = signWidth;
+    m_repaint    = false;
   }
 
 
