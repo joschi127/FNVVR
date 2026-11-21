@@ -1971,6 +1971,21 @@ namespace dxvk {
      * returns tiles with the target trait, so null over nothing to click.
      */
     constexpr uintptr_t InterfaceOverTile    = 0xCC;
+
+    /**
+     * InterfaceManager's point on the Pip-Boy's screen (VrMenuCursor), as
+     * named in the public layouts of commonlibnv and JIP LN NVSE:
+     * fPipboyMouseX (+0x4AC) and Y (+0x4B0), the screen's u * height *
+     * aspect and v * height, in pixels of the window's height;
+     * bOverPipboyScreen (+0x4B4, bool), and bMouseOverRenderedMenu (+0x170,
+     * bool), which InterfaceManager::Idle copies from it for the Pip-Boy.
+     * While both are set, PickMenus picks the Pip-Boy's tiles at that point
+     * instead of at the cursor. Idle calls UpdateCursor before PickMenus.
+     */
+    constexpr uintptr_t InterfacePipBoyMouseX       = 0x4AC;
+    constexpr uintptr_t InterfacePipBoyMouseY       = 0x4B0;
+    constexpr uintptr_t InterfaceOverPipBoyScreen   = 0x4B4;
+    constexpr uintptr_t InterfaceOverRenderedMenu   = 0x170;
     constexpr uintptr_t NodeLocalTranslate   = 0x58;
 
     /**

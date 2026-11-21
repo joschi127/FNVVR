@@ -2,6 +2,7 @@
 
 #include "vr_game_addresses.h"
 #include "vr_game_memory.h"
+#include "vr_interface_shape.h"
 #include "vr_menu_cursor.h"
 
 namespace dxvk {
@@ -22,6 +23,9 @@ namespace dxvk {
     bool g_installed = false;
 
     VrPointerState g_state;
+    bool g_pipBoyPanel = false;
+
+    using ScreenSizeFn = int32_t (__cdecl*)();
 
     uintptr_t g_pluginMouseWheel = 0;
 
@@ -63,6 +67,18 @@ namespace dxvk {
       }
 
       reinterpret_cast<UpdateCursorFn>(VrGame::UpdateCursor)(interfaceManager, unused);
+
+      // The panel shows the Pip-Boy's screen whole: the laser's point on it
+      // is the point on the screen the game picks the Pip-Boy's tiles at
+      if (g_state.cursorActive && g_pipBoyPanel) {
+        float height = float(reinterpret_cast<ScreenSizeFn>(VrGame::GameScreenHeight)());
+        float aspect = float(VrInterfaceShape::renderedMenuPickAspect());
+
+        field<float>(interfaceManager, VrGame::InterfacePipBoyMouseX)     = g_state.cursor.x * height * aspect;
+        field<float>(interfaceManager, VrGame::InterfacePipBoyMouseY)     = g_state.cursor.y * height;
+        field<bool>(interfaceManager,  VrGame::InterfaceOverPipBoyScreen) = true;
+        field<bool>(interfaceManager,  VrGame::InterfaceOverRenderedMenu) = true;
+      }
     }
 
     // Only on a call a plugin holds: its reading of the wheel does not look
@@ -133,6 +149,11 @@ namespace dxvk {
 
   void VrMenuCursor::update(const VrPointerState& state) {
     g_state = state;
+  }
+
+
+  void VrMenuCursor::setPipBoyPanel(bool shown) {
+    g_pipBoyPanel = shown;
   }
 
 }

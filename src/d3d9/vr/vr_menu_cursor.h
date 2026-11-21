@@ -60,6 +60,14 @@ namespace dxvk {
      */
     static void update(const VrPointerState& state);
 
+    /**
+     * rief Whether the menu panel shows the open Pip-Boy's screen
+     *
+     * The laser on the panel then places the point the Pip-Boy picks its
+     * tiles at, see VrStereoRenderer::setPipBoyPanel.
+     */
+    static void setPipBoyPanel(bool shown);
+
   };
 
 }

@@ -40,6 +40,12 @@ namespace dxvk {
      */
     static bool install();
 
+    /**
+     * rief What the game's picks on rendered menus multiply the window's
+     *    height by to get their X, in place of 4/3
+     */
+    static double renderedMenuPickAspect();
+
   };
 
 }

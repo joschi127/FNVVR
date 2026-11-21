@@ -180,6 +180,11 @@ namespace dxvk {
   }
 
 
+  double VrInterfaceShape::renderedMenuPickAspect() {
+    return g_pickAspect;
+  }
+
+
   bool VrInterfaceShape::install() {
     const uint8_t* sizeStart   = VrGame::InterfaceSizePrologue;
     const uint8_t* scaledStart = VrGame::InterfaceScaledHeightPrologue;

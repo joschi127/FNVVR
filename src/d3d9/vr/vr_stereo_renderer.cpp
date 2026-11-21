@@ -953,6 +953,7 @@ namespace dxvk {
     // at the panel does not close the Pip-Boy: the back button does
     m_menuOverPipBoy = m_overPipBoy && m_menuRendered;
     m_pipBoyOnPanel  = m_overPipBoy && m_menuRendered && m_pipBoyPanelDrawn;
+    VrMenuCursor::setPipBoyPanel(m_pipBoyOnPanel);
 
     if (m_preview)
       m_preview->present(eyes);
@@ -3393,9 +3394,7 @@ namespace dxvk {
     Com<IDirect3DSurface9> backBuffer;
     D3DSURFACE_DESC desc = { };
 
-    // The panel's copy of the Pip-Boy's screen does not take the laser:
-    // the Pip-Boy picks its cursor on the wrist's screen
-    if (!m_panelShown || m_pipBoyOnPanel
+    if (!m_panelShown
      || FAILED(m_device->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &backBuffer))
      || FAILED(backBuffer->GetDesc(&desc)) || !desc.Width)
       return nullptr;
