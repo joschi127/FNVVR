@@ -8,6 +8,16 @@
 namespace dxvk {
 
   /**
+   * \brief Edges of a rectangle on a panel, or the widths of its borders
+   */
+  struct VrPanelMargins {
+    float left   = 0.0f;
+    float top    = 0.0f;
+    float right  = 0.0f;
+    float bottom = 0.0f;
+  };
+
+  /**
    * \brief Where a flat panel is, for pointing at it
    *
    * The panel is a rectangle centred on \c pose, facing along its +Z axis,

@@ -285,7 +285,14 @@ namespace dxvk {
     g_vrSystem->m_immersiveMinigames = config.getOption<bool>("d3d9.vrImmersiveMinigames", true);
     g_vrSystem->m_pipBoyCropWidth  = std::min(std::max(config.getOption<float>("d3d9.vrPipBoyPanelCropWidth", 0.87f), 0.1f), 1.0f);
     g_vrSystem->m_pipBoyCropHeight = std::min(std::max(config.getOption<float>("d3d9.vrPipBoyPanelCropHeight", 0.87f), 0.1f), 1.0f);
-    g_vrSystem->m_pipBoyMargin     = std::min(std::max(config.getOption<float>("d3d9.vrPipBoyPanelMargin", 0.008f), 0.0f), 0.2f);
+    auto margin = [&config] (const char* name, float value) {
+      return std::min(std::max(config.getOption<float>(name, value), 0.0f), 0.2f);
+    };
+
+    g_vrSystem->m_pipBoyMargins.left   = margin("d3d9.vrPipBoyPanelMarginLeft",   g_vrSystem->m_pipBoyMargins.left);
+    g_vrSystem->m_pipBoyMargins.top    = margin("d3d9.vrPipBoyPanelMarginTop",    g_vrSystem->m_pipBoyMargins.top);
+    g_vrSystem->m_pipBoyMargins.right  = margin("d3d9.vrPipBoyPanelMarginRight",  g_vrSystem->m_pipBoyMargins.right);
+    g_vrSystem->m_pipBoyMargins.bottom = margin("d3d9.vrPipBoyPanelMarginBottom", g_vrSystem->m_pipBoyMargins.bottom);
     g_vrSystem->m_sneakConfig.physical = options.physicalSneak;
     g_vrSystem->m_sneakConfig.crouch   = crouch;
     g_vrSystem->m_forceGameSettings = !emulated && config.getOption<bool>("d3d9.vrForceGameSettings", true);
@@ -469,7 +476,7 @@ namespace dxvk {
       m_stereoRenderer->setPipBoyAngle(m_pipBoyAngle);
       m_stereoRenderer->setPipBoyPanel(m_pipBoyPanel);
       m_stereoRenderer->setMinigamesEnabled(m_immersiveMinigames);
-      m_stereoRenderer->setPipBoyPanelCrop(m_pipBoyCropWidth, m_pipBoyCropHeight, m_pipBoyMargin);
+      m_stereoRenderer->setPipBoyPanelCrop(m_pipBoyCropWidth, m_pipBoyCropHeight, m_pipBoyMargins);
       m_stereoRenderer->setScopesEnabled(m_scopes);
       m_stereoRenderer->setManualReload(m_manualReload);
       m_stereoRenderer->setRoomscale(m_roomscale);

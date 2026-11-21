@@ -971,7 +971,7 @@ namespace dxvk {
     // A menu over the Pip-Boy, such as a message box, is picked at the
     // cursor as on the other menus
     VrMenuCursor::setPipBoyPanel(m_pipBoyOnPanel && !m_menuDrawn, m_pipBoyCropWidth, m_pipBoyCropHeight,
-      m_pipBoyInsetLeft, m_pipBoyInsetTop);
+      m_pipBoyInside);
 
     if (m_preview)
       m_preview->present(eyes);
@@ -2796,19 +2796,22 @@ namespace dxvk {
       used.bottom = LONG(std::max(1.0f, std::round(float(desc.Height) * m_pipBoyCropHeight)));
     }
 
-    // A thin black border all around, of the same width on each side
+    // A black border around it, each side's width a share of the panel's
+    // width, so that the menus' own frame stands clear of the panel's edge
     D3DSURFACE_DESC targetDesc = { };
     RECT inside = { };
 
     if (found && SUCCEEDED(target->GetDesc(&targetDesc))) {
-      float margin = m_pipBoyMargin * float(targetDesc.Width);
-      inside.left   = LONG(std::round(margin));
-      inside.top    = LONG(std::round(margin));
-      inside.right  = LONG(targetDesc.Width)  - inside.left;
-      inside.bottom = LONG(targetDesc.Height) - inside.top;
+      float width = float(targetDesc.Width);
+      inside.left   = LONG(std::round(m_pipBoyMargins.left   * width));
+      inside.top    = LONG(std::round(m_pipBoyMargins.top    * width));
+      inside.right  = LONG(targetDesc.Width)  - LONG(std::round(m_pipBoyMargins.right  * width));
+      inside.bottom = LONG(targetDesc.Height) - LONG(std::round(m_pipBoyMargins.bottom * width));
 
-      m_pipBoyInsetLeft = float(inside.left) / float(targetDesc.Width);
-      m_pipBoyInsetTop  = float(inside.top)  / float(targetDesc.Height);
+      m_pipBoyInside.left   = float(inside.left)   / float(targetDesc.Width);
+      m_pipBoyInside.top    = float(inside.top)    / float(targetDesc.Height);
+      m_pipBoyInside.right  = float(inside.right)  / float(targetDesc.Width);
+      m_pipBoyInside.bottom = float(inside.bottom) / float(targetDesc.Height);
       m_device->Clear(0, nullptr, D3DCLEAR_TARGET, D3DCOLOR_ARGB(0xFF, 0, 0, 0), 1.0f, 0);
     }
 

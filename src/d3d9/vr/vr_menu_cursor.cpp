@@ -27,14 +27,13 @@ namespace dxvk {
     bool g_pipBoyPanel = false;
     float g_pipBoyCropWidth  = 1.0f;
     float g_pipBoyCropHeight = 1.0f;
-    float g_pipBoyInsetLeft  = 0.0f;
-    float g_pipBoyInsetTop   = 0.0f;
+    VrPanelMargins g_pipBoyInside = { 0.0f, 0.0f, 1.0f, 1.0f };
 
     // The point on the Pip-Boy's screen, from 0 to 1, under a point of the
-    // panel that shows its crop inside equal insets
-    float screenShare(float panel, float inset, float crop) {
-      float inside = std::max(1.0f - 2.0f * inset, 1e-3f);
-      return std::min(std::max((panel - inset) / inside, 0.0f), 1.0f) * crop;
+    // panel that shows its crop between two edges
+    float screenShare(float panel, float first, float last, float crop) {
+      float inside = std::max(last - first, 1e-3f);
+      return std::min(std::max((panel - first) / inside, 0.0f), 1.0f) * crop;
     }
 
     using ScreenSizeFn = int32_t (__cdecl*)();
@@ -86,8 +85,8 @@ namespace dxvk {
         float height = float(reinterpret_cast<ScreenSizeFn>(VrGame::GameScreenHeight)());
         float aspect = float(VrInterfaceShape::renderedMenuPickAspect());
 
-        float u = screenShare(g_state.cursor.x, g_pipBoyInsetLeft, g_pipBoyCropWidth);
-        float v = screenShare(g_state.cursor.y, g_pipBoyInsetTop,  g_pipBoyCropHeight);
+        float u = screenShare(g_state.cursor.x, g_pipBoyInside.left, g_pipBoyInside.right,  g_pipBoyCropWidth);
+        float v = screenShare(g_state.cursor.y, g_pipBoyInside.top,  g_pipBoyInside.bottom, g_pipBoyCropHeight);
 
         field<float>(interfaceManager, VrGame::InterfacePipBoyMouseX)     = u * height * aspect;
         field<float>(interfaceManager, VrGame::InterfacePipBoyMouseY)     = v * height;
@@ -168,12 +167,11 @@ namespace dxvk {
 
 
   void VrMenuCursor::setPipBoyPanel(bool shown, float cropWidth, float cropHeight,
-      float insetLeft, float insetTop) {
+      const VrPanelMargins& inside) {
     g_pipBoyPanel      = shown;
     g_pipBoyCropWidth  = cropWidth;
     g_pipBoyCropHeight = cropHeight;
-    g_pipBoyInsetLeft  = insetLeft;
-    g_pipBoyInsetTop   = insetTop;
+    g_pipBoyInside     = inside;
   }
 
 }
