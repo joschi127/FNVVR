@@ -130,7 +130,9 @@ switch those patch groups off (`d3d9.vrEnginePatchGroups`) to bisect a crash.
   only (xNVSE 6.4.9), while FNVVR presents the controllers as a gamepad; the prompts name E and Z. Also affects
   every flat gamepad player. Fixed on the co-op side in FNVVR-Coop-Compat ([ADR 0005](../adr/0005-small-coop-fork-for-vr.md)):
   the controls also read the game's polled gamepad state (`0x011F35A8`) through the game's gamepad bindings
-  (`OSInputGlobals` + `0x1BE8`), and the prompts name the bound key or button. Game test pending.
+  (`OSInputGlobals` + `0x1BE8`), and the prompts name the bound key or button. **Tested 2026-11-21 in a
+  two-PC session (host in VR, friend flat with a gamepad): both players went down and were revived by the other,
+  with the VR controller and with the gamepad.**
 - **Confirmed 2026-11-19:** the co-op MCM page cannot be operated in VR (entries open, options and the scroll bar
   do not react to A or the trigger). Workaround: set values in `Data/Config/NVCoop.ini` (re-read every 2 s).
 - **Found and fixed 2026-11-21 (co-op side, not VR-specific):** after co-op's Quick start the first-person camera
