@@ -199,6 +199,12 @@ two mods, scope, workflow) are recorded as ADRs in [docs/adr/](adr/README.md). A
 not rewritten; a change of mind is a new ADR that supersedes it. Open questions are ADRs with status
 Proposed until the maintainer decides. Bug fixes and test results do not need ADRs.
 
+- Index and list of this repository's ADRs: [docs/adr/README.md](adr/README.md).
+- Decisions about the co-op side (behaviour of the co-op fork) are ADRs in that fork:
+  [joschi127/FNVVR-Coop-Compat docs/adr/README.md](https://github.com/joschi127/FNVVR-Coop-Compat/blob/vr-compat/docs/adr/README.md);
+  how its changes behave in play: [docs/behaviour.md](https://github.com/joschi127/FNVVR-Coop-Compat/blob/vr-compat/docs/behaviour.md).
+- Plan behaviour changes with the maintainer before coding.
+
 ## Upstream relationship
 
 - Coordination with df4l (FNVVR) and Zyrcxies (co-op) is the maintainer's decision; agents never
