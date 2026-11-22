@@ -41,6 +41,11 @@ address patch), which texture mods already fill. Such code is frugal with memory
 around while idle, big temporary allocations only on demand and freed right after, no caches that grow
 without bound over a session. Reviews check memory use explicitly.
 
+Decisions are recorded in the same step they are made, without a reminder: the answers from the question
+dialog, new requirements, the agreed plan and its order. Lasting or public ones go into the matching ADR or
+doc (requirements of a feature into its ADR, how it is used into its documentation); the current state,
+order of work and machine details into `local/NOTES.md`.
+
 A wish about direction ("do it properly", "the long-term way") is not a go to implement. Read-only research
 to make the plan factual is fine before the go. Exceptions: bug fixes with an obvious cause and remedy, and
 small changes the maintainer asked for in exactly that form (for example a text change). Values meant for
