@@ -337,6 +337,9 @@ namespace dxvk {
         std::string value = command.path.substr(space + 1);
         VrCompassConfig check;
 
+        if (VrTestHooks::compass().empty())
+          return { "err no compass yet (off, or no frame in game drawn)" };
+
         if (!vrSetCompassValue(check, name, value))
           return { "err unknown setting or value; names: width top angle topdeg distance span backdrop opacity gap quest" };
 

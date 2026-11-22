@@ -271,16 +271,19 @@ namespace dxvk {
           float size  = kind == VrCompassMarkerKind::Quest ? std::clamp(config.questScale, 0.5f, 2.0f) : 1.0f;
           float scale = size * rowHeight / (MarkerBottom - MarkerTop);
           float left = x - MarkerCentreX * scale;
-          float top  = rowTop - MarkerTop * scale;
+          // Kept inside the image: a large arrow moved down grows upwards
+          float tip  = std::min(rowTop, height - 2.0f - size * rowHeight);
+          float top  = tip - MarkerTop * scale;
           list.drawImage(*picture, VrPaintImageUse::Shape, left, top,
             left + MarkerSize * scale, top + MarkerSize * scale, 0.0f, 0.0f, 1.0f, 1.0f, c);
         } else {
           // The game's arrow: a pentagon pointing up, filled or hollow
           float h = (kind == VrCompassMarkerKind::Quest ? std::clamp(config.questScale, 0.5f, 2.0f) : 1.0f) * rowHeight;
           float w = 0.33f * h;
+          float t = std::min(rowTop, height - 2.0f - h);
           const float arrow[] = {
-            x, rowTop,  x + w, rowTop + 0.45f * h,  x + w, rowTop + h,
-            x - w, rowTop + h,  x - w, rowTop + 0.45f * h };
+            x, t,  x + w, t + 0.45f * h,  x + w, t + h,
+            x - w, t + h,  x - w, t + 0.45f * h };
 
           if (kind == VrCompassMarkerKind::Quest)
             list.fillPolygon(arrow, 5, c);
@@ -290,7 +293,6 @@ namespace dxvk {
       }
     }
 
-    (void)height;
   }
 
 

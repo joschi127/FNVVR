@@ -3325,9 +3325,10 @@ namespace dxvk {
 
           m_compass->setConfig(config);
           Logger::info(str::format("VR: Compass set by the test channel: ", vrDescribeCompass(config)));
+          VrTestHooks::publishCompass(vrDescribeCompass(config));
+        } else if (VrTestHooks::compass().empty()) {
+          VrTestHooks::publishCompass(vrDescribeCompass(m_compass->config()));
         }
-
-        VrTestHooks::publishCompass(vrDescribeCompass(m_compass->config()));
       }
 
       static const std::vector<VrWorldTileInfo> NoTiles;

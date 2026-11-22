@@ -174,3 +174,17 @@ TEST_CASE(compass_settings_change_by_name_for_live_tuning) {
   CHECK(text.find("angle=auto") != std::string::npos);
   CHECK(text.find("backdrop=off") != std::string::npos);
 }
+
+
+TEST_CASE(compass_large_quest_marker_stays_inside_the_image) {
+  VrCompassConfig config;
+  config.backdrop   = false;
+  config.markerGap  = 14.0f;
+  config.questScale = 2.0f;
+  VrPaintList list(VrCompassImage::Width, VrCompassImage::Height);
+  std::vector<VrCompassMarker> markers = { { VrCompassMarkerKind::Quest, 0.0f, 0 } };
+  vrPaintCompass(list, config, 0.0f, markers, { 1.0f, 0.7f, 0.2f, 1.0f }, nullptr, VrCompassPictures());
+
+  for (const VrPaintVertex& v : list.vertices())
+    CHECK(v.y <= float(VrCompassImage::Height));
+}
