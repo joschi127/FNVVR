@@ -32,8 +32,14 @@ first, never assume it from an earlier answer.
 
 Recommended after larger sessions with new code: an AI code review with fresh context (a reviewer that did
 not write the code, for example a new agent or Claude Code's `/code-review`), before the first game test
-and at the latest before pushing. Focus on correctness (threads, lifetimes, error paths, licences), verify
+and at the latest before pushing. Focus on correctness (threads, lifetimes, error paths, licences) and memory use (see below), verify
 each finding before acting on it, and fix in separate commits. A review does not replace a game test.
+
+**Memory in the game process:** everything that runs inside the game (FNVVR's `d3d9.dll`, xNVSE plugins
+such as FNVVR-Test-Bridge, FNVVR-Coop-Compat) shares one 32-bit address space of about 4 GB (with the large
+address patch), which texture mods already fill. Such code is frugal with memory: no large buffers kept
+around while idle, big temporary allocations only on demand and freed right after, no caches that grow
+without bound over a session. Reviews check memory use explicitly.
 
 A wish about direction ("do it properly", "the long-term way") is not a go to implement. Read-only research
 to make the plan factual is fine before the go. Exceptions: bug fixes with an obvious cause and remedy, and
