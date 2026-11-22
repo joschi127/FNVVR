@@ -17,6 +17,7 @@
 #include "vr_d3d9_bridge.h"
 #include "vr_emulator_backend.h"
 #include "vr_emulator_keyboard.h"
+#include "vr_test_backend.h"
 #include "vr_extension_provider.h"
 #include "vr_game_console.h"
 #include "vr_game_settings.h"
@@ -268,6 +269,12 @@ namespace dxvk {
     swing.powerCost.base = config.getOption<int32_t>("d3d9.vrPowerAttackApCost", swing.powerCost.base);
     swing.powerCost.max  = config.getOption<int32_t>("d3d9.vrPowerAttackApCostMax", swing.powerCost.max);
     swing.powerCost.weightMult = config.getOption<float>("d3d9.vrPowerAttackApWeightMult", swing.powerCost.weightMult);
+
+    // Test tools drive VR input through a named pipe, off by default
+    if (config.getOption<bool>("d3d9.vrTestChannel", false)) {
+      backend = std::make_unique<VrTestBackend>(std::move(backend),
+        config.getOption<std::string>("d3d9.vrTestPipeName", "FNVVR-Test-VR"));
+    }
 
     g_vrSystem.reset(new VrSystem(std::move(backend), showPreview, panel, turn, weaponInHand, headsetResolution,
       timer, passes, developer, swing));

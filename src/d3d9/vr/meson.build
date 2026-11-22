@@ -73,6 +73,9 @@ vr_src = files([
 
 # Parts that depend on DXVK and Vulkan, only built into d3d9.dll
 vr_dxvk_src = files([
+  'vr_test_pipe.cpp',
+  'vr_test_capture.cpp',
+  'vr_test_backend.cpp',
   'vr_sleeve_cut.cpp',
   'vr_activate_target.cpp',
   'vr_prompt_icon.cpp',
