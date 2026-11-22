@@ -47,6 +47,10 @@ Requirements for FNVVR-Test-Bridge (maintainer, 2026-11-22):
 - run console commands and read values back (expression results and the console's printed text);
 - usable for FNVVR alone; the co-op mod is optional;
 - test changes stay in memory; nothing is saved unless someone saves;
+- a memory status of the game process (address space free, largest free block, used; committed and resident
+  memory) on request, in both channels, also without the co-op mod;
+- clean, short documentation of every implemented feature and how to use it (bridge README and protocol;
+  for the VR channel `docs/testing/vr-test-channel.md`), updated in the same commit as the feature;
 - **no performance cost**: with `Enabled=0` the plugin does nothing at all; enabled and idle it does one
   atomic load per frame. Whether enabled-and-idle is measurable has to be checked (frame times off against
   on). Until that is shown to be free, and in any case for real play and performance measurements, it stays
