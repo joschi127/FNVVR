@@ -37,6 +37,9 @@ B, drawn with the game's own pictures so that it looks and feels like the game's
   the same without the co-op mod. Markers outside the strip stay at its nearer end, fainter.
 - In an interior the cell's own north is used, as on the game's compass.
 - The compass on the hand stays.
+- **Requirement: a good default** for the strip's size and place (width and top edge shares, distance, the
+  band behind it), settled together in guided headset sessions, so that other players start with a compass
+  that fits without changing `dxvk.conf`. The current defaults are a first guess.
 - Size and place follow the field of view the headset reports (the maintainer often plays with a field of
   view reduced in Virtual Desktop): the width is a share of the horizontal field of view, the top edge a share
   of its upper half. `dxvk.conf` overrides them in degrees (`auto` or not set: from the field of view); the dark
