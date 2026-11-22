@@ -48,22 +48,22 @@ TEST_CASE(world_tile_far_away_stands_at_the_greatest_distance_in_its_direction) 
 }
 
 
-TEST_CASE(world_tile_shrinks_with_the_person_up_to_the_greatest_distance) {
+TEST_CASE(world_tile_shrinks_with_the_person_and_hides_far_away) {
   VrWorldTileConfig config;
   VrPose head = headAt(0.0f, 0.0f, 0.0f);
 
   auto angleAt = [&] (float distance) {
     VrWorldTilePlace place = vrPlaceWorldTile(config, head, { 0.0f, 0.0f, -distance });
     float shown = std::min(distance, config.maxDistance);
-    CHECK_NEAR(place.width, config.width, 1.0e-5);
     return 2.0f * std::atan(0.5f * place.width / shown);
   };
 
-  // A fixed size in the world: half as large in the view at twice the distance...
+  // A fixed size in the world: half as large in the view at twice the
+  // distance, also beyond the greatest distance a tile stands at
   CHECK_NEAR(std::tan(0.5f * angleAt(4.0f)) / std::tan(0.5f * angleAt(8.0f)), 2.0, 1.0e-4);
-  // ...and no smaller beyond the greatest distance
-  CHECK_NEAR(angleAt(config.maxDistance), angleAt(60.0f), 1.0e-5);
-  CHECK(angleAt(10.0f) > angleAt(20.0f));
+  CHECK_NEAR(std::tan(0.5f * angleAt(20.0f)) / std::tan(0.5f * angleAt(40.0f)), 2.0, 1.0e-4);
+  CHECK(vrPlaceWorldTile(config, head, { 0.0f, 0.0f, -45.0f }).visible);
+  CHECK(!vrPlaceWorldTile(config, head, { 0.0f, 0.0f, -55.0f }).visible);
 }
 
 

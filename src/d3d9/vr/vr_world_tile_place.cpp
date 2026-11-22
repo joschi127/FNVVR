@@ -28,15 +28,15 @@ namespace dxvk {
     float distance = vrLength(offset);
     place.distance = distance;
 
-    if (!std::isfinite(distance) || distance < config.minDistance)
+    if (!std::isfinite(distance) || distance < config.minDistance || distance > config.hideDistance)
       return place;
 
     float shown = std::min(distance, std::max(config.maxDistance, config.minDistance));
 
-    // The same width at the anchor and, farther, at the greatest distance:
-    // the tile shrinks with the person up to there and no further
+    // Its width at the anchor; nearer than the anchor, as much smaller as it
+    // is nearer, so that it looks as large as at the anchor
     place.pose    = vrComputePanelPoseTowards(head, anchor, shown, MaxPitch);
-    place.width   = config.width;
+    place.width   = config.width * shown / distance;
     place.visible = place.width > 0.0f;
     return place;
   }

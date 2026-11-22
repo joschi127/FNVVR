@@ -135,5 +135,8 @@ Pip-Boy's amber (a dusty green was too dark to read), and a red like the Pip-Boy
 (`d3d9.vrFriendAlertColour`), then picked on a colour chart on the game's sky: green A6E585 (warmer and paler than a
 pure phosphor green, and light enough to stand out against the sky), red E0705A; the plate's image stands on the anchor, so the larger plate keeps its distance
 above the head.
+Headset session h06 (2026-11-22): sizes and height fitted at 3, 8 and 20 m, the colours fitted; at 40 m the plate
+was too big. The maintainer decided: no limit, the plate shrinks with the friend at every distance and is hidden
+beyond 50 m (`d3d9.vrWorldTileHideDistance`); the compass shows the friend there.
 - Friends also get a mark on the compass along the top of the view ([ADR 0008](0008-compass-at-the-top-of-the-view.md)).
 

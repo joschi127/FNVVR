@@ -185,6 +185,7 @@ namespace dxvk {
     worldTiles.enabled      = config.getOption<bool>("d3d9.vrWorldTiles", worldTiles.enabled);
     worldTiles.maxDistance  = std::max(config.getOption<float>("d3d9.vrWorldTileMaxDistance", worldTiles.maxDistance), 1.0f);
     worldTiles.width        = std::clamp(config.getOption<float>("d3d9.vrWorldTileWidth", worldTiles.width), 0.1f, 20.0f);
+    worldTiles.hideDistance = std::max(config.getOption<float>("d3d9.vrWorldTileHideDistance", worldTiles.hideDistance), 1.0f);
     panel.hudHeadTiles = vrSplitNameList(config.getOption<std::string>("d3d9.vrHudHeadTiles", ""));
 
     // The compass along the top of the view
