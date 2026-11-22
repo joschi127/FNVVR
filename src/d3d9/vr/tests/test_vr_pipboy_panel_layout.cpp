@@ -38,17 +38,17 @@ TEST_CASE(pipboy_layout_grows_within_the_texture) {
 }
 
 
-TEST_CASE(pipboy_casing_is_black_inside_and_plastic_outside) {
+TEST_CASE(pipboy_casing_is_clear_inside_and_plastic_outside) {
   std::vector<uint8_t> rgba = vrPaintPipBoyCasing(100, 80, 10, 10, 90, 70, 4);
   CHECK(rgba.size() == 100u * 80u * 4u);
 
   const uint8_t* centre = &rgba[(40 * 100 + 50) * 4];
-  CHECK(centre[0] == 0 && centre[1] == 0 && centre[2] == 0 && centre[3] == 255);
+  CHECK(centre[3] == 0);
 
   const uint8_t* border = &rgba[(5 * 100 + 50) * 4];
-  CHECK(border[0] > 40 && border[1] > 40 && border[2] > 30);
+  CHECK(border[0] > 40 && border[1] > 40 && border[2] > 30 && border[3] == 255);
 
   // The screen's corner is rounded: just inside the square corner is casing
   const uint8_t* corner = &rgba[(10 * 100 + 10) * 4];
-  CHECK(corner[0] > 0);
+  CHECK(corner[0] > 0 && corner[3] > 200);  // in the soft edge, nearly opaque
 }

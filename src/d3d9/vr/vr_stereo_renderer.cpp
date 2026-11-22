@@ -2937,8 +2937,7 @@ namespace dxvk {
       inside.right  = LONG(std::round(layout.inside.right  * float(targetDesc.Width)));
       inside.bottom = LONG(std::round(layout.inside.bottom * float(targetDesc.Height)));
 
-      if (!drawPipBoyCasing(target, layerDesc, targetDesc, layout, nullptr))
-        m_device->Clear(0, nullptr, D3DCLEAR_TARGET, D3DCOLOR_ARGB(0xFF, 0, 0, 0), 1.0f, 0);
+      m_device->Clear(0, nullptr, D3DCLEAR_TARGET, D3DCOLOR_ARGB(0xFF, 0, 0, 0), 1.0f, 0);
     }
 
     if (!found || inside.right <= inside.left || inside.bottom <= inside.top || used.right <= used.left
@@ -2951,16 +2950,16 @@ namespace dxvk {
       return false;
     }
 
-    // The screen's rounded corners, over the copy's dark rim
-    VrPipBoyPanelLayout drawn;
-    drawn.crop = m_pipBoyCrop;
-    drawn.inside = { m_pipBoyInside.left, m_pipBoyInside.top, m_pipBoyInside.right, m_pipBoyInside.bottom };
-    drawPipBoyCasing(target, layerDesc, targetDesc, drawn, &inside);
-
-    // The alpha the game leaves in the texture is not usable: the panel is
-    // opaque, as the wrist screen is
-    if (createMenuSceneResources())
+    // The casing, blended over the copy: clear where the screen is, with its
+    // rounded corners over the copy's dark rim. The alpha the game leaves in
+    // the texture is not usable: the panel is opaque, as the wrist screen is
+    if (createMenuSceneResources()) {
+      VrPipBoyPanelLayout drawn;
+      drawn.crop = m_pipBoyCrop;
+      drawn.inside = { m_pipBoyInside.left, m_pipBoyInside.top, m_pipBoyInside.right, m_pipBoyInside.bottom };
+      drawPipBoyCasing(layerDesc, targetDesc, drawn);
       makeMenuSceneOpaque(false);
+    }
 
     if (!m_loggedPipBoyPanel) {
       Logger::info(str::format("VR: The Pip-Boy's screen is shown on the panel, from the top left ",
@@ -2973,8 +2972,8 @@ namespace dxvk {
   }
 
 
-  bool VrStereoRenderer::drawPipBoyCasing(IDirect3DSurface9* target, const D3DSURFACE_DESC& layer,
-      const D3DSURFACE_DESC& targetDesc, const VrPipBoyPanelLayout& layout, const RECT* cornersOf) {
+  bool VrStereoRenderer::drawPipBoyCasing(const D3DSURFACE_DESC& layer,
+      const D3DSURFACE_DESC& targetDesc, const VrPipBoyPanelLayout& layout) {
     // Painted at half the panel's size: a smooth surface, and only a few MB
     // of the game's address space for a moment while it is painted
     uint32_t width  = std::max<uint32_t>(1, layer.Width  / 2);
@@ -3024,33 +3023,64 @@ namespace dxvk {
       std::memcpy(m_pipBoyCasingKey, key, sizeof(key));
     }
 
-    Com<IDirect3DSurface9> casing;
+    // A quad over the bound target, blended by the casing's alpha
+    m_menuSceneState->Capture();
 
-    if (FAILED(m_pipBoyCasing->GetSurfaceLevel(0, &casing)))
-      return false;
+    D3DVIEWPORT9 viewport = { 0, 0, targetDesc.Width, targetDesc.Height, 0.0f, 1.0f };
+    m_device->SetViewport(&viewport);
+    m_device->SetVertexShader(nullptr);
+    m_device->SetPixelShader(nullptr);
+    m_device->SetTexture(0, m_pipBoyCasing.ptr());
+    m_device->SetTexture(1, nullptr);
+    m_device->SetFVF(D3DFVF_XYZRHW | D3DFVF_TEX1);
 
-    if (!cornersOf)
-      return SUCCEEDED(m_device->StretchRect(casing.ptr(), nullptr, target, nullptr, D3DTEXF_LINEAR));
+    m_device->SetRenderState(D3DRS_ZENABLE,           D3DZB_FALSE);
+    m_device->SetRenderState(D3DRS_ZWRITEENABLE,      FALSE);
+    m_device->SetRenderState(D3DRS_STENCILENABLE,     FALSE);
+    m_device->SetRenderState(D3DRS_ALPHABLENDENABLE,  TRUE);
+    m_device->SetRenderState(D3DRS_SRCBLEND,          D3DBLEND_SRCALPHA);
+    m_device->SetRenderState(D3DRS_DESTBLEND,         D3DBLEND_INVSRCALPHA);
+    m_device->SetRenderState(D3DRS_BLENDOP,           D3DBLENDOP_ADD);
+    m_device->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, FALSE);
+    m_device->SetRenderState(D3DRS_ALPHATESTENABLE,   FALSE);
+    m_device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
+    m_device->SetRenderState(D3DRS_FOGENABLE,         FALSE);
+    m_device->SetRenderState(D3DRS_LIGHTING,          FALSE);
+    m_device->SetRenderState(D3DRS_CULLMODE,          D3DCULL_NONE);
+    m_device->SetRenderState(D3DRS_SRGBWRITEENABLE,   FALSE);
+    m_device->SetRenderState(D3DRS_COLORWRITEENABLE,
+      D3DCOLORWRITEENABLE_RED | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_BLUE);
 
-    // The four corners of the screen's place, from the casing's same spot
-    float sx = float(targetDesc.Width)  / float(width);
-    float sy = float(targetDesc.Height) / float(height);
-    const RECT corners[4] = {
-      { LONG(left), LONG(top), LONG(left + radius), LONG(top + radius) },
-      { LONG(right - radius), LONG(top), LONG(right), LONG(top + radius) },
-      { LONG(left), LONG(bottom - radius), LONG(left + radius), LONG(bottom) },
-      { LONG(right - radius), LONG(bottom - radius), LONG(right), LONG(bottom) },
+    m_device->SetTextureStageState(0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1);
+    m_device->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+    m_device->SetTextureStageState(0, D3DTSS_ALPHAOP,   D3DTOP_SELECTARG1);
+    m_device->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+    m_device->SetTextureStageState(0, D3DTSS_TEXCOORDINDEX, 0);
+    m_device->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_DISABLE);
+    m_device->SetTextureStageState(1, D3DTSS_COLOROP,   D3DTOP_DISABLE);
+    m_device->SetTextureStageState(1, D3DTSS_ALPHAOP,   D3DTOP_DISABLE);
+
+    m_device->SetSamplerState(0, D3DSAMP_MINFILTER,   D3DTEXF_LINEAR);
+    m_device->SetSamplerState(0, D3DSAMP_MAGFILTER,   D3DTEXF_LINEAR);
+    m_device->SetSamplerState(0, D3DSAMP_MIPFILTER,   D3DTEXF_NONE);
+    m_device->SetSamplerState(0, D3DSAMP_ADDRESSU,    D3DTADDRESS_CLAMP);
+    m_device->SetSamplerState(0, D3DSAMP_ADDRESSV,    D3DTADDRESS_CLAMP);
+    m_device->SetSamplerState(0, D3DSAMP_SRGBTEXTURE, FALSE);
+
+    // Pre-transformed vertices, offset by half a pixel to cover whole pixels
+    float quadRight  = float(targetDesc.Width)  - 0.5f;
+    float quadBottom = float(targetDesc.Height) - 0.5f;
+    float quad[4][6] = {
+      { -0.5f,  -0.5f,  0.0f, 1.0f, 0.0f, 0.0f },
+      { quadRight, -0.5f,  0.0f, 1.0f, 1.0f, 0.0f },
+      { -0.5f, quadBottom, 0.0f, 1.0f, 0.0f, 1.0f },
+      { quadRight, quadBottom, 0.0f, 1.0f, 1.0f, 1.0f },
     };
 
-    for (const RECT& source : corners) {
-      RECT dest = { LONG(std::round(float(source.left) * sx)), LONG(std::round(float(source.top) * sy)),
-                    LONG(std::round(float(source.right) * sx)), LONG(std::round(float(source.bottom) * sy)) };
+    bool drawn = SUCCEEDED(m_device->DrawPrimitiveUP(D3DPT_TRIANGLESTRIP, 2, quad, sizeof(quad[0])));
 
-      if (dest.right > dest.left && dest.bottom > dest.top)
-        m_device->StretchRect(casing.ptr(), &source, target, &dest, D3DTEXF_LINEAR);
-    }
-
-    return true;
+    m_menuSceneState->Apply();
+    return drawn;
   }
 
 

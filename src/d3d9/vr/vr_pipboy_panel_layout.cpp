@@ -86,8 +86,10 @@ namespace dxvk {
         float dy = py - cy;
         float outside = std::sqrt(dx * dx + dy * dy) - r;
 
-        if (outside <= 0.0f)
-          continue;  // the screen: black
+        if (outside <= 0.0f) {
+          out[3] = 0;
+          continue;  // the screen: clear, the copy of the Pip-Boy's screen shows through
+        }
 
         // The plastic: lighter towards its top edge, darker towards its bottom,
         // a soft rounding towards the outer edge and a dark lip at the screen
@@ -111,6 +113,7 @@ namespace dxvk {
         out[0] = clampByte(red);
         out[1] = clampByte(green);
         out[2] = clampByte(blue);
+        out[3] = clampByte(std::min(outside, 1.0f) * 255.0f);  // a soft edge at the screen
       }
     }
 

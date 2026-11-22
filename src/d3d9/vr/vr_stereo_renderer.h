@@ -883,8 +883,8 @@ namespace dxvk {
 
     bool copyPipBoyScreen(IDirect3DSurface9* target);
 
-    bool drawPipBoyCasing(IDirect3DSurface9* target, const D3DSURFACE_DESC& layer,
-      const D3DSURFACE_DESC& targetDesc, const VrPipBoyPanelLayout& layout, const RECT* cornersOf);
+    bool drawPipBoyCasing(const D3DSURFACE_DESC& layer,
+      const D3DSURFACE_DESC& targetDesc, const VrPipBoyPanelLayout& layout);
 
     void showPipBoyExtras();
 

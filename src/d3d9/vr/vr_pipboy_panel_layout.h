@@ -56,8 +56,9 @@ namespace dxvk {
    * \brief Paints the casing around the Pip-Boy's screen, RGBA8, top row first
    *
    * Greenish grey plastic, lighter towards its top edge and darker towards
-   * its bottom, with a dark lip at the screen. The screen's place is black,
-   * with rounded corners of \c cornerRadius pixels.
+   * its bottom, with a dark lip at the screen. The screen's place is clear
+   * (alpha 0), with rounded corners of \c cornerRadius pixels and a soft
+   * edge, so that the casing is blended over the copy of the screen.
    */
   std::vector<uint8_t> vrPaintPipBoyCasing(uint32_t width, uint32_t height,
     uint32_t insideLeft, uint32_t insideTop, uint32_t insideRight, uint32_t insideBottom, uint32_t cornerRadius);
