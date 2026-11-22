@@ -20,7 +20,11 @@ for performance measurements of other changes.
 
 It works with every backend:
 
-- **Emulator**: the usual case for automated tests.
+- **Emulator**: the usual case for automated tests. With the test channel on, the emulator's controllers drive
+  the game as a headset's do (actions, sticks, the laser on the menu panel); without it the emulator keeps its
+  keyboard gamepad. Set `d3d9.vrEmulatorRunWithoutFocus = True` as well, or the game stalls whenever another
+  window has the focus. The emulator's preview window shows the eyes only, not the panels: look at menus with
+  `capture panel`.
 - **OpenVR with SteamVR's null driver**: the real OpenVR path without a headset.
 - **OpenVR with a headset**: allowed, for example to press actions while a person watches. A set head
   pose makes the image disagree with the real head, so leave the head alone there.

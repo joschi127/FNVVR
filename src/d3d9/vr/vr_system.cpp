@@ -197,13 +197,21 @@ namespace dxvk {
     turn.smoothSpeed = options.smoothTurnSpeed;
 
     bool emulated = dynamic_cast<VrEmulatorBackend*>(backend.get()) != nullptr;
+    bool testChannel = config.getOption<bool>("d3d9.vrTestChannel", false);
+
+    // With the test channel, the emulator's controllers drive the game as a
+    // headset's do (actions, sticks, the laser on the menu panel), so that
+    // tests reach the same paths; the keyboard still moves the head
+    bool emulatedControllers = emulated && testChannel;
 
     if (auto* emulator = dynamic_cast<VrEmulatorBackend*>(backend.get())) {
       VrEmulatorKeyboard keyboard;
       emulator->setInputSource([keyboard] {
         return vrMergeInput(keyboard.sample(), VrGamepadHook::headInput());
       });
+    }
 
+    if (emulated && !emulatedControllers) {
       VrGamepadHook::Options gamepad;
       gamepad.virtualPad  = config.getOption<bool>("d3d9.vrVirtualGamepad", true);
       gamepad.headControl = config.getOption<bool>("d3d9.vrGamepadHead", true);
@@ -270,8 +278,11 @@ namespace dxvk {
     swing.powerCost.max  = config.getOption<int32_t>("d3d9.vrPowerAttackApCostMax", swing.powerCost.max);
     swing.powerCost.weightMult = config.getOption<float>("d3d9.vrPowerAttackApWeightMult", swing.powerCost.weightMult);
 
+    if (emulatedControllers)
+      Logger::info("VR: The test channel is on: the emulator's controllers drive the game like a headset's");
+
     // Test tools drive VR input through a named pipe, off by default
-    if (config.getOption<bool>("d3d9.vrTestChannel", false)) {
+    if (testChannel) {
       // String options come back empty, not as the fallback, when they are not set
       std::string pipeName = config.getOption<std::string>("d3d9.vrTestPipeName", "");
       backend = std::make_unique<VrTestBackend>(std::move(backend), pipeName.empty() ? "FNVVR-Test-VR" : pipeName);
@@ -306,7 +317,8 @@ namespace dxvk {
     g_vrSystem->m_forceGameSettings = !emulated && config.getOption<bool>("d3d9.vrForceGameSettings", true);
     g_vrSystem->m_rewriteTutorials = !emulated && config.getOption<bool>("d3d9.vrTutorials", true);
     g_vrSystem->m_hideGameWindow = !emulated && config.getOption<bool>("d3d9.vrHideGameWindow", true);
-    g_vrSystem->m_keepGameActive = g_vrSystem->m_hideGameWindow;
+    g_vrSystem->m_keepGameActive = g_vrSystem->m_hideGameWindow
+      || (emulated && config.getOption<bool>("d3d9.vrEmulatorRunWithoutFocus", false));
     DxvkInstance::registerExtensionProvider(g_vrSystem->m_extensionProvider.get());
 
     VrOptionsMenu::install(options, g_vrSystem->m_texts, [] (const VrOptions& changed) {
