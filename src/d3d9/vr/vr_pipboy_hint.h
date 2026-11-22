@@ -11,22 +11,23 @@ namespace dxvk {
    * \brief Layout of the sign that tells how to close the Pip-Boy's panel
    */
   struct VrPipBoyHintLayout {
-    constexpr static uint32_t ImageWidth  = 406;
+    constexpr static uint32_t ImageWidth  = 280;
     constexpr static uint32_t ImageHeight = 150;
-    /// Width of the sign, as a share of the panel's width: its button as
-    /// high as the Pip-Boy's own button hints on the panel ("Equip A"),
-    /// 3.95 % of the panel's width
-    constexpr static float    WidthShare  = 0.107f;
+    /// Width of the sign, as a share of the panel's width: its text and
+    /// button as high as the Pip-Boy's own button hints on the panel
+    /// ("Equip A": capitals 2.16 %, button 3.95 % of the panel's width)
+    constexpr static float    WidthShare  = 0.151f;
     /// Space between the panel's top edge and the sign, in metres
     constexpr static float    Gap         = 0.01f;
 
     // Text and button as the Pip-Boy's button hints, in units of the image
 
-    /// Height of the image (its width is 203)
+    /// Height of the image (its width is 140)
     constexpr static float    Units           = 75.0f;
-    /// Height of the text's capitals, as a share of the button's (46 to 84
-    /// pixels for "Equip A" on the panel)
-    constexpr static float    CapitalsShare   = 46.0f / 84.0f;
+    /// Height of the text's capitals, as a share of the button's image: the
+    /// B fills about half of its image, and is 84 pixels to the capitals' 46
+    /// on "Equip A"
+    constexpr static float    CapitalsShare   = 0.27f;
     /// Space around the text in the frame, both sides together
     constexpr static float    HorizontalSpace = 20.0f;
     /// Space above and below the text, together

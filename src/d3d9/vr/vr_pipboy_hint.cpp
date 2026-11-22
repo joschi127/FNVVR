@@ -16,8 +16,8 @@ namespace dxvk {
     constexpr char ButtonImage[] = "interface\\shared\\button\\general_button_b.dds";
 
     // Without the font, the frame is as wide and high as with "Close", in units
-    constexpr float TextWidthWithoutFont  = 123.0f;
-    constexpr float LineHeightWithoutFont = 64.0f;
+    constexpr float TextWidthWithoutFont  = 60.0f;
+    constexpr float LineHeightWithoutFont = 31.0f;
 
   }
 
