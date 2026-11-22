@@ -28,11 +28,12 @@ namespace dxvk {
     /// Nearest a tile is shown, in metres: closer, it would fill the view
     float minDistance  = 0.3f;
     /// Colour of a person's tile (trait user6 = 1) drawn in the HUD's
-    /// colour, and of its mark, 0xRRGGBB: a dusty green, as the compass's
+    /// colour, and of its mark, 0xRRGGBB: the green of an old phosphor
+    /// screen, the counterpart of the Pip-Boy's amber, as the compass's
     /// friends; a person's tile in a colour of its own (such as a downed
-    /// friend's red) is drawn in alertColour
-    uint32_t personColour = 0x9CB88A;
-    uint32_t alertColour  = 0xB86A5C;
+    /// friend's red) is drawn in alertColour, a red like the Pip-Boy's lamps
+    uint32_t personColour = 0x5CFF6E;
+    uint32_t alertColour  = 0xE0705A;
   };
 
   /**

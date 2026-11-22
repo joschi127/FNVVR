@@ -129,7 +129,10 @@ The first runs of co-op in the emulator (fakefriend, run c34) showed the flat pl
 Updated after the guided headset session h05 (2026-11-22): the plates were too small at 3 and 8 m and readable
 at 20 m. The maintainer decided: a fixed size in the world, so a plate grows and shrinks with the friend's body,
 no smaller beyond 20 m (`d3d9.vrWorldTileWidth`, a bit smaller than the old size at 20 m); the `v` under the
-name becomes the compass's friend mark; plate and compass mark share one dusty green, and the red of a downed
-friend is toned down in the same style (`d3d9.vrFriendColour`, `d3d9.vrFriendAlertColour`).
+name becomes the compass's friend mark; plate and compass mark share one colour (`d3d9.vrFriendColour`). After
+emulator screenshots the maintainer chose a bright green like an old phosphor screen, the counterpart of the
+Pip-Boy's amber (a dusty green was too dark to read), and a red like the Pip-Boy's lamps for a downed friend
+(`d3d9.vrFriendAlertColour`); the plate's image stands on the anchor, so the larger plate keeps its distance
+above the head.
 - Friends also get a mark on the compass along the top of the view ([ADR 0008](0008-compass-at-the-top-of-the-view.md)).
 

@@ -38,9 +38,10 @@ SetUIFloat "HUDMainMenu/MyMark/user5" 1
   (`d3d9.vrWorldTile*` in `dxvk.conf`). The panel has a fixed size in the world, so it grows and shrinks with
   the person it stands over; beyond 20 m it stands at 20 m in the anchor's direction and gets no smaller in the
   view. The panels have no depth test: like the flat HUD, a tile shows through walls.
-- A person's tile (`user6` = 1) is drawn in the friends' colour (`d3d9.vrFriendColour`, a dusty green, the
-  same as their mark on the compass); in a colour of its own (a downed friend's red) it is drawn in
-  `d3d9.vrFriendAlertColour`. A last line that is only `v` (the flat screen's pointer under a name) is
+- A person's tile (`user6` = 1) is drawn in the friends' colour (`d3d9.vrFriendColour`, the green of an old
+  phosphor screen, the same as their mark on the compass); in a colour of its own (a downed friend's red) it is
+  drawn in `d3d9.vrFriendAlertColour`, a red like the Pip-Boy's lamps. The image stands on the anchor: text and
+  mark are above it. A last line that is only `v` (the flat screen's pointer under a name) is
   replaced by the friend's mark of the compass.
 - Shows them while the HUD is shown in the world; hides them in menus.
 

@@ -190,7 +190,7 @@ namespace dxvk {
         info.person = number(tile, m_traitKind, 0.0f) == 1.0f;
 
         // A person's tile in the friends' colour, one in a colour of its own
-        // (a downed friend's red) in the alert colour, both dusty as the game
+        // (a downed friend's red) in the alert colour, phosphor green and lamp red
         bool ownColour = number(tile, m_traitSystemColour, 1.0f) == 0.0f;
 
         if (info.person) {
@@ -348,6 +348,16 @@ namespace dxvk {
       VrVector3 anchor = vrTransformPoint(reference,
         vrComputeGamePointInReference(camera, info.anchor, VrGameUnitsPerMetre));
       VrWorldTilePlace place = vrPlaceWorldTile(m_config, head, anchor);
+
+      // The image stands on the anchor, its text and mark above it, as the
+      // flat screen puts the text above the anchor: up by half its height
+      if (place.visible) {
+        VrVector3 up = vrRotate(place.pose.orientation, { 0.0f, 1.0f, 0.0f });
+        float lift = 0.5f * place.width * float(ImageHeight) / float(ImageWidth);
+        place.pose.position.x += up.x * lift;
+        place.pose.position.y += up.y * lift;
+        place.pose.position.z += up.z * lift;
+      }
 
       if (!place.visible) {
         slot.panel->hide();

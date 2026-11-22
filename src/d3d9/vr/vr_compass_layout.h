@@ -44,9 +44,9 @@ namespace dxvk {
     float markerGapNoBackdrop = -18.0f;
     /// Size of the quest objective's marker against the others
     float questScale = 1.0f;
-    /// Colour of friends' markers, 0xRRGGBB: a dusty green, as their name
+    /// Colour of friends' markers, 0xRRGGBB: a phosphor green, as their name
     /// plates (VrWorldTileConfig::personColour); the others take the HUD's colour
-    uint32_t friendColour = 0x9CB88A;
+    uint32_t friendColour = 0x5CFF6E;
   };
 
   /**

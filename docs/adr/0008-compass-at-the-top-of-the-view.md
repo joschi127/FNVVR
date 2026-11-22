@@ -32,7 +32,7 @@ B, drawn with the game's own pictures so that it looks and feels like the game's
   game's filled arrow (`glow_hud_compass_objective_marker.dds`); a target in another place points at the
   door that leads there, as on the game's compass. The marker the player placed on the map as the game's
   hollow arrow (`glow_hud_compass_pc_marker.dds`). Friends in co-op as the game's mark of a person
-  (`glow_hud_tick_mark.dds`) in a dusty green, the colour of their name plates, with their initial; friends come from
+  (`glow_hud_tick_mark.dds`) in a phosphor green, the colour of their name plates, with their initial; friends come from
   HUD tiles marked as a person's ([docs/hud-world-tiles.md](../hud-world-tiles.md)), so the compass works
   the same without the co-op mod. Markers outside the strip stay at its nearer end, fainter.
 - In an interior the cell's own north is used, as on the game's compass.
