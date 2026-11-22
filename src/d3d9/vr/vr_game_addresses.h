@@ -4227,8 +4227,17 @@ namespace dxvk {
     /**
      * HUD tiles anchored in the world (VrWorldTiles): the interface's trait
      * names a mod sets on a tile of the HUD to have it shown at a place in
-     * the world. See docs/hud-world-tiles.md.
+     * the world, looked up with TileTextToTrait once the game built its
+     * interface (it does not know them earlier). The user traits' ids are
+     * fixed (user0 is 0x1004 in xNVSE's GameTiles.h; TileTraitXpMeterBaseY
+     * is user3) and serve when a name is not found. See
+     * docs/hud-world-tiles.md.
      */
+    constexpr uint32_t  TileTraitUser2        = 0x1006;
+    constexpr uint32_t  TileTraitUser3        = 0x1007;
+    constexpr uint32_t  TileTraitUser4        = 0x1008;
+    constexpr uint32_t  TileTraitUser5        = 0x1009;
+    constexpr uint32_t  TileTraitUser6        = 0x100A;
     constexpr char      WorldTileFlagTrait[]  = "user5";
     constexpr char      WorldTileXTrait[]     = "user2";
     constexpr char      WorldTileYTrait[]     = "user3";

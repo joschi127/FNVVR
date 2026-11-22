@@ -83,24 +83,33 @@ namespace dxvk {
       return false;
     }
 
-    auto toTrait = reinterpret_cast<TileTextToTraitFn>(VrGame::TileTextToTrait);
-    m_traitFlag  = toTrait(VrGame::WorldTileFlagTrait);
-    m_traitX     = toTrait(VrGame::WorldTileXTrait);
-    m_traitY     = toTrait(VrGame::WorldTileYTrait);
-    m_traitZ     = toTrait(VrGame::WorldTileZTrait);
-    m_traitKind  = toTrait(VrGame::WorldTileKindTrait);
-    m_traitSystemColour = toTrait(VrGame::TileSystemColourTrait);
-    m_traitRed   = toTrait(VrGame::TileRedTrait);
-    m_traitGreen = toTrait(VrGame::TileGreenTrait);
-    m_traitBlue  = toTrait(VrGame::TileBlueTrait);
-
-    if (m_traitFlag == VrGame::TileTraitUnknown || m_traitX == VrGame::TileTraitUnknown
-     || m_traitY == VrGame::TileTraitUnknown || m_traitZ == VrGame::TileTraitUnknown) {
-      Logger::warn("VR: The game does not know the traits user2 to user5, tiles anchored in the world are shown flat");
-      m_available = false;
-    }
-
+    // The traits are looked up by name once the game built its interface,
+    // see resolveTraits: at this point it does not know their names yet
     return m_available;
+  }
+
+
+  void VrWorldTiles::resolveTraits() {
+    auto toTrait = reinterpret_cast<TileTextToTraitFn>(VrGame::TileTextToTrait);
+    auto byName = [&] (const char* name, uint32_t fallback) {
+      uint32_t trait = toTrait(name);
+      return trait != VrGame::TileTraitUnknown ? trait : fallback;
+    };
+
+    m_traitFlag  = byName(VrGame::WorldTileFlagTrait, VrGame::TileTraitUser5);
+    m_traitX     = byName(VrGame::WorldTileXTrait, VrGame::TileTraitUser2);
+    m_traitY     = byName(VrGame::WorldTileYTrait, VrGame::TileTraitUser3);
+    m_traitZ     = byName(VrGame::WorldTileZTrait, VrGame::TileTraitUser4);
+    m_traitKind  = byName(VrGame::WorldTileKindTrait, VrGame::TileTraitUser6);
+    // Without these the tile's colour is the HUD's
+    m_traitSystemColour = byName(VrGame::TileSystemColourTrait, VrGame::TileTraitUnknown);
+    m_traitRed   = byName(VrGame::TileRedTrait, VrGame::TileTraitUnknown);
+    m_traitGreen = byName(VrGame::TileGreenTrait, VrGame::TileTraitUnknown);
+    m_traitBlue  = byName(VrGame::TileBlueTrait, VrGame::TileTraitUnknown);
+    m_traitsResolved = true;
+
+    Logger::info(str::format("VR: HUD tiles anchored in the world: traits ", m_traitFlag, " ", m_traitX,
+      " ", m_traitY, " ", m_traitZ, " ", m_traitKind, ", colour ", m_traitSystemColour, " ", m_traitRed));
   }
 
 
@@ -117,6 +126,9 @@ namespace dxvk {
     std::vector<uintptr_t> headOnly;
 
     uintptr_t hud = m_available ? hudTile() : 0;
+
+    if (hud && !m_traitsResolved)
+      resolveTraits();
 
     if (hud) {
       auto lock = reinterpret_cast<CRITICAL_SECTION*>(VrGame::TileUpdateLock);

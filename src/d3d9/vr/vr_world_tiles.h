@@ -57,7 +57,7 @@ namespace dxvk {
     ~VrWorldTiles();
 
     /**
-     * \brief Checks the game's functions and finds the traits
+     * \brief Checks the game's functions
      * \returns \c false if the tiles cannot be read; nothing is done then
      */
     bool initialize();
@@ -140,6 +140,10 @@ namespace dxvk {
     mutable std::mutex     m_cullMutex;
     std::vector<uintptr_t> m_cullWorld;
     std::vector<uintptr_t> m_cullHeadOnly;
+
+    bool           m_traitsResolved = false;
+
+    void resolveTraits();
 
     bool paintSlot(Slot& slot, const VrWorldTileInfo& info);
 
