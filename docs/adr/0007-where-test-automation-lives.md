@@ -49,10 +49,16 @@ Requirements for FNVVR-Test-Bridge (maintainer, 2026-11-22):
 - test changes stay in memory; nothing is saved unless someone saves;
 - a memory status of the game process (address space free, largest free block, used; committed and resident
   memory) on request, in both channels, also without the co-op mod;
-- talking to the person in the headset (maintainer, 2026-11-22; planned, not built yet): notifications as the
-  game's HUD message with a sound (`notify`, bridge), questions with up to four answer buttons in the game's
-  message box (`ask`/`answer`, bridge), and a "done" signal without an open question as a controller gesture
-  reported by the VR channel (for example both sticks pressed for about a second);
+- talking to the person in the headset (maintainer, 2026-11-22): notifications as the game's HUD message
+  with a sound and a chosen time on screen (`notify`, bridge; default 8 s), repeated by the tools after 30 s
+  while the person has not reacted (texts kept short: a long one is hard to read in time); questions with up
+  to four answer buttons in the game's message box (`ask`/`answer`, bridge; one question at a time); and a
+  "done" signal without an open question: both sticks pressed for about a second, counted by the VR channel
+  (`signal=N` in `state`, hold time `d3d9.vrTestSignalHold`), confirmed by a short HUD notification;
+- opening the Pip-Boy on its panel testable without a person (maintainer, 2026-11-22): directly
+  (`pipboy open|close` in the VR channel, the same path as the gesture, only when the game could open it) and
+  by the gesture of looking at the left wrist (the VR channel reports where the Pip-Boy's screen is on the
+  left controller and whether it is looked at; the tools compute the hand pose from it);
 - clean, short documentation of every implemented feature and how to use it (bridge README and protocol;
   for the VR channel `docs/testing/vr-test-channel.md`), updated in the same commit as the feature;
 - **no performance cost**: with `Enabled=0` the plugin does nothing at all; enabled and idle it does one
