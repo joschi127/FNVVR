@@ -15,7 +15,8 @@ d3d9.vrTestPipeName = FNVVR-Test-VR  # optional
 
 FNVVR then puts a test layer in front of the real backend (emulator or OpenVR). With no requests it only
 passes everything through. The DXVK log names the pipe (`VR: Test channel listening on ...`). Leave it off
-for normal play and for performance measurements.
+on while playing if convenient: idle it costs no measurable frame time (measured 2026-11-22); switch it off
+for performance measurements of other changes.
 
 It works with every backend:
 

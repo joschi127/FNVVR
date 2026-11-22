@@ -149,7 +149,8 @@ presets (see its README).
 - **Game-level control for tests**: [FNVVR-Test-Bridge](https://github.com/joschi127/FNVVR-Test-Bridge),
   a separate xNVSE plugin (own repository, zlib), lets local tools run console commands and `eval`
   expressions in the running game and read the console text back, through a named pipe for the current
-  user. Install it only for test runs and keep `Enabled=0` for real play and performance measurements.
+  user. Idle it costs no measurable frame time (run 2026-11-22), so it may stay enabled while playing;
+  switch it off for performance measurements of other changes.
   Which test part lives where (VR side in FNVVR, game side in the bridge, co-op side in the co-op mod):
   [ADR 0007](adr/0007-where-test-automation-lives.md). Helper scripts are written in Python.
 - **VR-level control for tests**: the VR test channel (`d3d9.vrTestChannel`, off by default,

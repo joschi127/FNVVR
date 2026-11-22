@@ -56,9 +56,10 @@ Requirements for FNVVR-Test-Bridge (maintainer, 2026-11-22):
 - clean, short documentation of every implemented feature and how to use it (bridge README and protocol;
   for the VR channel `docs/testing/vr-test-channel.md`), updated in the same commit as the feature;
 - **no performance cost**: with `Enabled=0` the plugin does nothing at all; enabled and idle it does one
-  atomic load per frame. Whether enabled-and-idle is measurable has to be checked (frame times off against
-  on). Until that is shown to be free, and in any case for real play and performance measurements, it stays
-  `Enabled=0`.
+  atomic load per frame. Measured 2026-11-22 in the headset (bridge and VR channel on and idle against both
+  off, standing still at the same spot, 90 fps both): game thread about 6.3 against 6.6 ms per frame, process
+  about 1.10 against 1.15 cores, so no measurable cost. Both may stay on while playing (maintainer's
+  decision); they are switched off for performance measurements of other changes.
 
 ## Consequences
 
