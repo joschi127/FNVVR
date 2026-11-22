@@ -46,7 +46,7 @@ namespace dxvk {
     float questScale = 1.0f;
     /// Colour of friends' markers, 0xRRGGBB: a phosphor green, as their name
     /// plates (VrWorldTileConfig::personColour); the others take the HUD's colour
-    uint32_t friendColour = 0x5CFF6E;
+    uint32_t friendColour = 0x9BE07E;
   };
 
   /**

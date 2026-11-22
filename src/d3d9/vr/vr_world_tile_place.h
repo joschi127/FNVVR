@@ -32,7 +32,7 @@ namespace dxvk {
     /// screen, the counterpart of the Pip-Boy's amber, as the compass's
     /// friends; a person's tile in a colour of its own (such as a downed
     /// friend's red) is drawn in alertColour, a red like the Pip-Boy's lamps
-    uint32_t personColour = 0x5CFF6E;
+    uint32_t personColour = 0x9BE07E;
     uint32_t alertColour  = 0xE0705A;
   };
 
