@@ -50,6 +50,32 @@ the game folder, see the FNVVR README).
 All players need the same plugins in the same load order; True Co-op checks this when joining and can
 fetch plugins and archives, but not loose files or xNVSE plugins.
 
+## Recommended graphics mods (the tested setup)
+
+This fork recommends two graphics mods and **always tests with them installed**, so test results match
+what is played. Both are installed identically on every PC of a co-op session.
+
+| Mod | Version | Source |
+|---|---|---|
+| NMC's Texture Pack, **Medium** (both parts, the "for NMM" archives) | as on Nexus, 2026-11 | https://www.nexusmods.com/newvegas/mods/43135 |
+| Desert Natural Weathers | 7.9.2 | https://www.nexusmods.com/newvegas/mods/75437 |
+
+- **NMC's Texture Pack** is loose files only (textures and a few meshes, about 5 GB); copy both parts
+  completely into `Data`. No plugin.
+- **Desert Natural Weathers** brings `DNWeathers.esp` with its archive, sky meshes and settings under
+  `Data/config/HDRWeatherAndColor/` (depth of field and saturation effects off). Activate
+  `DNWeathers.esp` and put it **last** in the load order (newest file date, see "Load order on several
+  PCs").
+- `Fallout.ini`, section `[Archive]`: `bInvalidateOlderFiles=1`, so loose files win over the game's
+  archives.
+- Co-op: True Co-op compares plugins and archives (so it sees `DNWeathers.esp`), not loose textures;
+  install both mods the same way on every PC anyway. True Co-op does not synchronise the weather, so
+  two players can see different weather.
+- Memory: the game stays a 32-bit process; the 4 GB patch (see "Game") is required. A measured
+  comparison with and without the texture pack (address space, frame time in VR) is still open.
+- Not part of the setup: New Vegas Reloaded and ReShade presets (too much for this setup, and untested
+  with FNVVR).
+
 ## Points that matter for FNVVR + True Co-op
 
 Facts from True Co-op's description that the compatibility work has to keep in mind:
