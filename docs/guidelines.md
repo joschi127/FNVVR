@@ -266,8 +266,9 @@ with status Proposed until the maintainer decides. Bug fixes do not need ADRs.
   bug reports with a log on Discord or GitHub. Scope: features that do not fit the mod are refused
   as bloat. Anything offered upstream must be reviewed and explained by the maintainer; keep it
   small, in upstream's code style and with upstream's commit message style.
-- This fork's own `.github/` templates are still the inherited DXVK ones (they ask for Wine
-  versions and apitrace files); adapting them is a to-do.
+- This repository has its own slim `.github/` issue template (FNVVR build, game, xNVSE, co-op, headset,
+  logs) in place of the ones inherited from DXVK; blank issues are allowed, and problems that also happen
+  with df4l's FNVVR are pointed there.
 - Upstream discussion happens mostly on the FNVVR Discord (linked in the README). The co-op mod has
   its own Discord and Nexus page.
 - Do not report problems that only occur with this fork as regular bugs upstream.

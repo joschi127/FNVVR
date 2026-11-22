@@ -1,32 +1,22 @@
 ---
 name: Bug report
-about: Report crashes, rendering issues etc.
+about: Something does not work in FNVVR (this repository), with or without the co-op mod
 title: ''
 labels: ''
 assignees: ''
-
 ---
 
-Please describe your issue as accurately as possible. Include screenshots or videos when relevant.
+### What happens
+What you did, what you expected, what happened instead. Screenshots or a short video help.
 
-If you use Windows, please check the following page: https://github.com/doitsujin/dxvk/wiki/Windows
+### Setup
+- FNVVR: commit or build (`describe` line from the log, or the release)
+- Game: `FalloutNV.exe` version (1.4.0.525), Steam or GOG, 4 GB patch yes/no
+- xNVSE version
+- New Vegas True Co-op / FNVVR-Coop-Compat: no, or version (host or guest)
+- Other mods (or the mod list)
+- Headset and VR runtime (for example SteamVR, Virtual Desktop), or the emulator backend
+- GPU
 
-### Software information
-Name of the game, settings used etc. Include any mods or add-ons if applicable.
-
-### System information
-- GPU:
-- Driver:
-- Wine version: 
-- DXVK version: 
-
-### Apitrace file(s)
-- Put a link here
-
-For instructions on how to use apitrace, see: https://github.com/doitsujin/dxvk/wiki/Using-Apitrace
-
-### Log files
-Please attach Proton or Wine logs as a text file:
-- When using Proton, set the Steam launch options for your game to `PROTON_LOG=1 %command%` and attach the corresponding `steam-xxxxx.log` file in your home directory.
-- When using regular Wine, use `wine game.exe > game.log 2>&1` and attach the resulting `game.log` file.
-- On Windows, DXVK log files will usually appear next to the games exe or in its base folder.
+### Logs
+Attach `FalloutNV_d3d9.log` from the game folder, and with co-op `NVCoop.log`.
