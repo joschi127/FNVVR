@@ -1330,6 +1330,27 @@ namespace dxvk {
   }
 
 
+  bool VrOpenVrBackend::movePanel(VrPanelId id, const VrPose& pose, float width, VrPanelAnchor anchor) {
+    Panel& state = m_panels[uint32_t(id)];
+
+    // Only a panel that shows its image: the runtime keeps it
+    if (m_state != VrSessionState::Running || !state.handle || !state.visible)
+      return false;
+
+    vr::IVROverlay* overlay = m_runtime->overlay;
+    vr::HmdMatrix34_t transform = { };
+    vrPoseToMatrix34(pose, transform.m);
+
+    if (anchor == VrPanelAnchor::Head)
+      overlay->SetOverlayTransformTrackedDeviceRelative(state.handle, vr::k_unTrackedDeviceIndex_Hmd, &transform);
+    else
+      overlay->SetOverlayTransformAbsolute(state.handle, vr::TrackingUniverseStanding, &transform);
+
+    overlay->SetOverlayWidthInMeters(state.handle, width);
+    return true;
+  }
+
+
   bool VrOpenVrBackend::submitPanelPixels(VrPanelId id, const VrPanelPixels& panel) {
     if (m_state != VrSessionState::Running || !panel.rgba || !createPanel(id))
       return false;

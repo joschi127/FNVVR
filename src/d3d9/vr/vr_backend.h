@@ -350,6 +350,19 @@ namespace dxvk {
     virtual void hidePanel(VrPanelId id) = 0;
 
     /**
+     * \brief Moves a shown panel without giving its image again
+     *
+     * For a panel whose image did not change: placing it costs no copy
+     * of the image and no wait for the GPU.
+     *
+     * \returns \c false if the backend cannot or the panel is not shown;
+     *    the caller gives the whole panel with submitPanel then
+     */
+    virtual bool movePanel(VrPanelId, const VrPose&, float, VrPanelAnchor) {
+      return false;
+    }
+
+    /**
      * \brief Shows a panel from an image in system memory
      *
      * Slower than submitPanel: meant for images that rarely change.

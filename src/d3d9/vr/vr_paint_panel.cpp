@@ -41,6 +41,14 @@ namespace dxvk {
   }
 
 
+  bool VrPaintPanel::move(const VrPose& pose, float width, VrPanelAnchor anchor) {
+    if (m_shown && m_backend.movePanel(m_id, pose, width, anchor))
+      return true;
+
+    return show(pose, width, anchor);
+  }
+
+
   void VrPaintPanel::release() {
     hide();
     m_texture = nullptr;

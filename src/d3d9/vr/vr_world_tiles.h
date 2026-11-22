@@ -43,7 +43,10 @@ namespace dxvk {
    * chat line, belong in front of the head.
    *
    * update and show run on the game's main thread; the tiles to cull may be
-   * asked for by the interface pass on another thread.
+   * asked for by the interface pass on another thread. The tiles are read
+   * again each frame just before the eyes' interface passes; a mod that
+   * destroyed one of its HUD tiles in between would leave a stale pointer
+   * there (no known mod does).
    */
   class VrWorldTiles {
 
@@ -106,6 +109,7 @@ namespace dxvk {
       bool        placed = false;
       VrPose      shownPose  = { };
       float       shownWidth = 0.0f;
+      uint32_t    idleFrames = 0;
     };
 
     VrPainter&     m_painter;
@@ -131,6 +135,7 @@ namespace dxvk {
     VrPaintList    m_list;
     bool           m_loggedFound   = false;
     bool           m_loggedFailure = false;
+    bool           m_loggedNoFont  = false;
 
     mutable std::mutex     m_cullMutex;
     std::vector<uintptr_t> m_cullWorld;

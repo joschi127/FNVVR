@@ -28,6 +28,9 @@ namespace dxvk {
     constexpr float    MoveToShow = 0.0035f;
     constexpr float    TurnToShow = 0.99999f;
 
+    // Frames a slot stays unused before it lets go of its texture (about 10 s)
+    constexpr uint32_t ReleaseAfterFrames = 900;
+
     // Bounds of the walk through the HUD's top-level tiles, far above what it holds
     constexpr uint32_t MaxHudChildren = 1024;
 
@@ -135,6 +138,17 @@ namespace dxvk {
         if (!m_config.enabled || number(tile, m_traitFlag, 0.0f) == 0.0f)
           continue;
 
+        // Without the game's font the tiles cannot be drawn in the world: they
+        // stay flat. Asked for only now, in game, as the font is read once.
+        if (!m_images.font()) {
+          if (!m_loggedNoFont) {
+            Logger::warn("VR: No game font for HUD tiles anchored in the world, they are shown flat");
+            m_loggedNoFont = true;
+          }
+
+          continue;
+        }
+
         // Anchored: never drawn flat, even while it has nothing to show
         world.push_back(tile);
 
@@ -199,7 +213,7 @@ namespace dxvk {
     std::vector<std::string> lines = vrTileTextLines(info.text);
     float capitals = std::max(font->metrics.glyph('A').ascent, 1.0f);
     float scale    = Capitals / capitals;
-    float lineStep = font->metrics.lineHeight() * scale;
+    float lineStep = std::max(font->metrics.lineHeight() * scale, 1.0f);
 
     // Lines too wide for the image are made smaller
     for (const std::string& line : lines) {
@@ -257,8 +271,18 @@ namespace dxvk {
         if (slot.panel)
           slot.panel->hide();
         slot.placed = false;
+
+        // A slot unused for a while lets go of its texture
+        if (slot.panel && ++slot.idleFrames > ReleaseAfterFrames) {
+          slot.panel->release();
+          slot.drawn = false;
+          slot.idleFrames = 0;
+        }
+
         continue;
       }
+
+      slot.idleFrames = 0;
 
       const VrWorldTileInfo& info = m_tiles[i];
 
@@ -289,9 +313,15 @@ namespace dxvk {
       const VrQuaternion& b = slot.shownPose.orientation;
       float turned = std::fabs(a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w);
 
-      if (!slot.placed || !slot.panel->shown() || vrLength(moved) > MoveToShow * place.distance
-       || turned < TurnToShow || std::fabs(place.width - slot.shownWidth) > 0.01f * place.width) {
+      // A new image is given whole; a moved one only placed anew
+      if (!slot.placed || !slot.panel->shown()) {
         slot.panel->show(place.pose, place.width);
+        slot.placed     = true;
+        slot.shownPose  = place.pose;
+        slot.shownWidth = place.width;
+      } else if (vrLength(moved) > MoveToShow * place.distance || turned < TurnToShow
+       || std::fabs(place.width - slot.shownWidth) > 0.01f * place.width) {
+        slot.panel->move(place.pose, place.width);
         slot.placed     = true;
         slot.shownPose  = place.pose;
         slot.shownWidth = place.width;

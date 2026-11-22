@@ -58,6 +58,7 @@ namespace dxvk {
     void submitEmptyFrame(int64_t displayTime) override { m_inner->submitEmptyFrame(displayTime); }
     bool submitPanel(VrPanelId id, const VrPanelSubmission& panel) override;
     void hidePanel(VrPanelId id) override;
+    bool movePanel(VrPanelId id, const VrPose& pose, float width, VrPanelAnchor anchor) override;
     bool submitPanelPixels(VrPanelId id, const VrPanelPixels& panel) override;
 
     void showPointer(VrHand hand, const VrPointerSubmission& pointer) override { m_inner->showPointer(hand, pointer); }

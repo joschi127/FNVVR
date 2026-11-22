@@ -41,6 +41,14 @@ namespace dxvk {
     bool show(const VrPose& pose, float width, VrPanelAnchor anchor = VrPanelAnchor::Room);
 
     /**
+     * \brief Moves the shown image, without giving it again where the backend can
+     *
+     * For an image that did not change since it was last shown; otherwise
+     * the same as show.
+     */
+    bool move(const VrPose& pose, float width, VrPanelAnchor anchor = VrPanelAnchor::Room);
+
+    /**
      * \brief Hides the panel and lets go of its texture
      *
      * For a panel that may stay unused for long; the next paint makes it again.

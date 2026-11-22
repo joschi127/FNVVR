@@ -146,6 +146,23 @@ namespace dxvk {
   }
 
 
+  bool VrTestBackend::movePanel(VrPanelId id, const VrPose& pose, float width, VrPanelAnchor anchor) {
+    if (!m_inner->movePanel(id, pose, width, anchor))
+      return false;
+
+    // Moved, its image as before: its height keeps the image's aspect
+    if (uint32_t(id) < VrPanelCount) {
+      VrTestPanelPlace& place = m_places[uint32_t(id)];
+      place.height = place.width > 0.0f ? place.height * width / place.width : 0.0f;
+      place.pose   = pose;
+      place.width  = width;
+      place.anchor = anchor;
+    }
+
+    return true;
+  }
+
+
   bool VrTestBackend::submitPanelPixels(VrPanelId id, const VrPanelPixels& panel) {
     // Only the launcher uses panels from system memory, and it runs without this layer
     return m_inner->submitPanelPixels(id, panel);
