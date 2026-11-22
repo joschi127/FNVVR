@@ -63,14 +63,19 @@ namespace dxvk {
     // A line about an objective target for the log: its reference, its
     // teleport links and the reference shown
     void describeTarget(std::string& out, uintptr_t target, uintptr_t shown, const VrVector3& at) {
+      // The target itself may be gone while its doors are shown: only read what can be read
+      auto formId = [] (uintptr_t form) {
+        return form && VrGameMemory::readable(form + VrGame::FormId, sizeof(uint32_t))
+          ? readField<uint32_t>(form, VrGame::FormId) : 0u;
+      };
+
       uintptr_t ref = readField<uintptr_t>(target, VrGame::TargetRef);
       uint32_t links = readField<uint32_t>(target + VrGame::TargetTeleportLinks, VrGame::SimpleArrayCount);
       char line[160];
       // Without the place, which changes while a target walks
       (void)at;
       std::snprintf(line, sizeof(line), " [target %08X, %u door(s), shown %08X]",
-        ref ? readField<uint32_t>(ref, VrGame::FormId) : 0u, links,
-        shown ? readField<uint32_t>(shown, VrGame::FormId) : 0u);
+        formId(ref), links, formId(shown));
       out += line;
     }
 

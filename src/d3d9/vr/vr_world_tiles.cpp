@@ -130,6 +130,10 @@ namespace dxvk {
     if (hud && !m_traitsResolved)
       resolveTraits();
 
+    // Read before the game's tile lock is taken: the first call reads the
+    // font from the game's archives
+    const VrPaintFont* font = hud ? m_images.font() : nullptr;
+
     if (hud) {
       auto lock = reinterpret_cast<CRITICAL_SECTION*>(VrGame::TileUpdateLock);
       EnterCriticalSection(lock);
@@ -152,7 +156,7 @@ namespace dxvk {
 
         // Without the game's font the tiles cannot be drawn in the world: they
         // stay flat. Asked for only now, in game, as the font is read once.
-        if (!m_images.font()) {
+        if (!font) {
           if (!m_loggedNoFont) {
             Logger::warn("VR: No game font for HUD tiles anchored in the world, they are shown flat");
             m_loggedNoFont = true;
@@ -285,7 +289,7 @@ namespace dxvk {
         slot.placed = false;
 
         // A slot unused for a while lets go of its texture
-        if (slot.panel && ++slot.idleFrames > ReleaseAfterFrames) {
+        if (slot.panel && slot.drawn && ++slot.idleFrames > ReleaseAfterFrames) {
           slot.panel->release();
           slot.drawn = false;
           slot.idleFrames = 0;
