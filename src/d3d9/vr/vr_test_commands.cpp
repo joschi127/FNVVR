@@ -213,6 +213,8 @@ namespace dxvk {
       command.verb = VrTestVerb::Ping;
     } else if (verb == "state" && n == 1) {
       command.verb = VrTestVerb::State;
+    } else if (verb == "memory" && n == 1) {
+      command.verb = VrTestVerb::Memory;
     } else if (verb == "head") {
       if (!parsePose(words, 1, command.pose))
         return invalid("head <x> <y> <z> <yaw> <pitch> [roll]");

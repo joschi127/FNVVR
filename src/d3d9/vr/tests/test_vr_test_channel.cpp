@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <string>
+#include <vector>
 
 #include "../vr_math.h"
 #include "../vr_test_commands.h"
@@ -234,4 +235,76 @@ TEST_CASE(test_png_has_valid_structure) {
   // IEND's CRC is fixed
   CHECK(png[png.size() - 4] == 0xAE && png[png.size() - 3] == 0x42
      && png[png.size() - 2] == 0x60 && png[png.size() - 1] == 0x82);
+}
+
+
+TEST_CASE(test_png_stores_the_rows_across_blocks) {
+  // Wide enough that the raw data spans several stored blocks (65535 bytes each)
+  const uint32_t width = 9000, height = 3;
+  std::vector<uint8_t> pixels(size_t(width) * height * 4);
+
+  for (size_t i = 0; i < pixels.size(); i++)
+    pixels[i] = uint8_t(i * 7 + 3);
+
+  std::vector<uint8_t> png = vrEncodePng(pixels.data(), width, height);
+
+  // IDAT starts after the signature (8) and IHDR (25); its data after 8 bytes
+  size_t idat = 8 + 25;
+  uint32_t length = (uint32_t(png[idat]) << 24) | (uint32_t(png[idat + 1]) << 16)
+                  | (uint32_t(png[idat + 2]) << 8) | uint32_t(png[idat + 3]);
+  CHECK(std::string(png.begin() + idat + 4, png.begin() + idat + 8) == "IDAT");
+  CHECK(idat + 8 + length + 4 + 12 == png.size());
+
+  // Unpack the stored blocks
+  size_t pos = idat + 8 + 2;
+  std::vector<uint8_t> raw;
+  bool last = false;
+
+  while (!last) {
+    last = png[pos] & 1;
+    uint32_t len  = png[pos + 1] | (uint32_t(png[pos + 2]) << 8);
+    uint32_t nlen = png[pos + 3] | (uint32_t(png[pos + 4]) << 8);
+    CHECK((len ^ nlen) == 0xFFFF);
+    raw.insert(raw.end(), png.begin() + pos + 5, png.begin() + pos + 5 + len);
+    pos += 5 + len;
+  }
+
+  CHECK(raw.size() == (size_t(width) * 4 + 1) * height);
+
+  bool same = true;
+
+  for (uint32_t y = 0; y < height; y++) {
+    same = same && raw[y * (width * 4 + 1)] == 0;
+
+    for (size_t x = 0; x < size_t(width) * 4; x++)
+      same = same && raw[y * (width * 4 + 1) + 1 + x] == pixels[y * width * 4 + x];
+  }
+
+  CHECK(same);
+
+  uint32_t a = 1, b = 0;
+
+  for (uint8_t byte : raw) {
+    a = (a + byte) % 65521;
+    b = (b + a) % 65521;
+  }
+
+  uint32_t adler = (uint32_t(png[pos]) << 24) | (uint32_t(png[pos + 1]) << 16)
+                 | (uint32_t(png[pos + 2]) << 8) | uint32_t(png[pos + 3]);
+  CHECK(adler == ((b << 16) | a));
+}
+
+
+TEST_CASE(test_png_writer_refuses_missing_rows) {
+  size_t bytes = 0;
+  VrPngWriter writer([&bytes] (const uint8_t*, size_t size) { bytes += size; return true; }, 2, 2);
+  const uint8_t row[8] = { };
+  CHECK(writer.row(row));
+  CHECK(!writer.finish());
+}
+
+
+TEST_CASE(test_channel_parses_memory) {
+  CHECK(vrParseTestCommand("memory").verb == VrTestVerb::Memory);
+  CHECK(vrParseTestCommand("memory now").verb == VrTestVerb::Invalid);
 }

@@ -18,6 +18,7 @@ namespace dxvk {
     Invalid,
     Ping,        ///< ping
     State,       ///< state
+    Memory,      ///< memory: address space and memory of the game process
     Head,        ///< head <x> <y> <z> <yaw> <pitch> [roll]
     Hand,        ///< hand left|right <x> <y> <z> <yaw> <pitch> [roll]
     Release,     ///< release head|left|right|move|turn|all

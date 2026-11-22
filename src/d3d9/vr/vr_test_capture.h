@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -29,13 +30,17 @@ namespace dxvk {
 
     bool ready() const { return m_ready; }
 
+    /// Receives one converted RGBA8 row (width * 4 bytes), top row first
+    using RowSink = std::function<bool(const uint8_t* rgba)>;
+
     /**
-     * \brief Copies an image into RGBA8 pixels, top row first
+     * \brief Copies an image back and hands it out row by row as RGBA8
      *
+     * Only the staging buffer and one row are held, no copy of the image.
      * \param [in] opaque Set alpha to 255 (eye images carry no useful alpha)
      * \param [out] error Why it failed
      */
-    bool read(const VrEyeImage& image, bool opaque, std::vector<uint8_t>& rgba, std::string& error);
+    bool read(const VrEyeImage& image, bool opaque, const RowSink& row, std::string& error);
 
   private:
 
@@ -64,12 +69,14 @@ namespace dxvk {
     PFN_vkDestroyFence              m_destroyFence = nullptr;
     PFN_vkWaitForFences             m_waitForFences = nullptr;
     PFN_vkQueueSubmit               m_queueSubmit = nullptr;
+    PFN_vkInvalidateMappedMemoryRanges m_invalidate = nullptr;
 
   };
 
   /**
    * \brief Converts one row of pixels of a supported format to RGBA8
    *
+   * Floating-point formats hold linear values; they are encoded as sRGB.
    * \returns \c false for a format the capture does not handle
    */
   bool vrTestConvertRow(VkFormat format, const uint8_t* src, uint32_t width, bool opaque, uint8_t* dst);

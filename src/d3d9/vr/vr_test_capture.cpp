@@ -30,6 +30,11 @@ namespace dxvk {
       return uint8_t(v * 255.0f + 0.5f);
     }
 
+    float linearToSrgb(float c) {
+      c = std::min(std::max(c, 0.0f), 1.0f);
+      return c <= 0.0031308f ? 12.92f * c : 1.055f * std::pow(c, 1.0f / 2.4f) - 0.055f;
+    }
+
   }
 
 
@@ -86,8 +91,10 @@ namespace dxvk {
           uint16_t v[4];
           std::memcpy(v, src + x * 8, 8);
 
-          for (int c = 0; c < 4; c++)
-            out[c] = unit(halfToFloat(v[c]));
+          for (int c = 0; c < 3; c++)
+            out[c] = unit(linearToSrgb(halfToFloat(v[c])));
+
+          out[3] = unit(halfToFloat(v[3]));
           break;
         }
 
@@ -157,13 +164,14 @@ namespace dxvk {
     load(m_destroyFence,           "vkDestroyFence");
     load(m_waitForFences,          "vkWaitForFences");
     load(m_queueSubmit,            "vkQueueSubmit");
+    load(m_invalidate,             "vkInvalidateMappedMemoryRanges");
 
     m_ready = ok;
     return ok;
   }
 
 
-  bool VrTestCapture::read(const VrEyeImage& image, bool opaque, std::vector<uint8_t>& rgba, std::string& error) {
+  bool VrTestCapture::read(const VrEyeImage& image, bool opaque, const RowSink& row, std::string& error) {
     if (!m_ready) {
       error = "no graphics device for captures";
       return false;
@@ -202,13 +210,24 @@ namespace dxvk {
       VkMemoryRequirements requirements;
       m_bufferRequirements(m_device, buffer, &requirements);
 
+      // Cached system memory reads fast on the CPU and leaves the small
+      // device-local window (BAR) that DXVK needs alone
       uint32_t type = UINT32_MAX;
-      VkMemoryPropertyFlags wanted = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+      auto pick = [&] (VkMemoryPropertyFlags wanted, VkMemoryPropertyFlags unwanted) {
+        for (uint32_t i = 0; i < m_memory.memoryTypeCount && type == UINT32_MAX; i++) {
+          VkMemoryPropertyFlags flags = m_memory.memoryTypes[i].propertyFlags;
 
-      for (uint32_t i = 0; i < m_memory.memoryTypeCount && type == UINT32_MAX; i++) {
-        if ((requirements.memoryTypeBits & (1u << i)) && (m_memory.memoryTypes[i].propertyFlags & wanted) == wanted)
-          type = i;
-      }
+          if ((requirements.memoryTypeBits & (1u << i)) && (flags & wanted) == wanted && !(flags & unwanted))
+            type = i;
+        }
+      };
+
+      pick(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+      pick(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT, 0);
+      pick(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+      pick(VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, 0);
+      bool coherent = type != UINT32_MAX
+        && (m_memory.memoryTypes[type].propertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
       VkMemoryAllocateInfo allocInfo = { VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
       allocInfo.allocationSize  = requirements.size;
@@ -263,6 +282,16 @@ namespace dxvk {
       region.imageExtent = { image.extent.width, image.extent.height, 1 };
       m_cmdCopyImageToBuffer(cmd, image.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, 1, &region);
 
+      VkBufferMemoryBarrier hostRead = { VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER };
+      hostRead.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+      hostRead.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
+      hostRead.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+      hostRead.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+      hostRead.buffer = buffer;
+      hostRead.size = VK_WHOLE_SIZE;
+      m_cmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+        0, 0, nullptr, 1, &hostRead, 0, nullptr);
+
       barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
       barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
       barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
@@ -283,9 +312,14 @@ namespace dxvk {
       submit.commandBufferCount = 1;
       submit.pCommandBuffers = &cmd;
 
-      if (m_queueSubmit(m_queue, 1, &submit, fence) != VK_SUCCESS
-       || m_waitForFences(m_device, 1, &fence, VK_TRUE, 2'000'000'000ull) != VK_SUCCESS) {
-        error = "the copy did not finish";
+      if (m_queueSubmit(m_queue, 1, &submit, fence) != VK_SUCCESS) {
+        error = "vkQueueSubmit failed";
+        break;
+      }
+
+      // No time limit: freeing the objects while the GPU still copies would be worse than a stall
+      if (m_waitForFences(m_device, 1, &fence, VK_TRUE, UINT64_MAX) != VK_SUCCESS) {
+        error = "the copy did not finish (device lost?)";
         break;
       }
 
@@ -296,16 +330,27 @@ namespace dxvk {
         break;
       }
 
-      rgba.resize(size_t(image.extent.width) * image.extent.height * 4);
-      const uint8_t* src = static_cast<const uint8_t*>(data);
-
-      for (uint32_t y = 0; y < image.extent.height; y++) {
-        vrTestConvertRow(image.format, src + size_t(y) * image.extent.width * bpp, image.extent.width, opaque,
-          rgba.data() + size_t(y) * image.extent.width * 4);
+      if (!coherent) {
+        VkMappedMemoryRange range = { VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE };
+        range.memory = memory;
+        range.size   = VK_WHOLE_SIZE;
+        m_invalidate(m_device, 1, &range);
       }
 
-      m_unmapMemory(m_device, memory);
+      std::vector<uint8_t> line(size_t(image.extent.width) * 4);
+      const uint8_t* src = static_cast<const uint8_t*>(data);
       ok = true;
+
+      for (uint32_t y = 0; y < image.extent.height && ok; y++) {
+        vrTestConvertRow(image.format, src + size_t(y) * image.extent.width * bpp, image.extent.width, opaque,
+          line.data());
+        ok = row(line.data());
+      }
+
+      if (!ok)
+        error = "could not write the file";
+
+      m_unmapMemory(m_device, memory);
     } while (false);
 
     if (fence)  m_destroyFence(m_device, fence, nullptr);

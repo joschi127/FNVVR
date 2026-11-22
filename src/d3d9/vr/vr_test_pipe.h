@@ -20,7 +20,18 @@ namespace dxvk {
     std::string line;
     /// All answer lines; the last one is "ok ..." or "err ..."
     std::promise<std::vector<std::string>> reply;
+    /// Set by the pipe when it gave up waiting; the render thread then drops the job
+    std::atomic<bool> abandoned = { false };
   };
+
+  /**
+   * \brief The game process's memory for the "memory" request
+   *
+   * Free, largest free and used address space (the scarce resource of a
+   * 32-bit game), committed and resident memory, in MB. Walks the address
+   * space with VirtualQuery, about a millisecond; safe from any thread.
+   */
+  std::string vrTestMemoryStatus();
 
   /**
    * \brief Named pipe of the VR test channel

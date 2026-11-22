@@ -78,6 +78,8 @@ namespace dxvk {
     std::string describeState() const;
     void answer(std::shared_ptr<VrTestJob>& job, std::vector<std::string> lines);
     bool ensureCapture(std::string& error);
+    bool captureToPng(const VrEyeImage& image, bool opaque, const std::string& path, std::string& error);
+    bool dropAbandoned();
 
     std::unique_ptr<IVRBackend> m_inner;
     VrTestPipe                  m_pipe;
@@ -86,13 +88,12 @@ namespace dxvk {
     VrGraphicsBinding           m_binding;
 
     uint64_t                    m_frame = 0;
+    bool                        m_waitedSincePoll = false;
     VrInputState                m_lastReal;
     VrInputState                m_lastMerged;
     VrInputContext              m_context = VrInputContext::Game;
 
     std::array<VrTestPanelPlace, VrPanelCount> m_places;
-    std::array<std::vector<uint8_t>, VrPanelCount> m_pixels;
-    std::array<VrExtent, VrPanelCount> m_pixelExtent = { };
 
     /// The request being worked on over several frames (wait, capture)
     std::shared_ptr<VrTestJob>  m_pending;

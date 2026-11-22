@@ -1,6 +1,8 @@
 #include "vr_test_pipe.h"
 
-#include <sddl.h>
+#include <algorithm>
+#include <cstdio>
+#include <psapi.h>
 
 #include <chrono>
 #include <utility>
@@ -18,32 +20,42 @@ namespace dxvk {
     /// A request the render thread has not answered within this time fails
     constexpr auto ReplyTimeout = std::chrono::seconds(60);
 
-    /// DACL with one entry: full access for the user running the game
-    PSECURITY_DESCRIPTOR ownerOnlyDescriptor() {
-      PSECURITY_DESCRIPTOR result = nullptr;
-      HANDLE token = nullptr;
+    /**
+     * \brief Access rules that let only the game's own user open the pipe
+     *
+     * The descriptor and its list point into this object, so it has to live
+     * until the pipe is created.
+     */
+    struct UserOnlyAccess {
+      std::vector<BYTE>    user;
+      std::vector<BYTE>    acl;
+      SECURITY_DESCRIPTOR  descriptor = { };
 
-      if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &token))
-        return nullptr;
+      bool build() {
+        HANDLE token = nullptr;
 
-      DWORD needed = 0;
-      GetTokenInformation(token, TokenUser, nullptr, 0, &needed);
-      std::vector<BYTE> info(needed);
-      LPWSTR sidText = nullptr;
+        if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &token))
+          return false;
 
-      if (needed && GetTokenInformation(token, TokenUser, info.data(), needed, &needed)
-       && ConvertSidToStringSidW(reinterpret_cast<TOKEN_USER*>(info.data())->User.Sid, &sidText)) {
-        std::wstring sddl = std::wstring(L"D:P(A;;GA;;;") + sidText + L")";
+        DWORD size = 0;
+        GetTokenInformation(token, TokenUser, nullptr, 0, &size);
+        user.resize(size);
+        bool ok = size && GetTokenInformation(token, TokenUser, user.data(), size, &size);
+        CloseHandle(token);
 
-        if (!ConvertStringSecurityDescriptorToSecurityDescriptorW(sddl.c_str(), SDDL_REVISION_1, &result, nullptr))
-          result = nullptr;
+        if (!ok)
+          return false;
 
-        LocalFree(sidText);
+        PSID sid = reinterpret_cast<TOKEN_USER*>(user.data())->User.Sid;
+        acl.resize(sizeof(ACL) + sizeof(ACCESS_ALLOWED_ACE) + GetLengthSid(sid));
+        auto* list = reinterpret_cast<ACL*>(acl.data());
+
+        return InitializeAcl(list, DWORD(acl.size()), ACL_REVISION)
+            && AddAccessAllowedAce(list, ACL_REVISION, GENERIC_ALL, sid)
+            && InitializeSecurityDescriptor(&descriptor, SECURITY_DESCRIPTOR_REVISION)
+            && SetSecurityDescriptorDacl(&descriptor, TRUE, list, FALSE);
       }
-
-      CloseHandle(token);
-      return result;
-    }
+    };
 
     HANDLE createPipe(const std::string& path, PSECURITY_DESCRIPTOR descriptor) {
       SECURITY_ATTRIBUTES attributes = { };
@@ -57,28 +69,73 @@ namespace dxvk {
   }
 
 
+  std::string vrTestMemoryStatus() {
+    SYSTEM_INFO info;
+    GetSystemInfo(&info);
+    auto low  = reinterpret_cast<uintptr_t>(info.lpMinimumApplicationAddress);
+    auto high = reinterpret_cast<uintptr_t>(info.lpMaximumApplicationAddress);
+
+    uint64_t freeBytes = 0, largest = 0;
+
+    for (uintptr_t at = low; at < high; ) {
+      MEMORY_BASIC_INFORMATION region;
+
+      if (!VirtualQuery(reinterpret_cast<void*>(at), &region, sizeof(region)) || !region.RegionSize)
+        break;
+
+      if (region.State == MEM_FREE) {
+        freeBytes += region.RegionSize;
+        largest = std::max<uint64_t>(largest, region.RegionSize);
+      }
+
+      uintptr_t next = reinterpret_cast<uintptr_t>(region.BaseAddress) + region.RegionSize;
+
+      if (next <= at)
+        break;
+
+      at = next;
+    }
+
+    // K32GetProcessMemoryInfo is in kernel32 since Windows 7; looked up to avoid linking psapi
+    using GetInfo = BOOL (WINAPI*)(HANDLE, PPROCESS_MEMORY_COUNTERS, DWORD);
+    auto getInfo = reinterpret_cast<GetInfo>(reinterpret_cast<void*>(
+      GetProcAddress(GetModuleHandleW(L"kernel32.dll"), "K32GetProcessMemoryInfo")));
+    PROCESS_MEMORY_COUNTERS_EX counters = { };
+    counters.cb = sizeof(counters);
+    bool haveCounters = getInfo
+      && getInfo(GetCurrentProcess(), reinterpret_cast<PPROCESS_MEMORY_COUNTERS>(&counters), sizeof(counters));
+
+    constexpr double MB = 1024.0 * 1024.0;
+    double total = double(high - low + 1);
+    char text[192];
+    std::snprintf(text, sizeof(text), "vfree=%.0f vlargest=%.0f vused=%.0f vtotal=%.0f private=%.0f workingset=%.0f",
+      double(freeBytes) / MB, double(largest) / MB, (total - double(freeBytes)) / MB, total / MB,
+      haveCounters ? double(counters.PrivateUsage) / MB : -1.0,
+      haveCounters ? double(counters.WorkingSetSize) / MB : -1.0);
+    return text;
+  }
+
+
   VrTestPipe::~VrTestPipe() {
     stop();
   }
 
 
   std::string VrTestPipe::start(const std::string& name) {
-    PSECURITY_DESCRIPTOR descriptor = ownerOnlyDescriptor();
+    UserOnlyAccess access;
 
-    if (!descriptor) {
-      Logger::err(str::format("VR: Test channel: no owner-only security descriptor (", GetLastError(), ")"));
+    if (!access.build()) {
+      Logger::err(str::format("VR: Test channel: no user-only access rules (", GetLastError(), ")"));
       return std::string();
     }
 
     std::string path = "\\\\.\\pipe\\" + name;
-    HANDLE pipe = createPipe(path, descriptor);
+    HANDLE pipe = createPipe(path, &access.descriptor);
 
     if (pipe == INVALID_HANDLE_VALUE && GetLastError() == ERROR_ACCESS_DENIED) {
       path += "-" + std::to_string(GetCurrentProcessId());
-      pipe = createPipe(path, descriptor);
+      pipe = createPipe(path, &access.descriptor);
     }
-
-    LocalFree(descriptor);
 
     if (pipe == INVALID_HANDLE_VALUE) {
       Logger::err(str::format("VR: Test channel: CreateNamedPipe failed (", GetLastError(), ")"));
@@ -145,6 +202,9 @@ namespace dxvk {
       }
     }
 
+    // A picked-up job may still be waiting for frames on the render thread
+    job->abandoned = true;
+
     if (m_quit)
       return { "err the game is closing" };
 
@@ -191,7 +251,14 @@ namespace dxvk {
         if (!pending.empty() && pending.back() == '\r')
           pending.pop_back();
 
-        std::vector<std::string> answer = hand(pending);
+        // Answered here, so it also works while no frames run (loading screens)
+        std::string request = pending;
+        request.erase(0, request.find_first_not_of(" \t"));
+        request.erase(request.find_last_not_of(" \t") + 1);
+
+        std::vector<std::string> answer = (request == "memory" || request == "MEMORY")
+          ? std::vector<std::string> { "ok " + vrTestMemoryStatus() }
+          : hand(pending);
         pending.clear();
 
         std::string out;
@@ -217,10 +284,12 @@ namespace dxvk {
       if (m_quit)
         break;
 
+      DWORD error = connected ? 0 : GetLastError();
+
       if (connected) {
         serveClient();
-      } else if (GetLastError() != ERROR_OPERATION_ABORTED) {
-        Logger::warn(str::format("VR: Test channel: ConnectNamedPipe failed (", GetLastError(), ")"));
+      } else if (error != ERROR_OPERATION_ABORTED && error != ERROR_NO_DATA) {
+        Logger::warn(str::format("VR: Test channel: ConnectNamedPipe failed (", error, ")"));
         Sleep(500);
       }
 

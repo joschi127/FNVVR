@@ -1,6 +1,7 @@
 #include "vr_test_backend.h"
 
 #include <cstdio>
+#include <new>
 
 #include "../../util/log/log.h"
 #include "../../util/util_string.h"
@@ -52,11 +53,19 @@ namespace dxvk {
   VrFrameTiming VrTestBackend::waitFrame() {
     VrFrameTiming timing = m_inner->waitFrame();
     m_frame++;
+    m_waitedSincePoll = true;
     return timing;
   }
 
 
   VrInputState VrTestBackend::pollInput(int64_t displayTime) {
+    // While the game presents outside its main loop (loading screens, movies)
+    // it polls at each present without waiting for a frame: count those too,
+    // so waits end and presses are let go
+    if (displayTime == 0 && !m_waitedSincePoll)
+      m_frame++;
+
+    m_waitedSincePoll = false;
     m_lastReal = m_inner->pollInput(displayTime);
     takeRequests();
     m_lastMerged = m_input.merge(m_lastReal, m_frame);
@@ -83,16 +92,10 @@ namespace dxvk {
       static const char* const suffix[VrEyeCount] = { "-left.png", "-right.png" };
 
       for (uint32_t e = 0; e < VrEyeCount && error.empty(); e++) {
-        std::vector<uint8_t> rgba;
+        std::string file = m_capturePath + suffix[e];
 
-        if (ensureCapture(error) && m_capture.read(frame.images[e], true, rgba, error)) {
-          std::string file = m_capturePath + suffix[e];
-
-          if (vrWritePng(file, rgba.data(), frame.images[e].extent.width, frame.images[e].extent.height))
-            files.push_back(file);
-          else
-            error = "could not write " + file;
-        }
+        if (captureToPng(frame.images[e], true, file, error))
+          files.push_back(file);
       }
 
       m_captureKind = CaptureKind::None;
@@ -114,16 +117,10 @@ namespace dxvk {
       place.height = panel.image.extent.width
         ? panel.width * float(panel.image.extent.height) / float(panel.image.extent.width) : 0.0f;
       place.anchor = panel.anchor;
-      m_pixels[index].clear();
 
       if (m_pending && m_captureKind == CaptureKind::Panel && m_capturePanel == id) {
         std::string error;
-        std::vector<uint8_t> rgba;
-
-        if (ensureCapture(error) && m_capture.read(panel.image, false, rgba, error)
-         && !vrWritePng(m_capturePath, rgba.data(), panel.image.extent.width, panel.image.extent.height))
-          error = "could not write " + m_capturePath;
-
+        captureToPng(panel.image, false, m_capturePath, error);
         m_captureKind = CaptureKind::None;
         answer(m_pending, { error.empty() ? "ok " + m_capturePath : "err " + error });
       }
@@ -142,21 +139,7 @@ namespace dxvk {
 
 
   bool VrTestBackend::submitPanelPixels(VrPanelId id, const VrPanelPixels& panel) {
-    uint32_t index = uint32_t(id);
-
-    if (index < VrPanelCount && panel.rgba && panel.width && panel.height) {
-      VrTestPanelPlace& place = m_places[index];
-      place.shown  = true;
-      place.pose   = panel.pose;
-      place.width  = panel.metres;
-      place.height = panel.metres * float(panel.height) / float(panel.width);
-      place.anchor = VrPanelAnchor::Room;
-
-      // Kept for captures: such panels are submitted again only when they change
-      m_pixels[index].assign(panel.rgba, panel.rgba + size_t(panel.width) * panel.height * 4);
-      m_pixelExtent[index] = { panel.width, panel.height };
-    }
-
+    // Only the launcher uses panels from system memory, and it runs without this layer
     return m_inner->submitPanelPixels(id, panel);
   }
 
@@ -166,6 +149,58 @@ namespace dxvk {
       job->reply.set_value(std::move(lines));
       job = nullptr;
     }
+  }
+
+
+  bool VrTestBackend::captureToPng(const VrEyeImage& image, bool opaque, const std::string& path, std::string& error) {
+    if (!ensureCapture(error))
+      return false;
+
+    FILE* file = std::fopen(path.c_str(), "wb");
+
+    if (!file) {
+      error = "could not create " + path;
+      return false;
+    }
+
+    bool ok = false;
+
+    // The rows go from the staging buffer straight into the file, so only
+    // the staging buffer and one row are held in the game's address space
+    try {
+      VrPngWriter png([file] (const uint8_t* data, size_t size) {
+        return std::fwrite(data, 1, size, file) == size;
+      }, image.extent.width, image.extent.height);
+
+      ok = m_capture.read(image, opaque, [&png] (const uint8_t* row) { return png.row(row); }, error)
+        && png.finish();
+
+      if (!ok && error.empty())
+        error = "could not write " + path;
+    } catch (const std::bad_alloc&) {
+      error = "out of memory";
+    }
+
+    ok = std::fclose(file) == 0 && ok;
+
+    if (!ok) {
+      std::remove(path.c_str());
+
+      if (error.empty())
+        error = "could not write " + path;
+    }
+
+    return ok;
+  }
+
+
+  bool VrTestBackend::dropAbandoned() {
+    if (!m_pending || !m_pending->abandoned)
+      return false;
+
+    m_captureKind = CaptureKind::None;
+    m_pending = nullptr;
+    return true;
   }
 
 
@@ -179,6 +214,8 @@ namespace dxvk {
 
 
   void VrTestBackend::takeRequests() {
+    dropAbandoned();
+
     for (int i = 0; i < RequestsPerFrame && !m_pending; i++) {
       std::shared_ptr<VrTestJob> job = m_pipe.poll();
 
@@ -196,7 +233,7 @@ namespace dxvk {
 
 
   void VrTestBackend::finishWaits() {
-    if (!m_pending)
+    if (!m_pending || dropAbandoned())
       return;
 
     if (m_captureKind == CaptureKind::None) {
@@ -239,6 +276,9 @@ namespace dxvk {
 
       case VrTestVerb::State:
         return { "ok " + describeState() };
+
+      case VrTestVerb::Memory:
+        return { "ok " + vrTestMemoryStatus() };
 
       case VrTestVerb::Head:
         m_input.setHead(command.pose);
@@ -303,12 +343,6 @@ namespace dxvk {
 
       case VrTestVerb::CapturePanel: {
         uint32_t index = uint32_t(command.panel);
-
-        if (!m_pixels[index].empty()) {
-          if (!vrWritePng(command.path, m_pixels[index].data(), m_pixelExtent[index].width, m_pixelExtent[index].height))
-            return { "err could not write " + command.path };
-          return { "ok " + command.path };
-        }
 
         if (!m_places[index].shown)
           return { std::string("err the panel '") + vrTestPanelName(command.panel) + "' is not shown" };
