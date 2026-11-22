@@ -756,6 +756,13 @@ namespace dxvk {
       if (m_chargeRing)
         m_chargeRing->hide();
 
+      // Drawn only on stereo frames, see showWorldHud
+      if (m_compass)
+        m_compass->hide();
+
+      if (m_worldTiles)
+        m_worldTiles->hide();
+
       hideQuickPanels();
       renderPanelFrame(main, state);
       return;
