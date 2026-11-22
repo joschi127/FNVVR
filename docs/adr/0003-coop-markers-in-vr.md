@@ -132,8 +132,8 @@ no smaller beyond 20 m (`d3d9.vrWorldTileWidth`, a bit smaller than the old size
 name becomes the compass's friend mark; plate and compass mark share one colour (`d3d9.vrFriendColour`). After
 emulator screenshots the maintainer chose a bright green like an old phosphor screen, the counterpart of the
 Pip-Boy's amber (a dusty green was too dark to read), and a red like the Pip-Boy's lamps for a downed friend
-(`d3d9.vrFriendAlertColour`), then picked on a colour chart on the game's sky: green 9BE07E (warmer and paler than a
-pure phosphor green), red E0705A; the plate's image stands on the anchor, so the larger plate keeps its distance
+(`d3d9.vrFriendAlertColour`), then picked on a colour chart on the game's sky: green A6E585 (warmer and paler than a
+pure phosphor green, and light enough to stand out against the sky), red E0705A; the plate's image stands on the anchor, so the larger plate keeps its distance
 above the head.
 - Friends also get a mark on the compass along the top of the view ([ADR 0008](0008-compass-at-the-top-of-the-view.md)).
 
