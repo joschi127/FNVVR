@@ -27,7 +27,7 @@ B, drawn with the game's own pictures so that it looks and feels like the game's
 
 - The game's direction strip (`glow_hud_comp_direction_strip.dds`, with its marks and the English labels
   N to NW), tinted in the HUD's colour, about 120 degrees wide as on the game's HUD, fading out towards its
-  ends, on a light dark band for contrast against the sky. A small notch marks the heading.
+  ends, on a light dark band for contrast against the sky. Its middle is the heading, as on the game's HUD.
 - Below it, the game's markers, told apart by shape and colour: the active quest objective's targets as the
   game's filled arrow (`glow_hud_compass_objective_marker.dds`); a target in another place points at the
   door that leads there, as on the game's compass. The marker the player placed on the map as the game's

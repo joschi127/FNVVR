@@ -66,7 +66,7 @@ namespace dxvk {
         normal(prev, i, n1x, n1y);
         normal(i, next, n2x, n2y);
 
-        // A sharp corner would move far: at most eight times the offset
+        // A sharp corner would move far: at most four times the offset
         float scale = offset / std::max(1.0f + n1x * n2x + n1y * n2y, 0.125f);
         points[i].x = xy[2 * i] + (n1x + n2x) * scale;
         points[i].y = xy[2 * i + 1] + (n1y + n2y) * scale;

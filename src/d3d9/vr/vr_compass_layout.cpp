@@ -60,9 +60,14 @@ namespace dxvk {
       return std::clamp(1.0f - t * t * t, 0.0f, 1.0f);
     }
 
-    // Texels of the strip per pixel of the image, for the span
+    // Pixels of the image per texel of the strip across, for the span
     float stripScale(const VrCompassConfig& config, float width) {
       return width / (std::max(config.span, 1.0f) / 360.0f * StripTexels);
+    }
+
+    // Pixels per texel up and down: as across, but never into the markers' row
+    float stripRowScale(const VrCompassConfig& config, float width) {
+      return std::min(stripScale(config, width), (MarkerRowTop - StripY - 4.0f) / (StripBottom - StripTop));
     }
 
     void paintGameStrip(VrPaintList& list, const VrCompassConfig& config, float heading,
@@ -70,7 +75,7 @@ namespace dxvk {
       float width = float(list.width());
       float k     = stripScale(config, width);
       float top   = StripY;
-      float bottom = StripY + (StripBottom - StripTop) * k;
+      float bottom = StripY + (StripBottom - StripTop) * stripRowScale(config, width);
       float v0    = StripTop / StripRows;
       float v1    = StripBottom / StripRows;
 
@@ -102,8 +107,7 @@ namespace dxvk {
     void paintOwnStrip(VrPaintList& list, const VrCompassConfig& config, float heading,
         const VrColour& colour, const VrPaintFont* font) {
       float width = float(list.width());
-      float k     = stripScale(config, width);
-      float line  = StripY + (StripLineRow - StripTop) * k;
+      float line  = StripY + (StripLineRow - StripTop) * stripRowScale(config, width);
       float capitals = font ? std::max(font->metrics.glyph('A').ascent, 1.0f) : 1.0f;
 
       // Each 15 degree step: its label or dot, and the line to the next step,
@@ -196,13 +200,12 @@ namespace dxvk {
       const VrCompassPictures& pictures) {
     float width  = float(list.width());
     float height = float(list.height());
-    float k      = stripScale(config, width);
 
     list.clear();
 
     // A dark band behind the strip, round at its ends
     if (config.backdrop > 0.0f) {
-      float bandBottom = StripY + (StripBottom - StripTop) * k;
+      float bandBottom = StripY + (StripBottom - StripTop) * stripRowScale(config, width);
       list.fillRoundedRect(0.0f, StripY, width, bandBottom, 0.5f * (bandBottom - StripY),
         { 0.0f, 0.0f, 0.0f, config.backdrop });
     }

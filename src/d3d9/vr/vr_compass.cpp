@@ -24,8 +24,6 @@ namespace dxvk {
     constexpr uint32_t MaxLinks   = 64;
     // Most extra data entries walked on a cell
     constexpr uint32_t MaxExtraData = 256;
-    // The heading change that draws the strip again, radians
-    constexpr float    RedrawHeading = 0.0005f;
 
     template<typename T>
     T readField(uintptr_t base, uintptr_t offset) {
@@ -190,17 +188,25 @@ namespace dxvk {
       VrCompassMarker marker;
       marker.kind    = VrCompassMarkerKind::Friend;
       marker.bearing = vrCompassBearing(from, tile.anchor) - m_north;
-      marker.initial = tile.text.empty() ? 0 : tile.text[0];
+      marker.initial = 0;
+
+      for (char c : tile.text) {
+        if (c != ' ' && c != '\r' && c != '\n') {
+          marker.initial = c;
+          break;
+        }
+      }
       markers.push_back(marker);
     }
 
-    // Drawn again when the heading or a marker moved enough to show
-    bool same = m_drawn && std::fabs(vrCompassOffset(compassHeading, m_shownHeading)) < RedrawHeading
+    // Drawn again when the heading or a marker moved by a pixel of the strip
+    float redraw = std::max(m_config.span, 1.0f) * 3.14159265f / 180.0f / float(VrCompassImage::Width);
+    bool same = m_drawn && std::fabs(vrCompassOffset(compassHeading, m_shownHeading)) < redraw
       && markers.size() == m_shownMarkers.size();
 
     for (size_t i = 0; same && i < markers.size(); i++) {
       same = markers[i].kind == m_shownMarkers[i].kind && markers[i].initial == m_shownMarkers[i].initial
-        && std::fabs(vrCompassOffset(markers[i].bearing, m_shownMarkers[i].bearing)) < RedrawHeading;
+        && std::fabs(vrCompassOffset(markers[i].bearing, m_shownMarkers[i].bearing)) < redraw;
     }
 
     if (!same) {
@@ -237,6 +243,8 @@ namespace dxvk {
   void VrCompass::hide() {
     m_panel.hide();
     m_placed = false;
+    // Shown again, e.g. after a load door: the targets are read at once
+    m_frame  = 0;
   }
 
 }
