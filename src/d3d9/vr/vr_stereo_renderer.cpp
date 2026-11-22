@@ -19,6 +19,7 @@
 #include "vr_game_sound.h"
 #include "vr_head_hud.h"
 #include "vr_options_file.h"
+#include "vr_preview_panels.h"
 #include "vr_math.h"
 #include "vr_menu_cursor.h"
 #include "vr_stereo_renderer.h"
@@ -1085,8 +1086,14 @@ namespace dxvk {
     // cursor as on the other menus
     VrMenuCursor::setPipBoyPanel(m_pipBoyOnPanel && !m_menuDrawn, m_pipBoyCrop, m_pipBoyInside);
 
-    if (m_preview)
+    if (m_preview) {
+      // The emulator's preview draws the panels as the backend shows them:
+      // let the frame's panels reach it first (emulator only)
+      if (VrPreviewPanels::enabled())
+        m_submitter.finish();
+
       m_preview->present(eyes, views);
+    }
   }
 
 
