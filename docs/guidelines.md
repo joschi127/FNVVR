@@ -24,8 +24,9 @@ Machine-specific paths, the current state and the to-do list live outside git, u
 - `local/HISTORY.md`: older snapshots and completed steps, dated, in chronological order. Move
   sections of `NOTES.md` here when they are no longer current instead of deleting them.
 - `local/README.md`: what else is stored under `local/` (runs, backups, builds, tools).
-- `CLAUDE.local.md` (repo root, git-ignored) only imports `local/NOTES.md` for Claude Code; other
-  tools and developers read `local/NOTES.md` directly.
+- `CLAUDE.local.md` (repo root, git-ignored) is only a pointer for Claude Code: it imports
+  `local/CLAUDE.local.md`, which holds the local agent instructions and imports `local/NOTES.md`. That
+  way the instructions are versioned with `local/`. Other tools and developers read `local/NOTES.md` directly.
 
 The notes may contain local paths and machine details; that is why they stay out of git. Their
 language is the maintainer's choice; committed files are in English.
