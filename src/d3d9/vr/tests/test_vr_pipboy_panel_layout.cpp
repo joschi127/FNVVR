@@ -52,3 +52,18 @@ TEST_CASE(pipboy_casing_is_clear_inside_and_plastic_outside) {
   const uint8_t* corner = &rgba[(10 * 100 + 10) * 4];
   CHECK(corner[0] > 0 && corner[3] > 200);  // in the soft edge, nearly opaque
 }
+
+
+TEST_CASE(pipboy_casing_has_clear_rounded_outer_corners) {
+  std::vector<uint8_t> rgba = vrPaintPipBoyCasing(100, 80, 10, 10, 90, 70, 4, 12);
+
+  // The very corner is clear, the edge's middle and a point inside the rounding are not
+  CHECK(rgba[(0 * 100 + 0) * 4 + 3] == 0);
+  CHECK(rgba[(79 * 100 + 99) * 4 + 3] == 0);
+  CHECK(rgba[(0 * 100 + 50) * 4 + 3] > 0);
+  CHECK(rgba[(5 * 100 + 5) * 4 + 3] == 255);
+
+  // Without an outer radius the corner is casing
+  std::vector<uint8_t> square = vrPaintPipBoyCasing(100, 80, 10, 10, 90, 70, 4, 0);
+  CHECK(square[3] == 255);
+}

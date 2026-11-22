@@ -65,12 +65,14 @@ namespace dxvk {
 
 
   std::vector<uint8_t> vrPaintPipBoyCasing(uint32_t width, uint32_t height,
-      uint32_t insideLeft, uint32_t insideTop, uint32_t insideRight, uint32_t insideBottom, uint32_t cornerRadius) {
+      uint32_t insideLeft, uint32_t insideTop, uint32_t insideRight, uint32_t insideBottom, uint32_t cornerRadius,
+      uint32_t outerRadius) {
     std::vector<uint8_t> rgba(size_t(width) * height * 4, 0);
 
     float frame = float(std::max<uint32_t>(1, std::min(insideLeft, insideTop)));
     float lip   = std::max(1.0f, frame * 0.18f);
     float r     = float(cornerRadius);
+    float ro    = std::min(float(outerRadius), 0.5f * float(std::min(width, height)));
 
     for (uint32_t y = 0; y < height; y++) {
       for (uint32_t x = 0; x < width; x++) {
@@ -113,7 +115,12 @@ namespace dxvk {
         out[0] = clampByte(red);
         out[1] = clampByte(green);
         out[2] = clampByte(blue);
-        out[3] = clampByte(std::min(outside, 1.0f) * 255.0f);  // a soft edge at the screen
+        // A soft edge at the screen, and the device's rounded outer corners
+        float ox = std::min(std::max(px, ro), float(width)  - ro);
+        float oy = std::min(std::max(py, ro), float(height) - ro);
+        float beyond = std::sqrt((px - ox) * (px - ox) + (py - oy) * (py - oy)) - ro;
+        float cover = ro > 0.0f ? std::min(std::max(0.5f - beyond, 0.0f), 1.0f) : 1.0f;
+        out[3] = clampByte(std::min(std::min(outside, 1.0f), cover) * 255.0f);
       }
     }
 

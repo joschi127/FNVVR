@@ -108,6 +108,7 @@ namespace dxvk {
     bool                                 m_immersiveMinigames = true;
     VrShareRect                          m_pipBoyCrop = VrPipBoyPanelDefaultCrop;
     float                                m_pipBoyFrame = VrPipBoyPanelDefaultFrame;
+    float                                m_pipBoyCornerRadius = VrPipBoyPanelDefaultCornerRadius;
     // From the second headset test: the menus' frame sits at the texture's
     // top left, the right and bottom already have a thin dark edge
     bool                                 m_manualReload = true;

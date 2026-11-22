@@ -321,6 +321,8 @@ namespace dxvk {
     g_vrSystem->m_pipBoyCrop.right  = share("d3d9.vrPipBoyPanelCropRight",  VrPipBoyPanelDefaultCrop.right);
     g_vrSystem->m_pipBoyCrop.bottom = share("d3d9.vrPipBoyPanelCropBottom", VrPipBoyPanelDefaultCrop.bottom);
     g_vrSystem->m_pipBoyFrame = std::min(share("d3d9.vrPipBoyPanelFrame", VrPipBoyPanelDefaultFrame), 0.2f);
+    g_vrSystem->m_pipBoyCornerRadius = std::min(share("d3d9.vrPipBoyPanelCornerRadius",
+      VrPipBoyPanelDefaultCornerRadius), 0.2f);
     g_vrSystem->m_sneakConfig.physical = options.physicalSneak;
     g_vrSystem->m_sneakConfig.crouch   = crouch;
     g_vrSystem->m_forceGameSettings = !emulated && config.getOption<bool>("d3d9.vrForceGameSettings", true);
@@ -505,7 +507,7 @@ namespace dxvk {
       m_stereoRenderer->setPipBoyAngle(m_pipBoyAngle);
       m_stereoRenderer->setPipBoyPanel(m_pipBoyPanel);
       m_stereoRenderer->setMinigamesEnabled(m_immersiveMinigames);
-      m_stereoRenderer->setPipBoyPanelCrop(m_pipBoyCrop, m_pipBoyFrame);
+      m_stereoRenderer->setPipBoyPanelCrop(m_pipBoyCrop, m_pipBoyFrame, m_pipBoyCornerRadius);
       m_stereoRenderer->setScopesEnabled(m_scopes);
       m_stereoRenderer->setManualReload(m_manualReload);
       m_stereoRenderer->setRoomscale(m_roomscale);

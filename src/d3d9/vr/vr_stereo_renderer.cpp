@@ -2971,8 +2971,11 @@ namespace dxvk {
       VrPipBoyPanelLayout drawn;
       drawn.crop = m_pipBoyCrop;
       drawn.inside = { m_pipBoyInside.left, m_pipBoyInside.top, m_pipBoyInside.right, m_pipBoyInside.bottom };
-      drawPipBoyCasing(layerDesc, targetDesc, drawn);
-      makeMenuSceneOpaque(false);
+
+      // With the casing, only the screen's place is made opaque: the casing
+      // wrote its own alpha, clear in the rounded outer corners
+      bool cased = drawPipBoyCasing(layerDesc, targetDesc, drawn);
+      makeMenuSceneOpaque(false, cased ? &inside : nullptr);
     }
 
     if (!m_loggedPipBoyPanel) {
@@ -2997,7 +3000,8 @@ namespace dxvk {
     uint32_t right  = uint32_t(std::round(layout.inside.right  * float(width)));
     uint32_t bottom = uint32_t(std::round(layout.inside.bottom * float(height)));
     uint32_t radius = std::max<uint32_t>(2, uint32_t(std::round(0.018f * float(width))));
-    uint32_t key[6] = { width, height, left, top, right, bottom };
+    uint32_t outer  = uint32_t(std::round(std::min(std::max(m_pipBoyCornerRadius, 0.0f), 0.2f) * float(width)));
+    uint32_t key[7] = { width, height, left, top, right, bottom, outer };
 
     if (!m_pipBoyCasing.ptr() || std::memcmp(key, m_pipBoyCasingKey, sizeof(key)) != 0) {
       // Tried once per size: a failure, as with the address space nearly
@@ -3015,7 +3019,7 @@ namespace dxvk {
             &m_pipBoyCasing, nullptr)))
         return false;
 
-      std::vector<uint8_t> rgba = vrPaintPipBoyCasing(width, height, left, top, right, bottom, radius);
+      std::vector<uint8_t> rgba = vrPaintPipBoyCasing(width, height, left, top, right, bottom, radius, outer);
       D3DLOCKED_RECT locked;
 
       if (FAILED(staging->LockRect(0, &locked, nullptr, 0)))
@@ -3062,15 +3066,19 @@ namespace dxvk {
     m_device->SetRenderState(D3DRS_SRCBLEND,          D3DBLEND_SRCALPHA);
     m_device->SetRenderState(D3DRS_DESTBLEND,         D3DBLEND_INVSRCALPHA);
     m_device->SetRenderState(D3DRS_BLENDOP,           D3DBLENDOP_ADD);
-    m_device->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, FALSE);
+    // The alpha is the casing's: clear in its outer corners and over the
+    // screen, which is made opaque afterwards
+    m_device->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, TRUE);
+    m_device->SetRenderState(D3DRS_SRCBLENDALPHA,     D3DBLEND_ONE);
+    m_device->SetRenderState(D3DRS_DESTBLENDALPHA,    D3DBLEND_ZERO);
+    m_device->SetRenderState(D3DRS_BLENDOPALPHA,      D3DBLENDOP_ADD);
     m_device->SetRenderState(D3DRS_ALPHATESTENABLE,   FALSE);
     m_device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
     m_device->SetRenderState(D3DRS_FOGENABLE,         FALSE);
     m_device->SetRenderState(D3DRS_LIGHTING,          FALSE);
     m_device->SetRenderState(D3DRS_CULLMODE,          D3DCULL_NONE);
     m_device->SetRenderState(D3DRS_SRGBWRITEENABLE,   FALSE);
-    m_device->SetRenderState(D3DRS_COLORWRITEENABLE,
-      D3DCOLORWRITEENABLE_RED | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_BLUE);
+    m_device->SetRenderState(D3DRS_COLORWRITEENABLE,  0xF);
 
     m_device->SetTextureStageState(0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1);
     m_device->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
@@ -3105,7 +3113,7 @@ namespace dxvk {
   }
 
 
-  void VrStereoRenderer::makeMenuSceneOpaque(bool depthTested) {
+  void VrStereoRenderer::makeMenuSceneOpaque(bool depthTested, const RECT* only) {
     // The alpha written by the scene's shaders is not usable, so it is set
     // to one wherever the scene wrote depth, with a quad at the cleared
     // depth: the test does not depend on which way depth goes
@@ -3128,11 +3136,14 @@ namespace dxvk {
     m_device->SetRenderState(D3DRS_STENCILENABLE,     FALSE);
     m_device->SetRenderState(D3DRS_ALPHABLENDENABLE,  FALSE);
     m_device->SetRenderState(D3DRS_ALPHATESTENABLE,   FALSE);
-    m_device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
+    m_device->SetRenderState(D3DRS_SCISSORTESTENABLE, only ? TRUE : FALSE);
     m_device->SetRenderState(D3DRS_FOGENABLE,         FALSE);
     m_device->SetRenderState(D3DRS_LIGHTING,          FALSE);
     m_device->SetRenderState(D3DRS_CULLMODE,          D3DCULL_NONE);
     m_device->SetRenderState(D3DRS_COLORWRITEENABLE,  D3DCOLORWRITEENABLE_ALPHA);
+
+    if (only)
+      m_device->SetScissorRect(only);
     m_device->SetRenderState(D3DRS_TEXTUREFACTOR,     0xFFFFFFFF);
 
     m_device->SetTextureStageState(0, D3DTSS_COLOROP,   D3DTOP_SELECTARG1);

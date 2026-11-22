@@ -259,10 +259,13 @@ namespace dxvk {
      * \param [in] crop Part of the texture to show, see VrPipBoyPanelDefaultCrop
      * \param [in] frame Width of the drawn casing around it, a share of the
      *    panel's width
+     * \param [in] cornerRadius Radius of the panel's rounded outer corners,
+     *    a share of its width
      */
-    void setPipBoyPanelCrop(const VrShareRect& crop, float frame) {
-      m_pipBoyCropWanted = crop;
-      m_pipBoyFrame      = frame;
+    void setPipBoyPanelCrop(const VrShareRect& crop, float frame, float cornerRadius) {
+      m_pipBoyCropWanted  = crop;
+      m_pipBoyFrame       = frame;
+      m_pipBoyCornerRadius = cornerRadius;
     }
 
     /**
@@ -656,13 +659,14 @@ namespace dxvk {
     bool                m_pipBoyOnPanel = false;
     VrShareRect         m_pipBoyCropWanted = VrPipBoyPanelDefaultCrop;
     float               m_pipBoyFrame = VrPipBoyPanelDefaultFrame;
+    float               m_pipBoyCornerRadius = VrPipBoyPanelDefaultCornerRadius;
     // The part of the screen shown, and its place on the panel, as shares
     VrShareRect         m_pipBoyCrop;
     VrPanelMargins      m_pipBoyInside = { 0.0f, 0.0f, 1.0f, 1.0f };
     // The casing drawn around it, painted once per size
     Com<IDirect3DTexture9> m_pipBoyCasing;
-    uint32_t            m_pipBoyCasingKey[6] = { };
-    uint32_t            m_pipBoyCasingFailedKey[6] = { };
+    uint32_t            m_pipBoyCasingKey[7] = { };
+    uint32_t            m_pipBoyCasingFailedKey[7] = { };
     // The head's last pose while it looked ahead, not at the Pip-Boy: the
     // panel showing it is placed ahead of the player, not towards the wrist
     VrPose              m_lookAheadPose;
@@ -903,7 +907,7 @@ namespace dxvk {
 
     void drawMinigame();
 
-    void makeMenuSceneOpaque(bool depthTested);
+    void makeMenuSceneOpaque(bool depthTested, const RECT* only = nullptr);
 
     bool createMenuSceneResources();
 
