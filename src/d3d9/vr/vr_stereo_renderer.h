@@ -253,7 +253,7 @@ namespace dxvk {
     }
 
     /**
-     * rief Shows the open Pip-Boy's screen on the menu panel as well
+     * \brief Shows the open Pip-Boy's screen on the menu panel as well
      *
      * The wrist keeps its screen. The panel shows the texture the game
      * draws the Pip-Boy's menus into, and the gaze no longer closes the
@@ -265,7 +265,7 @@ namespace dxvk {
     }
 
     /**
-     * rief Sets the part of the Pip-Boy's texture the panel shows
+     * \brief Sets the part of the Pip-Boy's texture the panel shows
      *
      * The game draws the Pip-Boy's menus into the top left of the texture.
      *
