@@ -81,3 +81,13 @@ for co-op both instances report the session and see each other.
   work.
 - FNVVR gets test-only options; they stay off by default and are documented in `dxvk.conf`.
 - Each game run still needs the maintainer's go-ahead until the maintainer decides otherwise.
+
+## Update 2026-11-22: game-level control from the agent
+
+Requirement (the maintainer): while the game runs, the agent runs console commands itself and reads
+values and console text back, without changing saves. Where this lives is decided in
+[ADR 0007](0007-where-test-automation-lives.md): a small xNVSE plugin of our own,
+[FNVVR-Test-Bridge](https://github.com/joschi127/FNVVR-Test-Bridge) (named pipe, console lines and `eval`
+expressions, console text in the reply, off by default, no performance cost when off). It replaces the
+"console `bat` files or the co-op lab channel" mentioned for game-level actions in layer 3 above; the co-op
+lab channel was looked at first and is not used.

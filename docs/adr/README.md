@@ -31,3 +31,4 @@ reverse-engineering material.
 | [0004](0004-try-ttwvr-as-alternative.md) | Try Tale of Two Realities (TTWVR) as an alternative before committing to FNVVR + True Co-op | Proposed |
 | [0005](0005-small-coop-fork-for-vr.md) | A small public fork of the co-op mod for VR and gamepad fixes (FNVVR-Coop-Compat) | Accepted |
 | [0006](0006-pipboy-on-a-panel.md) | The Pip-Boy on a panel in VR, with a lamp bar and the VR controllers' buttons | Accepted |
+| [0007](0007-where-test-automation-lives.md) | Where test automation lives (VR side in FNVVR, game side in FNVVR-Test-Bridge) | Accepted |

@@ -113,6 +113,12 @@ presets (see its README).
   They test policy and math, not the game.
 - The emulator backend (`d3d9.vrBackend = emulator`, or `DXVK_VR_BACKEND=emulator`) runs the real
   game without a headset: simulated head and controllers, virtual time, a preview window.
+- **Game-level control for tests**: [FNVVR-Test-Bridge](https://github.com/joschi127/FNVVR-Test-Bridge),
+  a separate xNVSE plugin (own repository, zlib), lets local tools run console commands and `eval`
+  expressions in the running game and read the console text back, through a named pipe for the current
+  user. Install it only for test runs and keep `Enabled=0` for real play and performance measurements.
+  Which test part lives where (VR side in FNVVR, game side in the bridge, co-op side in the co-op mod):
+  [ADR 0007](adr/0007-where-test-automation-lives.md). Helper scripts are written in Python.
 - **Nothing automated tests the real game together with the co-op mod yet.** Building that harness
   is the first task of this fork ([ADR 0002](adr/0002-headless-ai-testing-first.md)). Until then a
   green unit test run says nothing about hooks, addresses or the co-op interplay; that needs a game
