@@ -231,6 +231,7 @@ namespace dxvk {
 
   void VrEmulatorBackend::showPointer(VrHand hand, const VrPointerSubmission& pointer) {
     m_pointerVisible[uint32_t(hand)] = true;
+    m_pointer[uint32_t(hand)] = pointer;
   }
 
 

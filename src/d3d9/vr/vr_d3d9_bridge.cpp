@@ -6,6 +6,7 @@
 #include "../../util/util_time.h"
 
 #include "vr_d3d9_bridge.h"
+#include "vr_preview_panels.h"
 
 namespace dxvk {
 
@@ -128,6 +129,10 @@ namespace dxvk {
 
     if (!queryImage(texture, textureInterop, panel.image))
       return false;
+
+    // The emulator's preview draws the panels itself (no compositor)
+    if (VrPreviewPanels::enabled())
+      VrPreviewPanels::record(id, texture, pose, width, anchor, premultiplied);
 
     // See submitStereoFrame
     panel.syncMs = flushAndLock(interop.ptr());

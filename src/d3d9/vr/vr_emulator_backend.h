@@ -157,6 +157,15 @@ namespace dxvk {
 
     bool isPointerVisible(VrHand hand) const { return m_pointerVisible[uint32_t(hand)]; }
 
+    /// The hand's laser as last shown, if it is shown
+    bool pointer(VrHand hand, VrPointerSubmission& result) const {
+      if (!m_pointerVisible[uint32_t(hand)])
+        return false;
+
+      result = m_pointer[uint32_t(hand)];
+      return true;
+    }
+
     /**
      * \brief Last haptic pulse requested for a hand, for tests
      */
@@ -184,6 +193,7 @@ namespace dxvk {
     uint32_t          m_submittedPanels = 0;
     bool              m_panelVisible[VrPanelCount] = { };
     bool              m_pointerVisible[VrHandCount] = { };
+    VrPointerSubmission m_pointer[VrHandCount];
     float             m_haptic[VrHandCount] = { };
 
     VrPose scriptedPose(int64_t timeNs) const;

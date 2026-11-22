@@ -995,7 +995,7 @@ namespace dxvk {
       m_pipBoyInside);
 
     if (m_preview)
-      m_preview->present(eyes);
+      m_preview->present(eyes, views);
   }
 
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+
 #include <memory>
 
 #include "../d3d9_include.h"
@@ -38,13 +40,19 @@ namespace dxvk {
     /**
      * \brief Copies the eye textures into the window and presents it
      *
+     * With d3d9.vrPreviewPanels, the panels and lasers are drawn over the
+     * eyes where a headset's compositor would show them.
+     *
      * \param [in] eyes Eye textures, indexed by VrEye
+     * \param [in] views Eye poses and fields of view the eyes were rendered with
      */
-    void present(IDirect3DTexture9* eyes[VrEyeCount]);
+    void present(IDirect3DTexture9* eyes[VrEyeCount], const std::array<VrEyeView, VrEyeCount>& views);
 
   private:
 
     VrPreviewWindow(IDirect3DDevice9* device, HWND window);
+
+    void drawOverlays(IDirect3DSurface9* target, const std::array<VrEyeView, VrEyeCount>& views);
 
     IDirect3DDevice9*       m_device;
     HWND                    m_window;
