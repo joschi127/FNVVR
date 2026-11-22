@@ -28,23 +28,25 @@ namespace dxvk {
     /// degrees; 0: a share of the upper half of the field of view (topShare)
     float top       = 0.0f;
     /// Width as a share of the horizontal field of view, when angle is 0
-    float widthShare = 0.45f;
+    float widthShare = 0.68f;
     /// Top edge as a share of the upper half of the field of view, when top is 0
     float topShare   = 0.8f;
     /// Distance from the head, in metres
     float distance  = 1.5f;
     /// A dark band behind the strip, which keeps it readable against a
     /// bright sky, and its opacity
-    bool  backdrop        = true;
+    bool  backdrop        = false;
     float backdropOpacity = 0.25f;
     /// Markers moved down (positive) or up towards the strip (negative), in
-    /// pixels of the strip's image
+    /// pixels of the strip's image, with the band and without it (nearer:
+    /// without the band the markers look apart from the strip)
     float markerGap  = 0.0f;
+    float markerGapNoBackdrop = -18.0f;
     /// Size of the quest objective's marker against the others
     float questScale = 1.0f;
-    /// Colour of friends' markers, 0xRRGGBB, green as the game's companions;
-    /// the others take the HUD's colour
-    uint32_t friendColour = 0x4CE04C;
+    /// Colour of friends' markers, 0xRRGGBB: a dusty green, as their name
+    /// plates (VrWorldTileConfig::personColour); the others take the HUD's colour
+    uint32_t friendColour = 0x9CB88A;
   };
 
   /**
@@ -134,7 +136,8 @@ namespace dxvk {
    * \brief Changes one setting by name, for tuning it live (VR test channel)
    *
    * Names: width, top (shares of the field of view), angle, topdeg (degrees
-   * or "auto"), distance, span, backdrop (on|off), opacity, gap, quest.
+   * or "auto"), distance, span, backdrop (on|off), opacity, gap (with the
+   * band), gapnoband, quest.
    *
    * \returns \c false, the settings unchanged, for an unknown name or value
    */

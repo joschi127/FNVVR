@@ -184,10 +184,7 @@ namespace dxvk {
     VrWorldTileConfig& worldTiles = panel.worldTiles;
     worldTiles.enabled      = config.getOption<bool>("d3d9.vrWorldTiles", worldTiles.enabled);
     worldTiles.maxDistance  = std::max(config.getOption<float>("d3d9.vrWorldTileMaxDistance", worldTiles.maxDistance), 1.0f);
-    worldTiles.angle        = std::clamp(config.getOption<float>("d3d9.vrWorldTileAngle", worldTiles.angle), 1.0f, 60.0f);
-    worldTiles.nearDistance = std::max(config.getOption<float>("d3d9.vrWorldTileNearDistance", worldTiles.nearDistance), 0.0f);
-    worldTiles.farDistance  = std::max(config.getOption<float>("d3d9.vrWorldTileFarDistance", worldTiles.farDistance), 0.0f);
-    worldTiles.farScale     = std::clamp(config.getOption<float>("d3d9.vrWorldTileFarScale", worldTiles.farScale), 0.1f, 1.0f);
+    worldTiles.width        = std::clamp(config.getOption<float>("d3d9.vrWorldTileWidth", worldTiles.width), 0.1f, 20.0f);
     panel.hudHeadTiles = vrSplitNameList(config.getOption<std::string>("d3d9.vrHudHeadTiles", ""));
 
     // The compass along the top of the view
@@ -221,21 +218,31 @@ namespace dxvk {
     compass.distance   = std::clamp(config.getOption<float>("d3d9.vrCompassDistance", compass.distance), 0.3f, 10.0f);
     compass.backdrop   = config.getOption<bool>("d3d9.vrCompassBackdrop", compass.backdrop);
     compass.markerGap  = std::clamp(config.getOption<float>("d3d9.vrCompassMarkerGap", compass.markerGap), -40.0f, 14.0f);
+    compass.markerGapNoBackdrop = std::clamp(config.getOption<float>("d3d9.vrCompassMarkerGapNoBackdrop",
+      compass.markerGapNoBackdrop), -40.0f, 14.0f);
     compass.questScale = std::clamp(config.getOption<float>("d3d9.vrCompassQuestScale", compass.questScale), 0.5f, 2.0f);
     compass.backdropOpacity = std::clamp(config.getOption<float>("d3d9.vrCompassBackdropOpacity", compass.backdropOpacity), 0.0f, 1.0f);
 
-    // A colour as RRGGBB; DXVK gives an empty text for an option not set
-    std::string friendColour = config.getOption<std::string>("d3d9.vrCompassFriendColour", "");
+    // Colours as RRGGBB; DXVK gives an empty text for an option not set
+    auto colourOption = [&] (const char* name, uint32_t& colour) {
+      std::string text = config.getOption<std::string>(name, "");
 
-    if (!friendColour.empty()) {
+      if (text.empty())
+        return;
+
       char* end = nullptr;
-      unsigned long value = std::strtoul(friendColour.c_str(), &end, 16);
+      unsigned long value = std::strtoul(text.c_str(), &end, 16);
 
-      if (end && *end == '\0' && friendColour.size() == 6)
-        compass.friendColour = uint32_t(value);
+      if (end && *end == '\0' && text.size() == 6)
+        colour = uint32_t(value);
       else
-        Logger::warn(str::format("VR: d3d9.vrCompassFriendColour '", friendColour, "' is not RRGGBB, kept the default"));
-    }
+        Logger::warn(str::format("VR: ", name, " '", text, "' is not RRGGBB, kept the default"));
+    };
+
+    // Friends: their name plates and their marks on the compass in one colour
+    colourOption("d3d9.vrFriendColour", worldTiles.personColour);
+    colourOption("d3d9.vrFriendAlertColour", worldTiles.alertColour);
+    compass.friendColour = worldTiles.personColour;
 
     VrTurnConfig turn;
     turn.smooth      = config.getOption<bool>("d3d9.vrSmoothTurn", turn.smooth);

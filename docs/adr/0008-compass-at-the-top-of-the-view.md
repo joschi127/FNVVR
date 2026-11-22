@@ -32,14 +32,17 @@ B, drawn with the game's own pictures so that it looks and feels like the game's
   game's filled arrow (`glow_hud_compass_objective_marker.dds`); a target in another place points at the
   door that leads there, as on the game's compass. The marker the player placed on the map as the game's
   hollow arrow (`glow_hud_compass_pc_marker.dds`). Friends in co-op as the game's mark of a person
-  (`glow_hud_tick_mark.dds`) in green, as the game shows companions, with their initial; friends come from
+  (`glow_hud_tick_mark.dds`) in a dusty green, the colour of their name plates, with their initial; friends come from
   HUD tiles marked as a person's ([docs/hud-world-tiles.md](../hud-world-tiles.md)), so the compass works
   the same without the co-op mod. Markers outside the strip stay at its nearer end, fainter.
 - In an interior the cell's own north is used, as on the game's compass.
 - The compass on the hand stays.
 - **Requirement: a good default** for the strip's size and place (width and top edge shares, distance, the
   band behind it), settled together in guided headset sessions, so that other players start with a compass
-  that fits without changing `dxvk.conf`. The current defaults are a first guess.
+  that fits without changing `dxvk.conf`. Guided session h05 (2026-11-22): size and height fitted, the quest
+  marker fitted, the markers' gap fitted with the band and was wanted nearer without it (-18). The maintainer
+  then set the defaults: no band (with its nearer gap) and a 1.5 times wider strip (0.68 of the field of
+  view); to be confirmed in the next session.
 - Size and place follow the field of view the headset reports (the maintainer often plays with a field of
   view reduced in Virtual Desktop): the width is a share of the horizontal field of view, the top edge a share
   of its upper half. `dxvk.conf` overrides them in degrees (`auto` or not set: from the field of view); the dark

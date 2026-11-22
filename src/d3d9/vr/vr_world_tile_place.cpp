@@ -13,17 +13,7 @@ namespace dxvk {
     // below still gets a tile facing the head
     constexpr float MaxPitch = 1.45f;
 
-    constexpr float Pi = 3.14159265f;
 
-  }
-
-
-  float vrWorldTileScale(const VrWorldTileConfig& config, float distance) {
-    if (distance <= config.nearDistance || config.farDistance <= config.nearDistance)
-      return 1.0f;
-
-    float t = std::min(1.0f, (distance - config.nearDistance) / (config.farDistance - config.nearDistance));
-    return 1.0f + t * (config.farScale - 1.0f);
   }
 
 
@@ -42,12 +32,34 @@ namespace dxvk {
       return place;
 
     float shown = std::min(distance, std::max(config.maxDistance, config.minDistance));
-    float angle = config.angle * vrWorldTileScale(config, distance) * Pi / 180.0f;
 
+    // The same width at the anchor and, farther, at the greatest distance:
+    // the tile shrinks with the person up to there and no further
     place.pose    = vrComputePanelPoseTowards(head, anchor, shown, MaxPitch);
-    place.width   = 2.0f * shown * std::tan(0.5f * angle);
+    place.width   = config.width;
     place.visible = place.width > 0.0f;
     return place;
+  }
+
+
+  bool vrDropPointerLine(std::vector<std::string>& lines) {
+    if (lines.size() < 2)
+      return false;
+
+    std::string last = lines.back();
+    last.erase(0, last.find_first_not_of(' '));
+    last.erase(last.find_last_not_of(' ') + 1);
+
+    if (last != "v" && last != "V")
+      return false;
+
+    lines.pop_back();
+    return true;
+  }
+
+
+  VrColour vrColourFromRgb(uint32_t rgb) {
+    return { float((rgb >> 16) & 0xFF) / 255.0f, float((rgb >> 8) & 0xFF) / 255.0f, float(rgb & 0xFF) / 255.0f, 1.0f };
   }
 
 

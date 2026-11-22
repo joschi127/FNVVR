@@ -227,8 +227,9 @@ namespace dxvk {
       VrCompassMarkerKind::Friend, VrCompassMarkerKind::Custom, VrCompassMarkerKind::Quest };
 
     float rowHeight = MarkerRowEnd - MarkerRowTop;
-    float rowTop    = MarkerRowTop + config.markerGap;
-    float rowEnd    = MarkerRowEnd + config.markerGap;
+    float gap       = config.backdrop ? config.markerGap : config.markerGapNoBackdrop;
+    float rowTop    = MarkerRowTop + gap;
+    float rowEnd    = MarkerRowEnd + gap;
     float capitals  = font ? std::max(font->metrics.glyph('A').ascent, 1.0f) : 1.0f;
 
     for (VrCompassMarkerKind kind : DrawOrder) {
@@ -335,6 +336,7 @@ namespace dxvk {
     else if (name == "span")     ok = number(30.0f, 360.0f, c.span);
     else if (name == "opacity")  ok = number(0.0f, 1.0f, c.backdropOpacity);
     else if (name == "gap")      ok = number(-40.0f, 14.0f, c.markerGap);
+    else if (name == "gapnoband") ok = number(-40.0f, 14.0f, c.markerGapNoBackdrop);
     else if (name == "quest")    ok = number(0.5f, 2.0f, c.questScale);
     else if (name == "backdrop") {
       ok = value == "on" || value == "off";
@@ -361,9 +363,9 @@ namespace dxvk {
     deg(c.angle, angle, sizeof(angle));
     deg(c.top, top, sizeof(top));
     std::snprintf(text, sizeof(text),
-      "width=%g top=%g angle=%s topdeg=%s distance=%g span=%g backdrop=%s opacity=%g gap=%g quest=%g",
+      "width=%g top=%g angle=%s topdeg=%s distance=%g span=%g backdrop=%s opacity=%g gap=%g gapnoband=%g quest=%g",
       c.widthShare, c.topShare, angle, top, c.distance, c.span, c.backdrop ? "on" : "off",
-      c.backdropOpacity, c.markerGap, c.questScale);
+      c.backdropOpacity, c.markerGap, c.markerGapNoBackdrop, c.questScale);
     return text;
   }
 

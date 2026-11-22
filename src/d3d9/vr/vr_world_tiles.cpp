@@ -17,9 +17,18 @@ namespace dxvk {
     using TileGetValueFn    = uintptr_t (__thiscall*)(uintptr_t tile, uint32_t trait);
     using TileTextToTraitFn = uint32_t (__cdecl*)(const char* name);
 
-    // Image of one tile: room for two lines, such as a name and "DOWNED 12s"
+    // Image of one tile: room for three lines, such as a name, "DOWNED 12s"
+    // and a person's mark
     constexpr uint32_t ImageWidth  = 512;
-    constexpr uint32_t ImageHeight = 128;
+    constexpr uint32_t ImageHeight = 160;
+
+    // A person's mark: the compass's mark of a friend, the game's mark of a
+    // person (32 x 32, the mark covers x 3 to 13, y 3 to 28)
+    constexpr char     PersonPicture[] = "interface\\hud\\glow_hud_tick_mark.dds";
+    constexpr float    MarkCentreX = 8.0f;
+    constexpr float    MarkTop     = 3.0f;
+    constexpr float    MarkBottom  = 28.0f;
+    constexpr float    MarkSize    = 32.0f;
     // Height of the capitals, in pixels of the image
     constexpr float    Capitals    = 30.0f;
 
@@ -180,7 +189,13 @@ namespace dxvk {
         info.anchor = { number(tile, m_traitX, 0.0f), number(tile, m_traitY, 0.0f), number(tile, m_traitZ, 0.0f) };
         info.person = number(tile, m_traitKind, 0.0f) == 1.0f;
 
-        if (number(tile, m_traitSystemColour, 1.0f) != 0.0f) {
+        // A person's tile in the friends' colour, one in a colour of its own
+        // (a downed friend's red) in the alert colour, both dusty as the game
+        bool ownColour = number(tile, m_traitSystemColour, 1.0f) == 0.0f;
+
+        if (info.person) {
+          info.colour = vrColourFromRgb(ownColour ? m_config.alertColour : m_config.personColour);
+        } else if (!ownColour) {
           info.colour = VrGameImages::hudColour();
         } else {
           info.colour = {
@@ -227,6 +242,8 @@ namespace dxvk {
       slot.panel = std::make_unique<VrPaintPanel>(m_painter, m_backend, VrPanelId(uint32_t(VrPanelId::WorldTile0) + uint32_t(&slot - m_slots.data())));
 
     std::vector<std::string> lines = vrTileTextLines(info.text);
+    // A person's pointer line becomes their mark, as on the compass
+    bool mark = info.person && vrDropPointerLine(lines);
     float capitals = std::max(font->metrics.glyph('A').ascent, 1.0f);
     float scale    = Capitals / capitals;
     float lineStep = std::max(font->metrics.lineHeight() * scale, 1.0f);
@@ -242,18 +259,35 @@ namespace dxvk {
       }
     }
 
-    lines.resize(std::min<size_t>(lines.size(), size_t(float(ImageHeight) / lineStep)));
+    size_t rows = mark ? 1 : 0;
+    lines.resize(std::min<size_t>(lines.size(), size_t(float(ImageHeight) / lineStep) - rows));
 
-    // The lines centred, the last one's baseline near the image's bottom:
-    // the text stands above the anchor, as on the flat screen
+    // The lines centred, the last one's baseline near the image's bottom (or
+    // the mark's row): the text stands above the anchor, as on the flat screen
     m_list.clear();
 
-    float baseline = float(ImageHeight) - 0.35f * lineStep - lineStep * float(lines.size() - 1);
+    float bottom   = float(ImageHeight) - (mark ? lineStep : 0.0f);
+    float baseline = bottom - 0.35f * lineStep - lineStep * float(lines.size() - 1);
 
     for (const std::string& line : lines) {
       float width = VrPaintList::measureText(*font, line, scale);
       m_list.drawText(*font, line, 0.5f * (float(ImageWidth) - width), baseline, scale, info.colour);
       baseline += lineStep;
+    }
+
+    if (mark) {
+      const VrImage* picture = m_images.picture(PersonPicture);
+      float height = 0.8f * lineStep;
+      float top    = bottom + 0.1f * lineStep;
+      float x      = 0.5f * float(ImageWidth);
+
+      if (picture) {
+        float s = height / (MarkBottom - MarkTop);
+        m_list.drawImage(*picture, VrPaintImageUse::Shape, x - MarkCentreX * s, top - MarkTop * s,
+          x + (MarkSize - MarkCentreX) * s, top + (MarkSize - MarkTop) * s, 0.0f, 0.0f, 1.0f, 1.0f, info.colour);
+      } else {
+        m_list.fillRect(x - 0.06f * height, top, x + 0.06f * height, top + height, info.colour);
+      }
     }
 
     if (!slot.panel->paint(m_list)) {

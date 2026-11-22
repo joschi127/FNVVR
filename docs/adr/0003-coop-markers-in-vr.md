@@ -125,5 +125,11 @@ The first runs of co-op in the emulator (fakefriend, run c34) showed the flat pl
 - **Scope**: name plates, "DOWNED" and chat above heads; the co-op mod's screen-fixed tiles (chat line,
   revive text, talk list) can be kept on the head panel with `d3d9.vrHudHeadTiles`.
 - **Look**: like the game's (its font and the tile's colour), as on the flat screen.
+
+Updated after the guided headset session h05 (2026-11-22): the plates were too small at 3 and 8 m and readable
+at 20 m. The maintainer decided: a fixed size in the world, so a plate grows and shrinks with the friend's body,
+no smaller beyond 20 m (`d3d9.vrWorldTileWidth`, a bit smaller than the old size at 20 m); the `v` under the
+name becomes the compass's friend mark; plate and compass mark share one dusty green, and the red of a downed
+friend is toned down in the same style (`d3d9.vrFriendColour`, `d3d9.vrFriendAlertColour`).
 - Friends also get a mark on the compass along the top of the view ([ADR 0008](0008-compass-at-the-top-of-the-view.md)).
 

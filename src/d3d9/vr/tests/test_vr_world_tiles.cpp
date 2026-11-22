@@ -48,21 +48,37 @@ TEST_CASE(world_tile_far_away_stands_at_the_greatest_distance_in_its_direction) 
 }
 
 
-TEST_CASE(world_tile_keeps_its_angular_size_near_and_shrinks_far) {
+TEST_CASE(world_tile_shrinks_with_the_person_up_to_the_greatest_distance) {
   VrWorldTileConfig config;
   VrPose head = headAt(0.0f, 0.0f, 0.0f);
 
   auto angleAt = [&] (float distance) {
     VrWorldTilePlace place = vrPlaceWorldTile(config, head, { 0.0f, 0.0f, -distance });
     float shown = std::min(distance, config.maxDistance);
-    return 2.0f * std::atan(0.5f * place.width / shown) * 180.0f / 3.14159265f;
+    CHECK_NEAR(place.width, config.width, 1.0e-5);
+    return 2.0f * std::atan(0.5f * place.width / shown);
   };
 
-  CHECK_NEAR(angleAt(2.0f), config.angle, 1.0e-3);
-  CHECK_NEAR(angleAt(config.nearDistance), config.angle, 1.0e-3);
-  CHECK_NEAR(angleAt(config.farDistance), config.angle * config.farScale, 1.0e-3);
-  CHECK_NEAR(angleAt(200.0f), config.angle * config.farScale, 1.0e-3);
-  CHECK(angleAt(20.0f) < angleAt(10.0f));
+  // A fixed size in the world: half as large in the view at twice the distance...
+  CHECK_NEAR(std::tan(0.5f * angleAt(4.0f)) / std::tan(0.5f * angleAt(8.0f)), 2.0, 1.0e-4);
+  // ...and no smaller beyond the greatest distance
+  CHECK_NEAR(angleAt(config.maxDistance), angleAt(60.0f), 1.0e-5);
+  CHECK(angleAt(10.0f) > angleAt(20.0f));
+}
+
+
+TEST_CASE(person_tile_pointer_line_is_dropped) {
+  std::vector<std::string> lines = { "FakeFriend", "v" };
+  CHECK(vrDropPointerLine(lines) && lines.size() == 1);
+  lines = { "FakeFriend", "DOWNED 12s", " v " };
+  CHECK(vrDropPointerLine(lines) && lines.size() == 2 && lines[1] == "DOWNED 12s");
+  lines = { "v" };
+  CHECK(!vrDropPointerLine(lines));   // a name "v" stays
+  lines = { "Hello", "vv" };
+  CHECK(!vrDropPointerLine(lines));
+  VrColour c = vrColourFromRgb(0x9CB88A);
+  CHECK_NEAR(c.r, 0x9C / 255.0, 1.0e-5);
+  CHECK_NEAR(c.b, 0x8A / 255.0, 1.0e-5);
 }
 
 

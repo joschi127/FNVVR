@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+#include "vr_paint.h"
 #include "vr_types.h"
 
 namespace dxvk {
@@ -10,27 +11,28 @@ namespace dxvk {
   /**
    * \brief How HUD tiles anchored in the world are placed, see VrWorldTiles
    *
-   * A tile stands at its anchor up to \c maxDistance from the head, and
-   * further away on the line to the anchor at that distance, so that the
-   * eyes do not converge on something much farther than the scene around
-   * it. It keeps its angular size up to \c nearDistance and shrinks with
-   * the distance down to \c farScale at \c farDistance, which tells near
-   * from far without making far tiles unreadable.
+   * A tile has a fixed size in the world, so that it grows and shrinks with
+   * the person it stands over. It stands at its anchor up to \c maxDistance
+   * from the head; farther away it stands at that distance on the line to
+   * the anchor with the same width, so that it gets no smaller in the view
+   * and the eyes do not converge on something much farther than the scene
+   * around it.
    */
   struct VrWorldTileConfig {
     /// Show tiles anchored in the world at all
     bool  enabled      = true;
     /// Farthest a tile stands from the head, in metres
     float maxDistance  = 20.0f;
-    /// Width of a tile's image as an angle up to nearDistance, in degrees
-    float angle        = 14.0f;
-    /// Up to this distance a tile keeps its angular size, in metres
-    float nearDistance = 5.0f;
-    /// At this distance and beyond a tile is farScale of its size, in metres
-    float farDistance  = 40.0f;
-    float farScale     = 0.6f;
+    /// Width of a tile's image in the world, in metres
+    float width        = 3.4f;
     /// Nearest a tile is shown, in metres: closer, it would fill the view
     float minDistance  = 0.3f;
+    /// Colour of a person's tile (trait user6 = 1) drawn in the HUD's
+    /// colour, and of its mark, 0xRRGGBB: a dusty green, as the compass's
+    /// friends; a person's tile in a colour of its own (such as a downed
+    /// friend's red) is drawn in alertColour
+    uint32_t personColour = 0x9CB88A;
+    uint32_t alertColour  = 0xB86A5C;
   };
 
   /**
@@ -45,11 +47,6 @@ namespace dxvk {
     /// Distance from the head to the anchor, in metres
     float  distance = 0.0f;
   };
-
-  /**
-   * \brief Scale of a tile's angular size at a distance
-   */
-  float vrWorldTileScale(const VrWorldTileConfig& config, float distance);
 
   /**
    * \brief Places a tile anchored in the world
@@ -74,5 +71,18 @@ namespace dxvk {
    * \brief Lines of a tile's text: the game breaks lines at CR or LF
    */
   std::vector<std::string> vrTileTextLines(const std::string& text);
+
+  /**
+   * \brief Drops a last line that is only a "v", the flat screen's pointer
+   *    under a person's name, which a person's mark replaces
+   *
+   * \returns Whether there was such a line
+   */
+  bool vrDropPointerLine(std::vector<std::string>& lines);
+
+  /**
+   * \brief A colour 0xRRGGBB, opaque
+   */
+  VrColour vrColourFromRgb(uint32_t rgb);
 
 }

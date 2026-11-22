@@ -51,6 +51,7 @@ TEST_CASE(compass_places_the_heading_in_the_middle_and_holds_markers_at_the_ends
 TEST_CASE(compass_draws_markers_where_their_bearing_is) {
   VrCompassConfig config;
   config.backdrop = false;
+  config.markerGapNoBackdrop = 0.0f;
   VrPaintList list(VrCompassImage::Width, VrCompassImage::Height);
   VrColour amber = { 1.0f, 0.7f, 0.2f, 1.0f };
 
@@ -69,6 +70,7 @@ TEST_CASE(compass_draws_markers_where_their_bearing_is) {
 TEST_CASE(compass_friend_marker_is_in_the_friend_colour) {
   VrCompassConfig config;
   config.backdrop = false;
+  config.markerGapNoBackdrop = 0.0f;
   config.friendColour = 0x00FF00;
   VrPaintList list(VrCompassImage::Width, VrCompassImage::Height);
 
@@ -83,6 +85,7 @@ TEST_CASE(compass_friend_marker_is_in_the_friend_colour) {
 
 TEST_CASE(compass_size_and_place_follow_the_field_of_view) {
   VrCompassConfig config;
+  config.widthShare = 0.45f;
   VrFov fov;
   fov.angleLeft  = degrees(-50.0f);
   fov.angleRight = degrees(50.0f);
@@ -161,6 +164,7 @@ TEST_CASE(compass_settings_change_by_name_for_live_tuning) {
   CHECK(vrSetCompassValue(config, "angle", "auto") && config.angle == 0.0f);
   CHECK(vrSetCompassValue(config, "backdrop", "off") && !config.backdrop);
   CHECK(vrSetCompassValue(config, "gap", "-12") && config.markerGap == -12.0f);
+  CHECK(vrSetCompassValue(config, "gapnoband", "-20") && config.markerGapNoBackdrop == -20.0f);
 
   // Unknown names and values leave the settings as they are
   VrCompassConfig before = config;
@@ -179,7 +183,7 @@ TEST_CASE(compass_settings_change_by_name_for_live_tuning) {
 TEST_CASE(compass_large_quest_marker_stays_inside_the_image) {
   VrCompassConfig config;
   config.backdrop   = false;
-  config.markerGap  = 14.0f;
+  config.markerGapNoBackdrop = 14.0f;
   config.questScale = 2.0f;
   VrPaintList list(VrCompassImage::Width, VrCompassImage::Height);
   std::vector<VrCompassMarker> markers = { { VrCompassMarkerKind::Quest, 0.0f, 0 } };
