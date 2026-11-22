@@ -12,9 +12,6 @@ namespace dxvk {
 
     using Layout = VrPipBoyHintLayout;
 
-    // The dark of the menus' background the game's buttons stand on
-    const VrColour Plate = { 0.0f, 0.0f, 0.0f, 0.7f };
-
     // The game's B button, as its menus show it with a gamepad
     constexpr char ButtonImage[] = "interface\\shared\\button\\general_button_b.dds";
 
@@ -31,8 +28,9 @@ namespace dxvk {
     float height = float(list.height());
     float unit   = height / Layout::Units;
 
+    // Clear around the text and the button, as the game's button hints
+    // stand on its menus without a box of their own
     list.clear();
-    list.fillRect(0.0f, 0.0f, width, height, Plate);
 
     // From the right: the button's image, and the frame its left part
     // overlaps, around the text
