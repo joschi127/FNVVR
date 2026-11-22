@@ -272,8 +272,9 @@ namespace dxvk {
 
     // Test tools drive VR input through a named pipe, off by default
     if (config.getOption<bool>("d3d9.vrTestChannel", false)) {
-      backend = std::make_unique<VrTestBackend>(std::move(backend),
-        config.getOption<std::string>("d3d9.vrTestPipeName", "FNVVR-Test-VR"));
+      // String options come back empty, not as the fallback, when they are not set
+      std::string pipeName = config.getOption<std::string>("d3d9.vrTestPipeName", "");
+      backend = std::make_unique<VrTestBackend>(std::move(backend), pipeName.empty() ? "FNVVR-Test-VR" : pipeName);
     }
 
     g_vrSystem.reset(new VrSystem(std::move(backend), showPreview, panel, turn, weaponInHand, headsetResolution,
