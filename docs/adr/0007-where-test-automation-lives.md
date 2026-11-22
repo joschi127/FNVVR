@@ -49,6 +49,10 @@ Requirements for FNVVR-Test-Bridge (maintainer, 2026-11-22):
 - test changes stay in memory; nothing is saved unless someone saves;
 - a memory status of the game process (address space free, largest free block, used; committed and resident
   memory) on request, in both channels, also without the co-op mod;
+- talking to the person in the headset (maintainer, 2026-11-22; planned, not built yet): notifications as the
+  game's HUD message with a sound (`notify`, bridge), questions with up to four answer buttons in the game's
+  message box (`ask`/`answer`, bridge), and a "done" signal without an open question as a controller gesture
+  reported by the VR channel (for example both sticks pressed for about a second);
 - clean, short documentation of every implemented feature and how to use it (bridge README and protocol;
   for the VR channel `docs/testing/vr-test-channel.md`), updated in the same commit as the feature;
 - **no performance cost**: with `Enabled=0` the plugin does nothing at all; enabled and idle it does one
