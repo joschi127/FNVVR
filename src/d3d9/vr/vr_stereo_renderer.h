@@ -26,6 +26,7 @@
 #include "vr_cpu_sampler.h"
 #include "vr_hand_activate_pick.h"
 #include "vr_hand_hud.h"
+#include "vr_compass.h"
 #include "vr_hud_layers.h"
 #include "vr_hud_meters.h"
 #include "vr_world_tiles.h"
@@ -116,6 +117,8 @@ namespace dxvk {
     VrWorldTileConfig        worldTiles;
     /// Names (prefixes) of HUD tiles shown on the head's panel only
     std::vector<std::string> hudHeadTiles;
+    /// The compass along the top of the view, see VrCompass
+    VrCompassConfig          compass;
   };
 
   /**
@@ -502,6 +505,7 @@ namespace dxvk {
     float               m_pipBoyExtrasPanelHeight = 0.0f;
     std::unique_ptr<VrCaravanValues>    m_caravanValues;
     std::unique_ptr<VrWorldTiles>       m_worldTiles;
+    std::unique_ptr<VrCompass>          m_compass;
     // Kept between frames, so that the interface pass does not allocate
     std::vector<uintptr_t>              m_cullTiles;
     // The left hand held ammunition at the last frame, and the reload
@@ -921,7 +925,7 @@ namespace dxvk {
 
     void isolateHud();
 
-    // Shows the tiles anchored in the world, or hides them
+    // Shows the tiles anchored in the world and the compass, or hides them
     void showWorldHud();
 
     bool createInterfaceTextures();

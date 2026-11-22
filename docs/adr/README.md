@@ -32,3 +32,4 @@ reverse-engineering material.
 | [0005](0005-small-coop-fork-for-vr.md) | A small public fork of the co-op mod for VR and gamepad fixes (FNVVR-Coop-Compat) | Accepted |
 | [0006](0006-pipboy-on-a-panel.md) | The Pip-Boy on a panel in VR, with a lamp bar and the VR controllers' buttons | Accepted |
 | [0007](0007-where-test-automation-lives.md) | Where test automation lives (VR side in FNVVR, game side in FNVVR-Test-Bridge) | Accepted |
+| [0008](0008-compass-at-the-top-of-the-view.md) | A compass along the top of the view, in the look of the game's | Accepted |

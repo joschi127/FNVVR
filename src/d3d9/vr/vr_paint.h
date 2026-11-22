@@ -163,6 +163,25 @@ namespace dxvk {
     void fillRoundedRect(float left, float top, float right, float bottom, float radius, const VrColour& colour);
 
     /**
+     * \brief Fills a convex polygon
+     *
+     * \param [in] xy Corners as x, y pairs in pixels, in either winding
+     * \param [in] count Number of corners, at least 3
+     * \param [in] colour Colour
+     */
+    void fillPolygon(const float* xy, uint32_t count, const VrColour& colour);
+
+    /**
+     * \brief Draws the outline of a convex polygon
+     *
+     * \param [in] xy Corners as x, y pairs in pixels, in either winding
+     * \param [in] count Number of corners, at least 3
+     * \param [in] thickness Width of the line, centred on the edges, in pixels
+     * \param [in] colour Colour
+     */
+    void strokePolygon(const float* xy, uint32_t count, float thickness, const VrColour& colour);
+
+    /**
      * \brief Fills part of a ring
      *
      * The sector runs clockwise from \c start to \c end, \c end may wrap

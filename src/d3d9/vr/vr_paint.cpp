@@ -37,6 +37,45 @@ namespace dxvk {
       return std::max(uint32_t(std::ceil(span * radius / SegmentLength)), 1u);
     }
 
+    // The corners of a convex polygon moved outwards by a distance, negative
+    // inwards: each corner along both edges' normals, so the edges stay parallel
+    std::vector<VrPaintVertex> offsetPolygon(const float* xy, uint32_t count, float offset, uint32_t colour) {
+      // The signed area tells the winding, so that the normals point outwards
+      float area = 0.0f;
+
+      for (uint32_t i = 0; i < count; i++) {
+        uint32_t j = (i + 1) % count;
+        area += xy[2 * i] * xy[2 * j + 1] - xy[2 * j] * xy[2 * i + 1];
+      }
+
+      float sign = area < 0.0f ? -1.0f : 1.0f;
+      std::vector<VrPaintVertex> points(count);
+
+      auto normal = [&] (uint32_t a, uint32_t b, float& nx, float& ny) {
+        float dx = xy[2 * b] - xy[2 * a];
+        float dy = xy[2 * b + 1] - xy[2 * a + 1];
+        float length = std::max(std::sqrt(dx * dx + dy * dy), 1.0e-6f);
+        nx =  dy / length * sign;
+        ny = -dx / length * sign;
+      };
+
+      for (uint32_t i = 0; i < count; i++) {
+        uint32_t prev = (i + count - 1) % count;
+        uint32_t next = (i + 1) % count;
+        float n1x, n1y, n2x, n2y;
+        normal(prev, i, n1x, n1y);
+        normal(i, next, n2x, n2y);
+
+        // A sharp corner would move far: at most eight times the offset
+        float scale = offset / std::max(1.0f + n1x * n2x + n1y * n2y, 0.125f);
+        points[i].x = xy[2 * i] + (n1x + n2x) * scale;
+        points[i].y = xy[2 * i + 1] + (n1y + n2y) * scale;
+        points[i].colour = colour;
+      }
+
+      return points;
+    }
+
   }
 
 
@@ -121,6 +160,55 @@ namespace dxvk {
       size_t next = (i + 1) % inside.size();
       triangle(centre, inside[i], inside[next]);
       quad(inside[i], outside[i], outside[next], inside[next]);
+    }
+  }
+
+
+  void VrPaintList::fillPolygon(const float* xy, uint32_t count, const VrColour& colour) {
+    if (count < 3 || colour.a <= 0.0f)
+      return;
+
+    // Inside the edges by half a pixel fully covered, outside by half a
+    // pixel not at all: the edges fade out over one pixel
+    uint32_t c = vrPremultiplied(colour);
+    std::vector<VrPaintVertex> inside  = offsetPolygon(xy, count, -0.5f, c);
+    std::vector<VrPaintVertex> outside = offsetPolygon(xy, count,  0.5f, 0u);
+
+    begin(nullptr, VrPaintImageUse::Shape);
+
+    for (uint32_t i = 1; i + 1 < count; i++)
+      triangle(inside[0], inside[i], inside[i + 1]);
+
+    for (uint32_t i = 0; i < count; i++) {
+      uint32_t next = (i + 1) % count;
+      quad(inside[i], outside[i], outside[next], inside[next]);
+    }
+  }
+
+
+  void VrPaintList::strokePolygon(const float* xy, uint32_t count, float thickness, const VrColour& colour) {
+    if (count < 3 || thickness <= 0.0f || colour.a <= 0.0f)
+      return;
+
+    // Rows from the outside in: faded edge, the line, faded edge. A line
+    // thinner than a pixel covers it partly.
+    float half = 0.5f * thickness;
+    float core = std::max(half - 0.5f, 0.0f);
+    uint32_t c = vrPremultiplied(colour.faded(std::min(thickness, 1.0f)));
+
+    std::vector<VrPaintVertex> rows[4] = {
+      offsetPolygon(xy, count,  half + 0.5f, 0u),
+      offsetPolygon(xy, count,  core, c),
+      offsetPolygon(xy, count, -core, c),
+      offsetPolygon(xy, count, -half - 0.5f, 0u) };
+
+    begin(nullptr, VrPaintImageUse::Shape);
+
+    for (uint32_t row = 0; row < 3; row++) {
+      for (uint32_t i = 0; i < count; i++) {
+        uint32_t next = (i + 1) % count;
+        quad(rows[row][i], rows[row][next], rows[row + 1][next], rows[row + 1][i]);
+      }
     }
   }
 

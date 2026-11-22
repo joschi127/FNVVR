@@ -189,6 +189,28 @@ namespace dxvk {
     worldTiles.farScale     = std::clamp(config.getOption<float>("d3d9.vrWorldTileFarScale", worldTiles.farScale), 0.1f, 1.0f);
     panel.hudHeadTiles = vrSplitNameList(config.getOption<std::string>("d3d9.vrHudHeadTiles", ""));
 
+    // The compass along the top of the view
+    VrCompassConfig& compass = panel.compass;
+    compass.enabled   = config.getOption<bool>("d3d9.vrCompass", compass.enabled);
+    compass.span      = std::clamp(config.getOption<float>("d3d9.vrCompassSpan", compass.span), 30.0f, 360.0f);
+    compass.angle     = std::clamp(config.getOption<float>("d3d9.vrCompassAngle", compass.angle), 10.0f, 90.0f);
+    compass.elevation = std::clamp(config.getOption<float>("d3d9.vrCompassElevation", compass.elevation), -60.0f, 60.0f);
+    compass.distance  = std::clamp(config.getOption<float>("d3d9.vrCompassDistance", compass.distance), 0.3f, 10.0f);
+    compass.backdrop  = std::clamp(config.getOption<float>("d3d9.vrCompassBackdrop", compass.backdrop), 0.0f, 1.0f);
+
+    // A colour as RRGGBB; DXVK gives an empty text for an option not set
+    std::string friendColour = config.getOption<std::string>("d3d9.vrCompassFriendColour", "");
+
+    if (!friendColour.empty()) {
+      char* end = nullptr;
+      unsigned long value = std::strtoul(friendColour.c_str(), &end, 16);
+
+      if (end && *end == '\0' && friendColour.size() == 6)
+        compass.friendColour = uint32_t(value);
+      else
+        Logger::warn(str::format("VR: d3d9.vrCompassFriendColour '", friendColour, "' is not RRGGBB, kept the default"));
+    }
+
     VrTurnConfig turn;
     turn.smooth      = config.getOption<bool>("d3d9.vrSmoothTurn", turn.smooth);
     turn.snapAngle   = config.getOption<float>("d3d9.vrSnapTurnAngle", turn.snapAngle);

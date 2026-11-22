@@ -1,0 +1,242 @@
+#include <algorithm>
+#include <cmath>
+
+#include "../../util/log/log.h"
+
+#include "vr_compass.h"
+#include "vr_game_addresses.h"
+#include "vr_game_memory.h"
+
+namespace dxvk {
+
+  namespace {
+
+    // The game's compass pictures, see VrCompassPictures
+    constexpr char StripPicture[]  = "interface\\hud\\glow_hud_comp_direction_strip.dds";
+    constexpr char QuestPicture[]  = "interface\\hud\\glow_hud_compass_objective_marker.dds";
+    constexpr char CustomPicture[] = "interface\\hud\\glow_hud_compass_pc_marker.dds";
+    constexpr char PersonPicture[] = "interface\\hud\\glow_hud_tick_mark.dds";
+
+    // Frames between reads of the targets
+    constexpr uint32_t TargetReadInterval = 10;
+    // Most objective targets and teleport links looked at
+    constexpr uint32_t MaxTargets = 8;
+    constexpr uint32_t MaxLinks   = 64;
+    // Most extra data entries walked on a cell
+    constexpr uint32_t MaxExtraData = 256;
+    // The heading change that draws the strip again, radians
+    constexpr float    RedrawHeading = 0.0005f;
+
+    template<typename T>
+    T readField(uintptr_t base, uintptr_t offset) {
+      return *reinterpret_cast<const T*>(base + offset);
+    }
+
+    bool readPosition(uintptr_t ref, VrVector3& position) {
+      if (!ref || !VrGameMemory::readable(ref + VrGame::RefLocation, sizeof(VrVector3)))
+        return false;
+
+      position = readField<VrVector3>(ref, VrGame::RefLocation);
+      return std::isfinite(position.x) && std::isfinite(position.y) && std::isfinite(position.z);
+    }
+
+    // Where an objective target's marker points: the first door of its way,
+    // when it is somewhere else, or the target itself
+    uintptr_t targetRef(uintptr_t target) {
+      if (!VrGameMemory::readable(target, VrGame::TargetTeleportLinks + VrGame::SimpleArrayCount + sizeof(uint32_t)))
+        return 0;
+
+      uintptr_t links = target + VrGame::TargetTeleportLinks;
+      uintptr_t items = readField<uintptr_t>(links, VrGame::SimpleArrayItems);
+      uint32_t  count = readField<uint32_t>(links, VrGame::SimpleArrayCount);
+
+      if (items && count && count <= MaxLinks && VrGameMemory::readable(items, sizeof(uintptr_t))) {
+        uintptr_t door = readField<uintptr_t>(items, 0);
+
+        if (door)
+          return door;
+      }
+
+      return readField<uintptr_t>(target, VrGame::TargetRef);
+    }
+
+    // The interior's north, from its ExtraNorthRotation; 0 outside
+    float cellNorth(uintptr_t player) {
+      uintptr_t cell = readField<uintptr_t>(player, VrGame::RefParentCell);
+
+      if (!cell || !VrGameMemory::readable(cell, VrGame::CellExtraList + VrGame::ExtraListFirst + sizeof(uintptr_t))
+       || !(readField<uint8_t>(cell, VrGame::CellFlags) & VrGame::CellFlagInterior))
+        return 0.0f;
+
+      uintptr_t extra = readField<uintptr_t>(cell + VrGame::CellExtraList, VrGame::ExtraListFirst);
+
+      for (uint32_t i = 0; extra && i < MaxExtraData; i++) {
+        if (!VrGameMemory::readable(extra, VrGame::ExtraNorthRotationAngle + sizeof(float)))
+          return 0.0f;
+
+        if (readField<uint8_t>(extra, VrGame::ExtraDataType) == VrGame::ExtraTypeNorthRotation) {
+          float angle = readField<float>(extra, VrGame::ExtraNorthRotationAngle);
+          return std::isfinite(angle) ? angle : 0.0f;
+        }
+
+        extra = readField<uintptr_t>(extra, VrGame::ExtraDataNext);
+      }
+
+      return 0.0f;
+    }
+
+  }
+
+
+  VrCompass::VrCompass(VrPainter& painter, IVRBackend& backend, VrGameImages& images)
+  : m_panel(painter, backend, VrPanelId::Compass),
+    m_list(VrCompassImage::Width, VrCompassImage::Height),
+    m_images(images) { }
+
+
+  VrCompass::~VrCompass() {
+    hide();
+  }
+
+
+  bool VrCompass::initialize() {
+    m_available = VrGameMemory::readable(VrGame::Player, sizeof(uintptr_t));
+
+    if (!m_available)
+      Logger::warn("VR: The player cannot be read, the compass is not shown");
+
+    return m_available;
+  }
+
+
+  void VrCompass::setConfig(const VrCompassConfig& config) {
+    m_config = config;
+    m_drawn  = false;
+  }
+
+
+  void VrCompass::readTargets() {
+    m_targets.clear();
+    m_north = 0.0f;
+
+    uintptr_t player = readField<uintptr_t>(VrGame::Player, 0);
+
+    if (!player || !VrGameMemory::readable(player, VrGame::PlayerPlacedMarker + VrGame::TargetTeleportLinks + 0x0C))
+      return;
+
+    m_north = cellNorth(player);
+
+    // The active quest objective's targets: a list whose nodes hold a
+    // target and the next node, the first node inside the player
+    uintptr_t node = player + VrGame::PlayerQuestTargets;
+
+    for (uint32_t i = 0; node && i < MaxTargets; i++) {
+      if (!VrGameMemory::readable(node, 2 * sizeof(uintptr_t)))
+        break;
+
+      uintptr_t target = readField<uintptr_t>(node, 0);
+      Target found;
+      found.kind = VrCompassMarkerKind::Quest;
+
+      if (target && readPosition(targetRef(target), found.position))
+        m_targets.push_back(found);
+
+      node = readField<uintptr_t>(node, sizeof(uintptr_t));
+    }
+
+    // The player's own marker, an objective target of the same layout
+    uintptr_t placed = player + VrGame::PlayerPlacedMarker;
+    Target custom;
+    custom.kind = VrCompassMarkerKind::Custom;
+
+    if (readField<uintptr_t>(placed, VrGame::TargetRef) && readPosition(targetRef(placed), custom.position))
+      m_targets.push_back(custom);
+  }
+
+
+  void VrCompass::show(bool shown, float heading, const std::vector<VrWorldTileInfo>& tiles) {
+    if (!shown || !m_available || m_failed || !m_config.enabled) {
+      hide();
+      return;
+    }
+
+    if (m_frame++ % TargetReadInterval == 0)
+      readTargets();
+
+    uintptr_t player = readField<uintptr_t>(VrGame::Player, 0);
+    VrVector3 from;
+
+    if (!readPosition(player, from)) {
+      hide();
+      return;
+    }
+
+    // In an interior, headings count from the cell's north
+    float compassHeading = heading - m_north;
+
+    std::vector<VrCompassMarker> markers;
+
+    for (const Target& target : m_targets) {
+      VrCompassMarker marker;
+      marker.kind    = target.kind;
+      marker.bearing = vrCompassBearing(from, target.position) - m_north;
+      markers.push_back(marker);
+    }
+
+    for (const VrWorldTileInfo& tile : tiles) {
+      if (!tile.person)
+        continue;
+
+      VrCompassMarker marker;
+      marker.kind    = VrCompassMarkerKind::Friend;
+      marker.bearing = vrCompassBearing(from, tile.anchor) - m_north;
+      marker.initial = tile.text.empty() ? 0 : tile.text[0];
+      markers.push_back(marker);
+    }
+
+    // Drawn again when the heading or a marker moved enough to show
+    bool same = m_drawn && std::fabs(vrCompassOffset(compassHeading, m_shownHeading)) < RedrawHeading
+      && markers.size() == m_shownMarkers.size();
+
+    for (size_t i = 0; same && i < markers.size(); i++) {
+      same = markers[i].kind == m_shownMarkers[i].kind && markers[i].initial == m_shownMarkers[i].initial
+        && std::fabs(vrCompassOffset(markers[i].bearing, m_shownMarkers[i].bearing)) < RedrawHeading;
+    }
+
+    if (!same) {
+      VrCompassPictures pictures;
+      pictures.strip  = m_images.picture(StripPicture);
+      pictures.quest  = m_images.picture(QuestPicture);
+      pictures.custom = m_images.picture(CustomPicture);
+      pictures.person = m_images.picture(PersonPicture);
+
+      vrPaintCompass(m_list, m_config, compassHeading, markers, VrGameImages::hudColour(), m_images.font(), pictures);
+
+      if (!m_panel.paint(m_list)) {
+        Logger::err("VR: Failed to draw the compass, it is not shown");
+        m_failed = true;
+        hide();
+        return;
+      }
+
+      m_drawn        = true;
+      m_placed       = false;
+      m_shownHeading = compassHeading;
+      m_shownMarkers = std::move(markers);
+    }
+
+    // Fixed to the head: given again for a new image or after it was hidden,
+    // as the runtime takes the image when it is given
+    if (!m_placed || !m_panel.shown()) {
+      m_panel.show(vrCompassPose(m_config), vrCompassWidth(m_config), VrPanelAnchor::Head);
+      m_placed = true;
+    }
+  }
+
+
+  void VrCompass::hide() {
+    m_panel.hide();
+    m_placed = false;
+  }
+
+}

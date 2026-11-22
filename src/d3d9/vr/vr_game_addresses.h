@@ -4189,6 +4189,42 @@ namespace dxvk {
     constexpr uint8_t   ModelLoaderUpdateReferencesPrologue[] = { 0x55, 0x8B, 0xEC, 0x6A, 0xFF, 0x68, 0x40, 0xCD, 0xEE, 0x00 };
 
     /**
+     * Compass (VrCompass). Offsets as in the public plugin headers of xNVSE
+     * and JIP LN NVSE (GameObjects.h, GameForms.h, GameExtraData.h):
+     *
+     * - PlayerQuestTargets: the active quest objective's targets, a tList of
+     *   BGSQuestObjective::Target* in PlayerCharacter (node: data, next),
+     *   empty when no quest is active.
+     * - Target: the target reference at TargetRef; its teleport links, a
+     *   BSSimpleArray (items at +4, count at +8) at TargetTeleportLinks, of
+     *   TeleportLinkSize each with the door reference first. Like the game's
+     *   other users of it (yUI, JIP's minimap), the first door is taken as
+     *   the way out of the player's place towards a target elsewhere.
+     * - PlayerPlacedMarker: the marker the player placed on the map, an
+     *   objective target of the same layout; its reference is null when none
+     *   is placed.
+     * - The cell's flags (bit 0: interior) and extra data list, whose first
+     *   entry is at +4 (entry: type byte at +4, next at +8). An interior's
+     *   north is turned by ExtraNorthRotation, a float in radians at +0xC.
+     */
+    constexpr uintptr_t PlayerQuestTargets       = 0x6C4;
+    constexpr uintptr_t PlayerPlacedMarker       = 0x6E8;
+    constexpr uintptr_t TargetRef                = 0x0C;
+    constexpr uintptr_t TargetTeleportLinks      = 0x20;
+    constexpr uintptr_t SimpleArrayItems         = 0x04;
+    constexpr uintptr_t SimpleArrayCount         = 0x08;
+    constexpr uintptr_t TeleportLinkSize         = 0x10;
+    constexpr uintptr_t RefParentCell            = 0x40;
+    constexpr uintptr_t CellFlags                = 0x24;
+    constexpr uint8_t   CellFlagInterior         = 0x01;
+    constexpr uintptr_t CellExtraList            = 0x28;
+    constexpr uintptr_t ExtraListFirst           = 0x04;
+    constexpr uintptr_t ExtraDataType            = 0x04;
+    constexpr uintptr_t ExtraDataNext            = 0x08;
+    constexpr uint8_t   ExtraTypeNorthRotation   = 0x43;
+    constexpr uintptr_t ExtraNorthRotationAngle  = 0x0C;
+
+    /**
      * HUD tiles anchored in the world (VrWorldTiles): the interface's trait
      * names a mod sets on a tile of the HUD to have it shown at a place in
      * the world. See docs/hud-world-tiles.md.

@@ -367,6 +367,14 @@ namespace dxvk {
         renderer->m_worldTiles = nullptr;
     }
 
+    if (panel.compass.enabled) {
+      renderer->m_compass = std::make_unique<VrCompass>(*renderer->m_painter, backend, renderer->m_gameImages);
+
+      if (renderer->m_compass->initialize())
+        renderer->m_compass->setConfig(panel.compass);
+      else
+        renderer->m_compass = nullptr;
+    }
 
     if (VrGameConsole::install())
       renderer->m_terminal = std::make_unique<VrConsoleTerminal>(*renderer->m_painter, backend, texts);
@@ -3286,6 +3294,18 @@ namespace dxvk {
 
     if (m_worldTiles)
       m_worldTiles->show(shown, m_reference, m_gameCameraPose, m_headPose);
+
+    if (m_compass) {
+      float heading = 0.0f;
+
+      if (shown) {
+        heading = vrComputeCameraHeading(vrComputeEyeCameraPose(m_gameCameraPose,
+          vrComputeEyeInReference(m_reference, m_headPose), VrGameUnitsPerMetre));
+      }
+
+      static const std::vector<VrWorldTileInfo> NoTiles;
+      m_compass->show(shown, heading, m_worldTiles ? m_worldTiles->tiles() : NoTiles);
+    }
   }
 
 

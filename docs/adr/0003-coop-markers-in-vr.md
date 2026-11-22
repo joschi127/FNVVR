@@ -125,4 +125,5 @@ The first runs of co-op in the emulator (fakefriend, run c34) showed the flat pl
 - **Scope**: name plates, "DOWNED" and chat above heads; the co-op mod's screen-fixed tiles (chat line,
   revive text, talk list) can be kept on the head panel with `d3d9.vrHudHeadTiles`.
 - **Look**: like the game's (its font and the tile's colour), as on the flat screen.
+- Friends also get a mark on the compass along the top of the view ([ADR 0008](0008-compass-at-the-top-of-the-view.md)).
 
