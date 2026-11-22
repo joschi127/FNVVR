@@ -33,7 +33,7 @@ namespace dxvk {
     CapturePanel,///< capture panel <panel> <file>, the rest of the line (may hold spaces)
     PipBoy,      ///< pipboy: where its screen is on the left hand, and whether it is open or looked at
     PipBoyOpen,  ///< pipboy open: opens it the way the gesture does, when the game allows
-    PipBoyClose, ///< pipboy close: closes it the way looking away does
+    PipBoyClose, ///< pipboy close: closes it as B or the close sign do
     SignalOn,    ///< signal on: counts the "done" signal (both hands above the head) from now on
     SignalOff,   ///< signal off
   };

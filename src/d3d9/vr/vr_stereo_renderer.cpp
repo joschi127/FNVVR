@@ -2290,8 +2290,10 @@ namespace dxvk {
           break;
 
         case VrTestPipBoyRequest::Close:
-          if (gaze.canClose)
-            request = VrPipBoyRequest::Close;
+          // As B or the close sign do, also on the panel, where looking
+          // away does not close it
+          if (gaze.state != VrPipBoyState::Closed)
+            m_closePipBoy = true;
           break;
 
         case VrTestPipBoyRequest::None:

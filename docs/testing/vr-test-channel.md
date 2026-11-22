@@ -64,7 +64,7 @@ Poses are `<x> <y> <z> <yaw> <pitch> [roll]`: metres in tracking space (+Y up, -
 | `capture eyes <prefix>` | `ok <prefix>-left.png <prefix>-right.png` | Both eye images of the next frame, full resolution |
 | `capture panel <panel> <file>` | `ok <file>` | The panel's image the next time it is submitted (at once for panels drawn from system memory) |
 | `pipboy` | `ok state=<closed\|changing\|open> looking=<0\|1> screen <f> <u> <r> facing <f> <u> <r>` | Where the Pip-Boy's screen is on the left controller (metres forward, up and right of it, and the way it faces) and whether the wrist is looked at; `screen unknown` before the game placed it |
-| `pipboy open` / `pipboy close` | `ok asked; ...` | Opens it the way looking at the wrist does (only when the game could open it then), or closes it the way looking away does; `pipboy` shows the result a few frames later |
+| `pipboy open` / `pipboy close` | `ok asked; ...` | Opens it the way looking at the wrist does (only when the game could open it then), or closes it as B or the close sign do (also on the panel); `pipboy` shows the result a few frames later |
 | `signal on` / `signal off` | `ok signal=<n\|off>` | Counts the person's "done" signal from now on: both hands held above the head for `d3d9.vrTestSignalHold` seconds (default 1), once per raise; `state` shows `signal=<n>`. Off by default and after each start, in memory only |
 
 Actions are FNVVR's named actions, not controller buttons (bindings are the runtime's business):
