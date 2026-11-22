@@ -22,4 +22,34 @@ namespace dxvk {
     return VrPipBoyView::None;
   }
 
+
+  void VrPipBoyPager::start(VrPipBoyView view, float now) {
+    m_target    = view;
+    m_pressedAt = VrPipBoyView::None;
+    m_started   = now;
+  }
+
+
+  int32_t VrPipBoyPager::update(VrPipBoyView current, bool pressing, float now) {
+    if (m_target == VrPipBoyView::None)
+      return 0;
+
+    if (current == m_target || now - m_started > GiveUpAfter) {
+      m_target = VrPipBoyView::None;
+      return 0;
+    }
+
+    // Between two views, or the last press not done: wait
+    if (current == VrPipBoyView::None || pressing)
+      return 0;
+
+    // The last step not shown yet: wait for it a while, then press again
+    if (current == m_pressedAt && now - m_pressTime < RetryAfter)
+      return 0;
+
+    m_pressedAt = current;
+    m_pressTime = now;
+    return uint32_t(m_target) > uint32_t(current) ? 1 : -1;
+  }
+
 }

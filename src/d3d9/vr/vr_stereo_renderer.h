@@ -35,6 +35,7 @@
 #include "vr_ammo_label.h"
 #include "vr_pipboy_hint.h"
 #include "vr_pipboy_lamp_bar.h"
+#include "vr_pipboy_lamp_bar_layout.h"
 #include "vr_pipboy_arm_texture.h"
 #include "vr_caravan_values.h"
 #include "vr_game_images.h"
@@ -483,6 +484,9 @@ namespace dxvk {
     VrPanelPlacement    m_pipBoyExtras;
     bool                m_pipBoyExtrasShown   = false;
     bool                m_pipBoyExtrasTrigger = false;
+    // Pages to a knob's view a step at a time, see VrPipBoyPager
+    VrPipBoyPager       m_pipBoyPager;
+    std::chrono::steady_clock::time_point m_pipBoyPagerEpoch = std::chrono::steady_clock::now();
     bool                m_pipBoyCloseClicked  = false;
     bool                m_pipBoyHintHovered   = false;
     bool                m_loggedFocusSound    = false;
@@ -890,6 +894,10 @@ namespace dxvk {
     void showPipBoyExtras();
 
     void clickPipBoyExtras();
+
+    void pagePipBoy();
+
+    float pipBoyPagerClock() const;
 
     VrPipBoyView currentPipBoyView() const;
 

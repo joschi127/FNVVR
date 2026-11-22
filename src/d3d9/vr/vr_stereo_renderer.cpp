@@ -1076,8 +1076,10 @@ namespace dxvk {
     // The sign and the lamp bar around the Pip-Boy's panel take the lasers
     if (m_pipBoyExtrasShown && m_pipBoyOnPanel) {
       clickPipBoyExtras();
+      pagePipBoy();
       m_controls.setPointerSurface(&m_pipBoyExtras);
     } else {
+      m_pipBoyPager.cancel();
       m_pipBoyExtrasTrigger = false;
       m_pipBoyHintHovered   = false;
     }
@@ -2872,15 +2874,27 @@ namespace dxvk {
     VrPipBoyView view = vrPipBoyLampBarKnobAt(barX, barY);
 
     // The game's own "view to set" did not switch the view from here: the
-    // knob pages to it with LT and RT, as the grips do
+    // knob pages to it with LT and RT, as the grips do, a step at a time
     VrPipBoyView current = currentPipBoyView();
 
     if (view != VrPipBoyView::None && current != VrPipBoyView::None && view != current) {
-      int32_t steps = int32_t(view) - int32_t(current);
-      m_controls.pagePipBoy(steps);
+      m_pipBoyPager.start(view, pipBoyPagerClock());
       Logger::info(str::format("VR: The Pip-Boy's knob ", uint32_t(view), " on the lamp bar is clicked, ",
-        steps, " page(s) from ", uint32_t(current)));
+        int32_t(view) - int32_t(current), " page(s) from ", uint32_t(current)));
     }
+  }
+
+
+  void VrStereoRenderer::pagePipBoy() {
+    int32_t step = m_pipBoyPager.update(currentPipBoyView(), m_controls.isPagingPipBoy(), pipBoyPagerClock());
+
+    if (step)
+      m_controls.pagePipBoy(step);
+  }
+
+
+  float VrStereoRenderer::pipBoyPagerClock() const {
+    return std::chrono::duration<float>(std::chrono::steady_clock::now() - m_pipBoyPagerEpoch).count();
   }
 
 

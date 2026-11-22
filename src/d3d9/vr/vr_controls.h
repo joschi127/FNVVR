@@ -230,6 +230,11 @@ namespace dxvk {
       m_pipBoyPageFrames = 0;
     }
 
+    /// Whether a press of pagePipBoy is still going on
+    bool isPagingPipBoy() const {
+      return m_pipBoyPageSteps != 0;
+    }
+
     /**
      * \brief Makes the left hand's reload button activate
      *
