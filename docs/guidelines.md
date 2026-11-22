@@ -13,6 +13,22 @@ CHANGELOG remain authoritative for everything that is not specific to this fork.
 "The maintainer" below is the repository owner, who decides on side effects, pushes, releases and
 contact with other projects.
 
+## Plan first, then implement
+
+This applies to every solution: features, fixes whose cause or remedy is not obvious, tools, test
+infrastructure, architecture, behaviour and UI.
+
+1. Write down the plan: what, where (which repository and files), how, and what it costs.
+2. List **all** open questions and the options with a recommendation.
+3. Wait until the maintainer has answered them and given an explicit go.
+4. Only then implement. If a new question comes up while implementing, stop and ask instead of deciding
+   alone.
+
+A wish about direction ("do it properly", "the long-term way") is not a go to implement. Read-only research
+to make the plan factual is fine before the go. Exceptions: bug fixes with an obvious cause and remedy, and
+small changes the maintainer asked for in exactly that form (for example a text change). Values meant for
+fine tuning go into an INI setting.
+
 ## Local notes (git-ignored)
 
 Machine-specific paths, the current state and the to-do list live outside git, under `local/`
@@ -211,7 +227,7 @@ with status Proposed until the maintainer decides. Bug fixes do not need ADRs.
 - Decisions about the co-op side are ADRs in FNVVR-Coop-Compat:
   [joschi127/FNVVR-Coop-Compat docs/adr/README.md](https://github.com/joschi127/FNVVR-Coop-Compat/blob/vr-compat/docs/adr/README.md);
   how FNVVR-Coop-Compat's changes behave in play: [docs/behaviour.md](https://github.com/joschi127/FNVVR-Coop-Compat/blob/vr-compat/docs/behaviour.md).
-- Plan behaviour changes with the maintainer before coding.
+- Plan changes with the maintainer before coding (see "Plan first, then implement").
 
 ## Upstream relationship
 
