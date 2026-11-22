@@ -32,11 +32,20 @@ namespace dxvk {
     /**
      * \brief Shows the last image drawn
      *
-     * \param [in] pose Panel pose in tracking space
+     * \param [in] pose Panel pose in tracking space, or relative to the
+     *    head for VrPanelAnchor::Head
      * \param [in] width Panel width, in metres
+     * \param [in] anchor What the pose is relative to
      * \returns Whether the backend shows it
      */
-    bool show(const VrPose& pose, float width);
+    bool show(const VrPose& pose, float width, VrPanelAnchor anchor = VrPanelAnchor::Room);
+
+    /**
+     * \brief Hides the panel and lets go of its texture
+     *
+     * For a panel that may stay unused for long; the next paint makes it again.
+     */
+    void release();
 
     /**
      * \brief Hides the panel

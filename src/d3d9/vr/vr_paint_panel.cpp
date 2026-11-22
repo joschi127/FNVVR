@@ -31,13 +31,22 @@ namespace dxvk {
   }
 
 
-  bool VrPaintPanel::show(const VrPose& pose, float width) {
+  bool VrPaintPanel::show(const VrPose& pose, float width, VrPanelAnchor anchor) {
     if (!m_drawn)
       return false;
 
     m_shown = VrD3D9Bridge::submitPanel(m_painter.device(), m_backend, m_id, m_texture.ptr(),
-      pose, width, VrPanelAnchor::Room, true);
+      pose, width, anchor, true);
     return m_shown;
+  }
+
+
+  void VrPaintPanel::release() {
+    hide();
+    m_texture = nullptr;
+    m_width   = 0;
+    m_height  = 0;
+    m_drawn   = false;
   }
 
 

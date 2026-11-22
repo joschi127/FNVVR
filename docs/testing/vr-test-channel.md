@@ -75,7 +75,7 @@ menuback menualternate menuoption menuprevious menunext menulefttrigger menurigh
 the channel are added to the real controllers' (a real button still works); poses and sticks that are set
 replace the real ones.
 
-Panels: `menu hudhead hudwrist hudprompt hudcharge hudammo quickwheel terminal caravanvalues pipboyhint
+Panels: `menu world0 ... world8 compass hudhead hudwrist hudprompt hudcharge hudammo quickwheel terminal caravanvalues pipboyhint
 pipboylampbar`. The Pip-Boy on a panel ([ADR 0006](../adr/0006-pipboy-on-a-panel.md)) is shown on `menu`.
 
 Captures cost one stalled frame each (the image is copied back from the GPU); without a capture request

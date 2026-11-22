@@ -21,7 +21,8 @@ namespace dxvk {
     };
 
     const char* const PanelNames[VrPanelCount] = {
-      "menu", "hudhead", "hudwrist", "hudprompt", "hudcharge", "hudammo", "quickwheel", "terminal",
+      "menu", "world0", "world1", "world2", "world3", "world4", "world5", "world6", "world7", "world8",
+      "compass", "hudhead", "hudwrist", "hudprompt", "hudcharge", "hudammo", "quickwheel", "terminal",
       "caravanvalues", "pipboyhint", "pipboylampbar",
     };
 

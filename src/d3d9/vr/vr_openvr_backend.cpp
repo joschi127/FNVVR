@@ -86,11 +86,19 @@ namespace dxvk {
     // hand panels, which are nearer, over the HUD, and the console's
     // terminal, nearer than the menu it is opened from, over all of them.
     constexpr std::array<const char*, VrPanelCount> PanelOverlayKeys  = {
-      "fnvvr.panel", "fnvvr.hud.head", "fnvvr.hud.wrist", "fnvvr.hud.prompt", "fnvvr.hud.charge",
+      "fnvvr.panel",
+      "fnvvr.world.0", "fnvvr.world.1", "fnvvr.world.2", "fnvvr.world.3", "fnvvr.world.4",
+      "fnvvr.world.5", "fnvvr.world.6", "fnvvr.world.7", "fnvvr.world.8", "fnvvr.compass",
+      "fnvvr.hud.head", "fnvvr.hud.wrist", "fnvvr.hud.prompt", "fnvvr.hud.charge",
       "fnvvr.hud.ammo", "fnvvr.quickwheel", "fnvvr.terminal",
       "fnvvr.caravan.values", "fnvvr.pipboy.hint", "fnvvr.pipboy.lampbar" };
     constexpr std::array<const char*, VrPanelCount> PanelOverlayNames = {
-      "Fallout: New Vegas", "Fallout: New Vegas HUD", "Fallout: New Vegas wrist HUD",
+      "Fallout: New Vegas",
+      "Fallout: New Vegas world tile 1", "Fallout: New Vegas world tile 2", "Fallout: New Vegas world tile 3",
+      "Fallout: New Vegas world tile 4", "Fallout: New Vegas world tile 5", "Fallout: New Vegas world tile 6",
+      "Fallout: New Vegas world tile 7", "Fallout: New Vegas world tile 8", "Fallout: New Vegas world tile 9",
+      "Fallout: New Vegas compass",
+      "Fallout: New Vegas HUD", "Fallout: New Vegas wrist HUD",
       "Fallout: New Vegas interaction prompt", "Fallout: New Vegas power attack charge",
       "Fallout: New Vegas ammunition", "Fallout: New Vegas quick wheel", "Fallout: New Vegas console",
       "Fallout: New Vegas Caravan values", "Fallout: New Vegas Pip-Boy hint",

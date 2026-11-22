@@ -141,9 +141,12 @@ namespace dxvk {
     struct TexturedVertex { float x, y, z, rhw, u, v; };
     struct ColoredVertex  { float x, y, z, rhw; D3DCOLOR color; };
 
-    // The order a headset shows them in: the menu, the head's HUD over it, the hands' panels over that
+    // The order a headset shows them in: the menu, the tiles in the world and the compass, the head's HUD
+    // over them, the hands' panels over that
     static const VrPanelId Order[] = {
-      VrPanelId::Menu, VrPanelId::Terminal, VrPanelId::CaravanValues, VrPanelId::PipBoyLampBar,
+      VrPanelId::Menu, VrPanelId::WorldTile0, VrPanelId::WorldTile1, VrPanelId::WorldTile2, VrPanelId::WorldTile3,
+      VrPanelId::WorldTile4, VrPanelId::WorldTile5, VrPanelId::WorldTile6, VrPanelId::WorldTile7,
+      VrPanelId::WorldTile8, VrPanelId::Compass, VrPanelId::Terminal, VrPanelId::CaravanValues, VrPanelId::PipBoyLampBar,
       VrPanelId::PipBoyHint, VrPanelId::HudHead, VrPanelId::HudWrist, VrPanelId::HudPrompt,
       VrPanelId::HudCharge, VrPanelId::HudAmmo, VrPanelId::QuickWheel,
     };

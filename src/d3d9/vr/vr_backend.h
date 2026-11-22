@@ -77,6 +77,19 @@ namespace dxvk {
   enum class VrPanelId : uint32_t {
     /// Screens without a 3D scene, such as the main menu
     Menu,
+    /// HUD tiles another mod anchors in the world, such as a friend's name
+    /// above them, at their place in the room (see VrWorldTiles)
+    WorldTile0,
+    WorldTile1,
+    WorldTile2,
+    WorldTile3,
+    WorldTile4,
+    WorldTile5,
+    WorldTile6,
+    WorldTile7,
+    WorldTile8,
+    /// The compass along the top of the view
+    Compass,
     /// HUD messages, objectives and subtitles, in front of the head
     HudHead,
     /// Health bar and compass, on the back of the right hand
@@ -99,7 +112,10 @@ namespace dxvk {
     PipBoyLampBar,
   };
 
-  constexpr uint32_t VrPanelCount = 11;
+  constexpr uint32_t VrPanelCount = 21;
+
+  /// How many HUD tiles anchored in the world are shown at the same time
+  constexpr uint32_t VrWorldTileCount = 9;
 
   /**
    * \brief What a panel's pose is relative to
