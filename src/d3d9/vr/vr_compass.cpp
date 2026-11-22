@@ -1,5 +1,7 @@
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
+#include <string>
 
 #include "../../util/log/log.h"
 
@@ -56,6 +58,20 @@ namespace dxvk {
       }
 
       return readField<uintptr_t>(target, VrGame::TargetRef);
+    }
+
+    // A line about an objective target for the log: its reference, its
+    // teleport links and the reference shown
+    void describeTarget(std::string& out, uintptr_t target, uintptr_t shown, const VrVector3& at) {
+      uintptr_t ref = readField<uintptr_t>(target, VrGame::TargetRef);
+      uint32_t links = readField<uint32_t>(target + VrGame::TargetTeleportLinks, VrGame::SimpleArrayCount);
+      char line[160];
+      // Without the place, which changes while a target walks
+      (void)at;
+      std::snprintf(line, sizeof(line), " [target %08X, %u door(s), shown %08X]",
+        ref ? readField<uint32_t>(ref, VrGame::FormId) : 0u, links,
+        shown ? readField<uint32_t>(shown, VrGame::FormId) : 0u);
+      out += line;
     }
 
     // The interior's north, from its ExtraNorthRotation; 0 outside
@@ -123,6 +139,7 @@ namespace dxvk {
       return;
 
     m_north = cellNorth(player);
+    std::string described;
 
     // The active quest objective's targets: a list whose nodes hold a
     // target and the next node, the first node inside the player
@@ -136,8 +153,12 @@ namespace dxvk {
       Target found;
       found.kind = VrCompassMarkerKind::Quest;
 
-      if (target && readPosition(targetRef(target), found.position))
+      uintptr_t shown = target ? targetRef(target) : 0;
+
+      if (shown && readPosition(shown, found.position)) {
         m_targets.push_back(found);
+        describeTarget(described, target, shown, found.position);
+      }
 
       node = readField<uintptr_t>(node, sizeof(uintptr_t));
     }
@@ -147,12 +168,27 @@ namespace dxvk {
     Target custom;
     custom.kind = VrCompassMarkerKind::Custom;
 
-    if (readField<uintptr_t>(placed, VrGame::TargetRef) && readPosition(targetRef(placed), custom.position))
+    uintptr_t placedShown = readField<uintptr_t>(placed, VrGame::TargetRef) ? targetRef(placed) : 0;
+
+    if (placedShown && readPosition(placedShown, custom.position)) {
       m_targets.push_back(custom);
+      described += " placed marker";
+      describeTarget(described, placed, placedShown, custom.position);
+    }
+
+    // Logged when what the compass points at changes, for comparing with the game's compass
+    char north[48];
+    std::snprintf(north, sizeof(north), ", north %.3f", m_north);
+    described += north;
+
+    if (described != m_loggedTargets) {
+      Logger::info(str::format("VR: Compass:", described.empty() ? std::string(" no target") : described));
+      m_loggedTargets = described;
+    }
   }
 
 
-  void VrCompass::show(bool shown, float heading, const std::vector<VrWorldTileInfo>& tiles) {
+  void VrCompass::show(bool shown, float heading, const std::vector<VrWorldTileInfo>& tiles, const VrFov& fov) {
     if (!shown || !m_available || m_failed || !m_config.enabled) {
       hide();
       return;
@@ -232,10 +268,18 @@ namespace dxvk {
     }
 
     // Fixed to the head: given again for a new image or after it was hidden,
-    // as the runtime takes the image when it is given
+    // as the runtime takes the image when it is given; moved when the field
+    // of view changes
+    VrCompassPlacement place = vrCompassPlace(m_config, fov);
+    bool moved = std::fabs(place.angle - m_place.angle) > 0.05f || std::fabs(place.elevation - m_place.elevation) > 0.05f;
+
     if (!m_placed || !m_panel.shown()) {
-      m_panel.show(vrCompassPose(m_config), vrCompassWidth(m_config), VrPanelAnchor::Head);
+      m_panel.show(vrCompassPose(m_config, place), vrCompassWidth(m_config, place), VrPanelAnchor::Head);
       m_placed = true;
+      m_place  = place;
+    } else if (moved) {
+      m_panel.move(vrCompassPose(m_config, place), vrCompassWidth(m_config, place), VrPanelAnchor::Head);
+      m_place  = place;
     }
   }
 

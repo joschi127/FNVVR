@@ -926,7 +926,7 @@ namespace dxvk {
     void isolateHud();
 
     // Shows the tiles anchored in the world and the compass, or hides them
-    void showWorldHud();
+    void showWorldHud(const std::array<VrEyeView, VrEyeCount>& views);
 
     bool createInterfaceTextures();
 

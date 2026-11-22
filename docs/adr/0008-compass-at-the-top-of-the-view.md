@@ -37,7 +37,11 @@ B, drawn with the game's own pictures so that it looks and feels like the game's
   the same without the co-op mod. Markers outside the strip stay at its nearer end, fainter.
 - In an interior the cell's own north is used, as on the game's compass.
 - The compass on the hand stays.
-- Size, place and colours are `dxvk.conf` options (`d3d9.vrCompass*`); on by default.
+- Size and place follow the field of view the headset reports (the maintainer often plays with a field of
+  view reduced in Virtual Desktop): the width is a share of the horizontal field of view, the top edge a share
+  of its upper half. `dxvk.conf` overrides them in degrees (`auto` or not set: from the field of view); the dark
+  band behind the strip can be switched off and its opacity set. Colours too are `dxvk.conf` options
+  (`d3d9.vrCompass*`); on by default.
 - Requested and rejected: labels set in `dxvk.conf` (for example German N, NO, O, ...). The game's strip has
   its labels drawn in; the maintainer chose its look over changeable labels. Without the strip picture the
   compass draws marks and English labels of its own in the same style.

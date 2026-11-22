@@ -972,7 +972,7 @@ namespace dxvk {
     else
       hideHandHud();
 
-    showWorldHud();
+    showWorldHud(views);
 
     // A menu keeps its last image for a frame where it was not drawn. The
     // console's terminal stands in front of the menu it is opened from,
@@ -3288,7 +3288,7 @@ namespace dxvk {
   }
 
 
-  void VrStereoRenderer::showWorldHud() {
+  void VrStereoRenderer::showWorldHud(const std::array<VrEyeView, VrEyeCount>& views) {
     // In the world with the HUD shown in front of the head, not over a menu
     bool shown = m_layer == InterfaceLayer::Hud && m_hudRendered && m_hasReference && m_hasHeadPose;
 
@@ -3303,8 +3303,18 @@ namespace dxvk {
           vrComputeEyeInReference(m_reference, m_headPose), VrGameUnitsPerMetre));
       }
 
+      // Both eyes' field of view together
+      VrFov fov = views[0].fov;
+
+      for (const VrEyeView& view : views) {
+        fov.angleLeft  = std::min(fov.angleLeft, view.fov.angleLeft);
+        fov.angleRight = std::max(fov.angleRight, view.fov.angleRight);
+        fov.angleUp    = std::max(fov.angleUp, view.fov.angleUp);
+        fov.angleDown  = std::min(fov.angleDown, view.fov.angleDown);
+      }
+
       static const std::vector<VrWorldTileInfo> NoTiles;
-      m_compass->show(shown, heading, m_worldTiles ? m_worldTiles->tiles() : NoTiles);
+      m_compass->show(shown, heading, m_worldTiles ? m_worldTiles->tiles() : NoTiles, fov);
     }
   }
 

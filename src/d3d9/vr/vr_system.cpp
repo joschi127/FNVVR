@@ -2,6 +2,7 @@
 #include <tlhelp32.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
 #include <cwctype>
 #include <memory>
@@ -193,10 +194,33 @@ namespace dxvk {
     VrCompassConfig& compass = panel.compass;
     compass.enabled   = config.getOption<bool>("d3d9.vrCompass", compass.enabled);
     compass.span      = std::clamp(config.getOption<float>("d3d9.vrCompassSpan", compass.span), 30.0f, 360.0f);
-    compass.angle     = std::clamp(config.getOption<float>("d3d9.vrCompassAngle", compass.angle), 10.0f, 90.0f);
-    compass.elevation = std::clamp(config.getOption<float>("d3d9.vrCompassElevation", compass.elevation), -60.0f, 60.0f);
-    compass.distance  = std::clamp(config.getOption<float>("d3d9.vrCompassDistance", compass.distance), 0.3f, 10.0f);
-    compass.backdrop  = std::clamp(config.getOption<float>("d3d9.vrCompassBackdrop", compass.backdrop), 0.0f, 1.0f);
+    // Width and top edge in degrees, or "auto" (or not set): from the headset's field of view
+    auto degreesOrAuto = [&] (const char* name, float low, float high) {
+      std::string text = config.getOption<std::string>(name, "");
+
+      if (text.empty() || text == "auto" || text == "Auto")
+        return 0.0f;
+
+      char* end = nullptr;
+      float value = std::strtof(text.c_str(), &end);
+
+      if (!end || *end != '\0' || !std::isfinite(value)) {
+        Logger::warn(str::format("VR: ", name, " '", text, "' is neither a number nor auto, auto is used"));
+        return 0.0f;
+      }
+
+      // 0 means auto, so a fixed value keeps away from it
+      value = std::clamp(value, low, high);
+      return value == 0.0f ? 0.01f : value;
+    };
+
+    compass.angle      = degreesOrAuto("d3d9.vrCompassAngle", 10.0f, 120.0f);
+    compass.top        = degreesOrAuto("d3d9.vrCompassTop", -60.0f, 80.0f);
+    compass.widthShare = std::clamp(config.getOption<float>("d3d9.vrCompassWidthShare", compass.widthShare), 0.05f, 1.0f);
+    compass.topShare   = std::clamp(config.getOption<float>("d3d9.vrCompassTopShare", compass.topShare), -1.0f, 1.0f);
+    compass.distance   = std::clamp(config.getOption<float>("d3d9.vrCompassDistance", compass.distance), 0.3f, 10.0f);
+    compass.backdrop   = config.getOption<bool>("d3d9.vrCompassBackdrop", compass.backdrop);
+    compass.backdropOpacity = std::clamp(config.getOption<float>("d3d9.vrCompassBackdropOpacity", compass.backdropOpacity), 0.0f, 1.0f);
 
     // A colour as RRGGBB; DXVK gives an empty text for an option not set
     std::string friendColour = config.getOption<std::string>("d3d9.vrCompassFriendColour", "");

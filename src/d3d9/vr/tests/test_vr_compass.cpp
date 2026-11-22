@@ -50,7 +50,7 @@ TEST_CASE(compass_places_the_heading_in_the_middle_and_holds_markers_at_the_ends
 
 TEST_CASE(compass_draws_markers_where_their_bearing_is) {
   VrCompassConfig config;
-  config.backdrop = 0.0f;
+  config.backdrop = false;
   VrPaintList list(VrCompassImage::Width, VrCompassImage::Height);
   VrColour amber = { 1.0f, 0.7f, 0.2f, 1.0f };
 
@@ -68,7 +68,7 @@ TEST_CASE(compass_draws_markers_where_their_bearing_is) {
 
 TEST_CASE(compass_friend_marker_is_in_the_friend_colour) {
   VrCompassConfig config;
-  config.backdrop = 0.0f;
+  config.backdrop = false;
   config.friendColour = 0x00FF00;
   VrPaintList list(VrCompassImage::Width, VrCompassImage::Height);
 
@@ -81,11 +81,46 @@ TEST_CASE(compass_friend_marker_is_in_the_friend_colour) {
 }
 
 
+TEST_CASE(compass_size_and_place_follow_the_field_of_view) {
+  VrCompassConfig config;
+  VrFov fov;
+  fov.angleLeft  = degrees(-50.0f);
+  fov.angleRight = degrees(50.0f);
+  fov.angleUp    = degrees(45.0f);
+  fov.angleDown  = degrees(-50.0f);
+
+  // Shares of the view: 45 % of 100 degrees wide, top edge at 80 % of 45 degrees
+  VrCompassPlacement place = vrCompassPlace(config, fov);
+  float height = 45.0f * float(VrCompassImage::Height) / float(VrCompassImage::Width);
+  CHECK_NEAR(place.angle, 45.0, 1.0e-3);
+  CHECK_NEAR(place.elevation, 36.0 - 0.5 * height, 1.0e-3);
+
+  // A narrower view (Virtual Desktop's reduced field of view): smaller and lower
+  fov.angleLeft = degrees(-35.0f);
+  fov.angleRight = degrees(35.0f);
+  fov.angleUp = degrees(30.0f);
+  VrCompassPlacement narrow = vrCompassPlace(config, fov);
+  CHECK(narrow.angle < place.angle && narrow.elevation < place.elevation);
+
+  // Fixed angles override the view
+  config.angle = 50.0f;
+  config.top   = 20.0f;
+  VrCompassPlacement fixed = vrCompassPlace(config, fov);
+  CHECK_NEAR(fixed.angle, 50.0, 1.0e-4);
+  CHECK_NEAR(fixed.elevation, 20.0 - 25.0 * float(VrCompassImage::Height) / float(VrCompassImage::Width), 1.0e-3);
+
+  // An unknown view
+  VrCompassConfig unset;
+  CHECK_NEAR(vrCompassPlace(unset, VrFov()).angle, 40.0, 1.0e-4);
+}
+
+
 TEST_CASE(compass_strip_is_above_the_eyes_and_faces_them) {
   VrCompassConfig config;
-  config.elevation = 30.0f;
   config.distance  = 2.0f;
-  VrPose pose = vrCompassPose(config);
+  VrCompassPlacement place;
+  place.elevation = 30.0f;
+  VrPose pose = vrCompassPose(config, place);
 
   CHECK_NEAR(pose.position.y, 1.0, 1.0e-4);
   CHECK(pose.position.z < 0.0f);

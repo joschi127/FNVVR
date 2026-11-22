@@ -21,15 +21,22 @@ namespace dxvk {
     /// Degrees of heading across the strip; the game's own compass shows
     /// about 120 (345 of the 1024 pixels of its strip)
     float span      = 120.0f;
-    /// Width of the strip as an angle of the view, in degrees
-    float angle     = 40.0f;
-    /// How far above the middle of the view the strip is, in degrees
-    float elevation = 24.0f;
+    /// Width of the strip as an angle of the view, in degrees; 0: a share
+    /// of the field of view the headset reports (widthShare)
+    float angle     = 0.0f;
+    /// How far above the middle of the view the strip's top edge is, in
+    /// degrees; 0: a share of the upper half of the field of view (topShare)
+    float top       = 0.0f;
+    /// Width as a share of the horizontal field of view, when angle is 0
+    float widthShare = 0.45f;
+    /// Top edge as a share of the upper half of the field of view, when top is 0
+    float topShare   = 0.8f;
     /// Distance from the head, in metres
     float distance  = 1.5f;
-    /// Opacity of the dark band behind the strip, which keeps it readable
-    /// against a bright sky
-    float backdrop  = 0.25f;
+    /// A dark band behind the strip, which keeps it readable against a
+    /// bright sky, and its opacity
+    bool  backdrop        = true;
+    float backdropOpacity = 0.25f;
     /// Colour of friends' markers, 0xRRGGBB, green as the game's companions;
     /// the others take the HUD's colour
     uint32_t friendColour = 0x4CE04C;
@@ -119,15 +126,35 @@ namespace dxvk {
     const VrCompassPictures& pictures);
 
   /**
+   * \brief Size and place of the strip in the view
+   */
+  struct VrCompassPlacement {
+    /// Width as an angle, in degrees
+    float angle     = 40.0f;
+    /// Elevation of its centre above the view's middle, in degrees
+    float elevation = 24.0f;
+  };
+
+  /**
+   * \brief Size and place of the strip for a field of view
+   *
+   * \param [in] config Compass settings: fixed angles, or shares of the view
+   * \param [in] fov The field of view of both eyes together, in radians
+   *    (left and down negative); all zero when not known, which gives a
+   *    40 degree strip with its top 30 degrees up
+   */
+  VrCompassPlacement vrCompassPlace(const VrCompassConfig& config, const VrFov& fov);
+
+  /**
    * \brief Pose of the strip relative to the head
    *
    * Centred above the view's middle by the elevation, tilted to face the eye.
    */
-  VrPose vrCompassPose(const VrCompassConfig& config);
+  VrPose vrCompassPose(const VrCompassConfig& config, const VrCompassPlacement& place);
 
   /**
    * \brief Width of the strip, in metres
    */
-  float vrCompassWidth(const VrCompassConfig& config);
+  float vrCompassWidth(const VrCompassConfig& config, const VrCompassPlacement& place);
 
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <vector>
 
 #include "vr_compass_layout.h"
@@ -44,8 +45,10 @@ namespace dxvk {
      * \param [in] shown Whether the HUD is shown in the world now
      * \param [in] heading Heading the head faces in the game world, radians, 0 north, clockwise
      * \param [in] tiles Tiles anchored in the world, for friends' markers
+     * \param [in] fov The field of view of both eyes together, for the
+     *    strip's size and place (all zero when not known)
      */
-    void show(bool shown, float heading, const std::vector<VrWorldTileInfo>& tiles);
+    void show(bool shown, float heading, const std::vector<VrWorldTileInfo>& tiles, const VrFov& fov);
 
     void hide();
 
@@ -68,12 +71,14 @@ namespace dxvk {
     // Read every few frames: the game moves its targets rarely
     std::vector<Target> m_targets;
     float             m_north = 0.0f;
+    std::string       m_loggedTargets;
 
     // What the image shows, to draw it only when it changes
     std::vector<VrCompassMarker> m_shownMarkers;
     float             m_shownHeading = -100.0f;
     bool              m_drawn = false;
     bool              m_placed = false;
+    VrCompassPlacement m_place;
 
     void readTargets();
 

@@ -204,10 +204,10 @@ namespace dxvk {
     list.clear();
 
     // A dark band behind the strip, round at its ends
-    if (config.backdrop > 0.0f) {
+    if (config.backdrop && config.backdropOpacity > 0.0f) {
       float bandBottom = StripY + (StripBottom - StripTop) * stripRowScale(config, width);
       list.fillRoundedRect(0.0f, StripY, width, bandBottom, 0.5f * (bandBottom - StripY),
-        { 0.0f, 0.0f, 0.0f, config.backdrop });
+        { 0.0f, 0.0f, 0.0f, config.backdropOpacity });
     }
 
     if (pictures.strip)
@@ -287,8 +287,27 @@ namespace dxvk {
   }
 
 
-  VrPose vrCompassPose(const VrCompassConfig& config) {
-    float e = config.elevation * Pi / 180.0f;
+  VrCompassPlacement vrCompassPlace(const VrCompassConfig& config, const VrFov& fov) {
+    constexpr float Degrees = 180.0f / 3.14159265f;
+    float horizontal = (fov.angleRight - fov.angleLeft) * Degrees;
+    float up = fov.angleUp * Degrees;
+
+    VrCompassPlacement place;
+    place.angle = config.angle > 0.0f ? config.angle
+      : horizontal > 1.0f ? std::clamp(config.widthShare, 0.05f, 1.0f) * horizontal : 40.0f;
+
+    float top = config.top != 0.0f ? config.top
+      : up > 1.0f ? std::clamp(config.topShare, -1.0f, 1.0f) * up : 30.0f;
+
+    // The strip's height as an angle, from its image's aspect
+    float height = place.angle * float(VrCompassImage::Height) / float(VrCompassImage::Width);
+    place.elevation = top - 0.5f * height;
+    return place;
+  }
+
+
+  VrPose vrCompassPose(const VrCompassConfig& config, const VrCompassPlacement& place) {
+    float e = place.elevation * Pi / 180.0f;
 
     // The head looks along -Z with +Y up; the panel faces along its +Z,
     // tilted about X by the elevation to face the eye
@@ -299,8 +318,8 @@ namespace dxvk {
   }
 
 
-  float vrCompassWidth(const VrCompassConfig& config) {
-    return 2.0f * config.distance * std::tan(0.5f * config.angle * Pi / 180.0f);
+  float vrCompassWidth(const VrCompassConfig& config, const VrCompassPlacement& place) {
+    return 2.0f * config.distance * std::tan(0.5f * place.angle * Pi / 180.0f);
   }
 
 }
