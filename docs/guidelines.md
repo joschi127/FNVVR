@@ -30,6 +30,11 @@ the go itself as a dialog question as well. The same applies to every action wit
 changes in the game or documents folder, pushes, new repositories, posts): ask for the go in the dialog
 first, never assume it from an earlier answer.
 
+Recommended after larger sessions with new code: an AI code review with fresh context (a reviewer that did
+not write the code, for example a new agent or Claude Code's `/code-review`), before the first game test
+and at the latest before pushing. Focus on correctness (threads, lifetimes, error paths, licences), verify
+each finding before acting on it, and fix in separate commits. A review does not replace a game test.
+
 A wish about direction ("do it properly", "the long-term way") is not a go to implement. Read-only research
 to make the plan factual is fine before the go. Exceptions: bug fixes with an obvious cause and remedy, and
 small changes the maintainer asked for in exactly that form (for example a text change). Values meant for
