@@ -162,6 +162,9 @@ presets (see its README).
   [docs/testing/vr-test-channel.md](testing/vr-test-channel.md)) sets head and hand poses, presses
   actions, aims at panels and captures eyes and panels through FNVVR's own named pipe. It and the bridge
   are each optional and neither needs the co-op mod; the Python tools in FNVVR-Test-Bridge speak both.
+- **Headset sessions with the maintainer** follow the guided flow in FNVVR-Test-Bridge's
+  [docs/headset-sessions.md](https://github.com/joschi127/FNVVR-Test-Bridge/blob/main/docs/headset-sessions.md): greeting, short numbered steps in the HUD, questions
+  in the game's message box, the hands-up signal for "done", thanks; several topics in one session.
 - **Nothing automated tests the real game together with the co-op mod yet.** Building that harness
   is the first task of this fork ([ADR 0002](adr/0002-headless-ai-testing-first.md)). Until then a
   green unit test run says nothing about hooks, addresses or the co-op interplay; that needs a game

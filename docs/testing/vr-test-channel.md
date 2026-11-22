@@ -5,6 +5,8 @@ of the test split in [ADR 0007](../adr/0007-where-test-automation-lives.md): the
 FNVVR, the game side (console commands, values) in
 [FNVVR-Test-Bridge](https://github.com/joschi127/FNVVR-Test-Bridge), whose Python tools speak both
 channels. Each channel works on its own: this one needs neither xNVSE nor the bridge nor the co-op mod.
+With a person in the headset, the tools run a guided session (HUD steps, questions, the hands-up signal
+counted here): see FNVVR-Test-Bridge's [guided headset sessions](https://github.com/joschi127/FNVVR-Test-Bridge/blob/main/docs/headset-sessions.md).
 
 ## Switching it on
 
