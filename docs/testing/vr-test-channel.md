@@ -23,8 +23,14 @@ It works with every backend:
 - **Emulator**: the usual case for automated tests. With the test channel on, the emulator's controllers drive
   the game as a headset's do (actions, sticks, the laser on the menu panel); without it the emulator keeps its
   keyboard gamepad. Set `d3d9.vrEmulatorRunWithoutFocus = True` as well, or the game stalls whenever another
-  window has the focus. The emulator's preview window shows the eyes only, not the panels: look at menus with
-  `capture panel`.
+  window has the focus.
+
+  What the screen shows in the emulator: the game's window shows a flat view of the world, and the preview
+  window ("VR preview") the two eye images FNVVR hands to the VR runtime. In VR the menus, the Pip-Boy on a
+  panel, the HUD and the lamp bar are not drawn into those images but handed over as separate panels, which a
+  real runtime (SteamVR) composites into the headset's view. The emulator has no compositor, so neither window
+  shows the panels; the wrist Pip-Boy is part of the 3D scene and does show. Look at panels with
+  `capture panel <panel> <file>`.
 - **OpenVR with SteamVR's null driver**: the real OpenVR path without a headset.
 - **OpenVR with a headset**: allowed, for example to press actions while a person watches. A set head
   pose makes the image disagree with the real head, so leave the head alone there.
