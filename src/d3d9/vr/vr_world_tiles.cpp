@@ -32,10 +32,11 @@ namespace dxvk {
     // Height of the capitals, in pixels of the image
     constexpr float    Capitals    = 30.0f;
 
-    // A shown tile is given again once it moved by this share of its
-    // distance (a fifth of a degree) or turned by about half a degree
-    constexpr float    MoveToShow = 0.0035f;
-    constexpr float    TurnToShow = 0.99999f;
+    // A shown tile is placed anew whenever it moved by more than this share
+    // of its distance (a few hundredths of a degree) or turned at all: moving
+    // costs no image, and steps were seen as jumps in the headset
+    constexpr float    MoveToShow = 0.0005f;
+    constexpr float    TurnToShow = 0.9999999f;
 
     // Frames a slot stays unused before it lets go of its texture (about 10 s)
     constexpr uint32_t ReleaseAfterFrames = 900;
@@ -379,7 +380,7 @@ namespace dxvk {
         slot.placed     = true;
         slot.shownPose  = place.pose;
         slot.shownWidth = place.width;
-      } else if (vrLength(moved) > MoveToShow * place.distance || turned < TurnToShow
+      } else if (vrLength(moved) > MoveToShow * std::min(place.distance, m_config.maxDistance) || turned < TurnToShow
        || std::fabs(place.width - slot.shownWidth) > 0.01f * place.width) {
         slot.panel->move(place.pose, place.width);
         slot.placed     = true;

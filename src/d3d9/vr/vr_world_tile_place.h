@@ -14,16 +14,17 @@ namespace dxvk {
    * A tile has a fixed size in the world, so that it grows and shrinks with
    * the person it stands over, at every distance. Beyond \c hideDistance it
    * is not shown (the compass shows a friend there). It stands at its anchor
-   * up to \c maxDistance from the head; farther away it stands at that
-   * distance on the line to the anchor, made as much smaller as it is
-   * nearer, so that it looks the same while the eyes do not converge on
-   * something much farther than the scene around it.
+   * up to \c maxDistance from the head (by default as far as it is shown);
+   * farther away it would stand at that distance on the line to the anchor,
+   * made as much smaller as it is nearer. Standing at the anchor, it moves
+   * with the person when the head moves (a nearer stand-in seemed to jump in
+   * the headset, session h06).
    */
   struct VrWorldTileConfig {
     /// Show tiles anchored in the world at all
     bool  enabled      = true;
     /// Farthest a tile stands from the head, in metres
-    float maxDistance  = 20.0f;
+    float maxDistance  = 50.0f;
     /// Beyond this distance of its anchor a tile is not shown, in metres
     float hideDistance = 50.0f;
     /// Width of a tile's image in the world, in metres

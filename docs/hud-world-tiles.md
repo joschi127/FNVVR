@@ -36,8 +36,7 @@ SetUIFloat "HUDMainMenu/MyMark/user5" 1
 - Reads the HUD's top-level tiles once per frame on the game's main thread; up to 9 anchored tiles are shown.
 - Draws each tile's text with the game's font on its own panel at the anchor, facing the head
   (`d3d9.vrWorldTile*` in `dxvk.conf`). The panel has a fixed size in the world, so it grows and shrinks with
-  the person it stands over; beyond 50 m it is not shown. Beyond 20 m it stands at 20 m in the anchor's
-  direction, made as much smaller, so it looks the same while the eyes need not converge farther. The panels have no depth test: like the flat HUD, a tile shows through walls.
+  the person it stands over; beyond 50 m it is not shown. It stands at its anchor, so it moves with the person when the head moves. The panels have no depth test: like the flat HUD, a tile shows through walls.
 - A person's tile (`user6` = 1) is drawn in the friends' colour (`d3d9.vrFriendColour`, the green of an old
   phosphor screen, the same as their mark on the compass); in a colour of its own (a downed friend's red) it is
   drawn in `d3d9.vrFriendAlertColour`, a red like the Pip-Boy's lamps. The image stands on the anchor: text and
