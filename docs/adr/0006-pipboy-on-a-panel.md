@@ -25,9 +25,13 @@ mod as bloat); whether that changes after more play is the maintainer's decision
 - The Pip-Boy is still opened by looking at the wrist and pressing the button. While it is open, the texture the game
   draws its menus into is copied onto the flat menu panel the other menus use. The wrist keeps its screen.
 - The panel is placed straight ahead: where the head looked before it bent down to the wrist, at the head's place.
-- Only the part of the texture that holds the menus is shown (`d3d9.vrPipBoyPanelCropWidth` / `CropHeight`), with a
-  black border per side (`d3d9.vrPipBoyPanelMarginLeft` / `Top` / `Right` / `Bottom`) so that the menus' own frame
-  stands clear of the panel's edge. These are tuning values in `dxvk.conf`.
+- Only the part of the texture that holds the menus is shown, centred, with the dark rim around them that the wrist
+  screen shows too (`d3d9.vrPipBoyPanelCropLeft` / `Top` / `Right` / `Bottom`). It is widened to the panel's aspect,
+  so nothing is stretched. Around it a thin casing like the wrist's is drawn, as wide on every side
+  (`d3d9.vrPipBoyPanelFrame`), with rounded screen corners; it is blended over the copy. The laser maps through the
+  same crop. Tuning values in `dxvk.conf`. Large Pip-Boy text comes first: the casing stays thin. It is painted
+  once, at half the panel's size (a few MB for a moment; full size would cost about four times as much and looks the
+  same, the casing being a smooth shade). Checked in the emulator on ITEMS, STATS and DATA (runs c21, c22).
 - Looking away does not close it (looking at the panel would); B closes it.
 - A sign above the panel's top right corner shows "Close" and the game's B button image, drawn like the game's own
   text buttons (its menus' `text_box` prefab, as the container menu's Exit): text and button dimmed until a laser is
