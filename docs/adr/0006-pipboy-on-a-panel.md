@@ -62,3 +62,14 @@ mod as bloat); whether that changes after more play is the maintainer's decision
 - Tested in the headset on 2026-11-21 (runs c11): the panel is readable, the grips page, the laser clicks entries,
   B closes, the option turns the panel on and off. Open: the placement straight ahead, the border values, the
   grip images, the lamp bar, the wrist's painted buttons.
+
+## Update 2026-11-22: the item list's lower rows
+
+The laser could not point at the lower rows of the Pip-Boy's item list (from row 8 in the headset, from row 5
+in the emulator), while the buttons below worked. Cause: `InterfaceManager::PickMenus` tests the cursor on a
+rendered menu against the tile's clip rectangle and scales all four sides from units to pixels with the
+window's width over 1280; on a window narrower than 4:3 (every headset eye) the top and bottom come out short.
+FNVVR now gives those two multiplications the height's own scale on such windows; 4:3 and wider keep the
+game's factor. Found and checked with the test channels in the emulator (run c19): all rows take the pointer,
+also after scrolling, and drawing is unchanged.
+
