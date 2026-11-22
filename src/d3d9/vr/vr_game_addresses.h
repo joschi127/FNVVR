@@ -2045,6 +2045,20 @@ namespace dxvk {
      * the pick lands to the right of the pointed point. ida-gog.
      */
     constexpr uintptr_t RenderedMenuPickAspectSite = 0x007FB9B0;
+
+    /**
+     * InterfaceManager::PickMenus (0x007126C0) tests the cursor on a rendered
+     * menu against the clip rectangle of the tile under it: it scales the
+     * rectangle's four sides from units to pixels with
+     * Interface::GetRealScreenWidth / 1280 ([ebp-0x98]), the top and bottom
+     * too, with fmul dword ptr [ebp-0x98] at these two sites. On a window
+     * narrower than 4:3 the height then comes out short, and a list's lower
+     * rows (the Pip-Boy's items) fall outside the clip. Found in the running
+     * game's code.
+     */
+    constexpr uintptr_t PickClipTopSite    = 0x00712BF3;
+    constexpr uintptr_t PickClipBottomSite = 0x00712C0A;
+    constexpr uint8_t   PickClipScaleInstruction[] = { 0xD8, 0x8D, 0x68, 0xFF, 0xFF, 0xFF };
     constexpr uintptr_t PipBoyPickAspectSite       = 0x007F88EE;
     constexpr uint8_t   PickAspectInstruction[]    = { 0xDC, 0x0D, 0x28, 0x81, 0x07, 0x01 };
 

@@ -33,6 +33,9 @@ namespace dxvk {
     /// Read by the game's picks on rendered menus in place of its 4/3
     double g_pickAspect = VrInterfaceMinAspect;
 
+    /// Read by the cursor's clip test in PickMenus for the clip's top and bottom
+    float g_pickClipHeightScale = 1.0f;
+
     /// What the radial tiles' hit test reached before us
     uintptr_t g_radialContains = VrGame::RadialTileContains;
 
@@ -43,6 +46,7 @@ namespace dxvk {
       // The interface is laid out, so asks for its size, before anything
       // can be picked on it
       g_pickAspect = vrComputeRenderedMenuPickAspect(width, height);
+      g_pickClipHeightScale = float(vrComputePickClipHeightScale(width, height));
       return vrComputeInterfaceAspect(width, height);
     }
 
@@ -232,6 +236,21 @@ namespace dxvk {
     }
 
     Logger::info("VR: The interface is laid out at 4:3 at least and stretched over a narrower window");
+
+    // fmul dword ptr [g_pickClipHeightScale] for the clip's top and bottom
+    const uint8_t* clipStart = VrGame::PickClipScaleInstruction;
+    size_t clipLength = sizeof(VrGame::PickClipScaleInstruction);
+    uint8_t clipInstruction[sizeof(VrGame::PickClipScaleInstruction)] = { 0xD8, 0x0D };
+    uint32_t clipOperand = uint32_t(reinterpret_cast<uintptr_t>(&g_pickClipHeightScale));
+    std::memcpy(&clipInstruction[2], &clipOperand, sizeof(clipOperand));
+
+    bool clipFound = VrGameMemory::matches(VrGame::PickClipTopSite, clipStart, clipLength)
+      && VrGameMemory::matches(VrGame::PickClipBottomSite, clipStart, clipLength);
+
+    if (!clipFound
+     || !VrGameMemory::replaceCode(VrGame::PickClipTopSite, clipStart, clipInstruction, clipLength)
+     || !VrGameMemory::replaceCode(VrGame::PickClipBottomSite, clipStart, clipInstruction, clipLength))
+      Logger::warn("VR: The pick's clip test was not found, a list's lower rows may not take the pointer");
 
     if (!VrGameMemory::chainVirtual(VrGame::RadialTileContainsSlot, VrGame::RadialTileContains,
         reinterpret_cast<const void*>(&radialContains), &g_radialContains))

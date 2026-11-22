@@ -632,3 +632,14 @@ TEST_CASE(camera_blend_cuts_when_too_far) {
   checkVector(result.position, 500.0f, 0.0f, 0.0f);
   CHECK_NEAR(vrComputeCameraHeading(result), 1.0f, 1e-4);
 }
+
+
+TEST_CASE(pick_clip_height_scale_fixes_narrow_windows_only) {
+  // A narrow window: a unit of height is the window's height over 960
+  CHECK_NEAR(vrComputePickClipHeightScale(1440, 1600), 1600.0 / 960.0, 1e-5);
+  CHECK_NEAR(vrComputePickClipHeightScale(2292, 1884), 1884.0 / 960.0, 1e-5);
+  // 4:3 and wider keep the game's width over 1280
+  CHECK_NEAR(vrComputePickClipHeightScale(1280, 960), 1.0, 1e-5);
+  CHECK_NEAR(vrComputePickClipHeightScale(1920, 1080), 1920.0 / 1280.0, 1e-5);
+  CHECK_NEAR(vrComputePickClipHeightScale(0, 0), 1.0, 1e-5);
+}

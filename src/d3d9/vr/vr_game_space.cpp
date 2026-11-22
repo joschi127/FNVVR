@@ -356,6 +356,15 @@ namespace dxvk {
   }
 
 
+  double vrComputePickClipHeightScale(uint32_t width, uint32_t height) {
+    if (!width || !height)
+      return 1.0;
+
+    double widthScale = double(width) / 1280.0;
+    return widthScale / vrComputeRadialPickScaleY(width, height);
+  }
+
+
   double vrComputeRadialPickScaleY(uint32_t width, uint32_t height) {
     // Window aspect over interface aspect: 1 on a window 4:3 or wider
     return vrComputeRenderedMenuPickAspect(width, height) / double(VrInterfaceMinAspect);
