@@ -8,6 +8,7 @@
 #include "vr_crash_log.h"
 #include "vr_d3d9_bridge.h"
 #include "vr_frame_submitter.h"
+#include "vr_preview_panels.h"
 
 namespace dxvk {
 
@@ -103,6 +104,11 @@ namespace dxvk {
 
     if (!VrD3D9Bridge::queryImage(texture, op.texture, op.panel.image))
       return false;
+
+    // The emulator's preview draws the panels itself (no compositor), as
+    // in VrD3D9Bridge::submitPanel
+    if (VrPreviewPanels::enabled())
+      VrPreviewPanels::record(id, texture, pose, width, anchor, premultiplied);
 
     pinImage(texture);
 

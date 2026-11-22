@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <functional>
 #include <vector>
 
@@ -195,7 +196,20 @@ namespace dxvk {
     uint32_t          m_submittedFrames = 0;
     uint32_t          m_emptyFrames = 0;
     uint32_t          m_submittedPanels = 0;
-    bool              m_panelVisible[VrPanelCount] = { };
+    /// A flag read and written atomically, copyable with the backend
+    struct VisibleFlag {
+      std::atomic<bool> value = { false };
+
+      VisibleFlag() = default;
+      VisibleFlag(const VisibleFlag& other) : value(other.value.load()) { }
+      VisibleFlag& operator = (const VisibleFlag& other) { value = other.value.load(); return *this; }
+      VisibleFlag& operator = (bool visible) { value = visible; return *this; }
+      operator bool () const { return value.load(); }
+    };
+
+    // Written where panels are submitted (the submission thread, see
+    // VrFrameSubmitter), read by the preview on the game thread
+    VisibleFlag       m_panelVisible[VrPanelCount];
     bool              m_pointerVisible[VrHandCount] = { };
     VrPointerSubmission m_pointer[VrHandCount];
     float             m_haptic[VrHandCount] = { };
