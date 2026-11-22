@@ -46,8 +46,9 @@ mod as bloat); whether that changes after more play is the maintainer's decision
   STATS, ITEMS and DATA and their three knobs, read at run time from the player's own game texture (no game asset is
   shipped), the active view's knob lit with the game's button glow, and arrow tabs with the grips' names (LG, RG) in
   place of LT and RT. The knobs are clicked with the laser to switch the view: the view is paged to a step at a time
-  (LT/RT), each step pressed only once the game shows the last, as it ignores a press while it switches (headset run
-  h02: STATS to DATA ended on ITEMS before; fixed, emulator run c24).
+  (LT/RT), each step pressed shortly after the game shows the last (and again after 0.25 s without a change), as it
+  ignores a press while it switches (headset run h02: STATS to DATA ended on ITEMS before; fixed, emulator run c24;
+  headset run h03: the middle lamp stayed lit for about 0.3 s, the log names each step's time since the click).
 
 **Buttons in VR, panel or not:**
 - While the Pip-Boy is open, the grips page through the main views (they press LT and RT) and the triggers press LB

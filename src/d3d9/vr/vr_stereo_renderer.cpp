@@ -2918,10 +2918,15 @@ namespace dxvk {
 
 
   void VrStereoRenderer::pagePipBoy() {
-    int32_t step = m_pipBoyPager.update(currentPipBoyView(), m_controls.isPagingPipBoy(), pipBoyPagerClock());
+    float now = pipBoyPagerClock();
+    VrPipBoyView current = currentPipBoyView();
+    int32_t step = m_pipBoyPager.update(current, m_controls.isPagingPipBoy(), now);
 
-    if (step)
+    if (step) {
       m_controls.pagePipBoy(step);
+      Logger::info(str::format("VR: The Pip-Boy pages ", step > 0 ? "forward" : "back", " from view ",
+        uint32_t(current), ", ", uint32_t(std::round(1000.0f * m_pipBoyPager.elapsed(now))), " ms after the knob's click"));
+    }
   }
 
 

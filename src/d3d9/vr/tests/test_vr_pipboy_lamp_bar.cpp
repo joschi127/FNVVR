@@ -36,8 +36,9 @@ TEST_CASE(pager_presses_the_next_step_only_once_the_last_is_shown) {
   CHECK(pager.update(VrPipBoyView::Stats, false, 0.10f) == 0);
   CHECK(pager.update(VrPipBoyView::None,  false, 0.15f) == 0);
 
-  // ITEMS is shown: the second step
-  CHECK(pager.update(VrPipBoyView::Items, false, 0.20f) == 1);
+  // ITEMS is shown: the second step once it has settled
+  CHECK(pager.update(VrPipBoyView::Items, false, 0.20f) == 0);
+  CHECK(pager.update(VrPipBoyView::Items, false, 0.20f + VrPipBoyPager::SettleAfter + 0.005f) == 1);
   CHECK(pager.update(VrPipBoyView::Items, false, 0.30f) == 0);
 
   // DATA reached: done

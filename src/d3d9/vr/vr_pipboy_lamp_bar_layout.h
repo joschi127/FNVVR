@@ -64,15 +64,17 @@ namespace dxvk {
    * \brief Pages the Pip-Boy to a wanted view, one step at a time
    *
    * The game takes a press of LT or RT while it switches views as no press,
-   * so the next step is pressed only once the game shows the view the last
-   * one went to, or after \c RetryAfter seconds without a change. A wanted
-   * view that is not reached within \c GiveUpAfter seconds is dropped.
+   * so the next step is pressed only \c SettleAfter seconds after the game
+   * shows the view the last one went to, or again after \c RetryAfter
+   * seconds without a change. A wanted view that is not reached within
+   * \c GiveUpAfter seconds is dropped.
    */
   class VrPipBoyPager {
 
   public:
 
-    static constexpr float RetryAfter  = 0.5f;
+    static constexpr float SettleAfter = 0.035f;
+    static constexpr float RetryAfter  = 0.25f;
     static constexpr float GiveUpAfter = 3.0f;
 
     /// Pages to \c view from now on
@@ -82,6 +84,9 @@ namespace dxvk {
     void cancel() { m_target = VrPipBoyView::None; }
 
     bool active() const { return m_target != VrPipBoyView::None; }
+
+    /// Seconds since start(), for the log
+    float elapsed(float now) const { return now - m_started; }
 
     /**
      * \brief The step to press now
@@ -99,6 +104,8 @@ namespace dxvk {
     VrPipBoyView m_pressedAt = VrPipBoyView::None;
     float        m_started   = 0.0f;
     float        m_pressTime = 0.0f;
+    VrPipBoyView m_seen      = VrPipBoyView::None;
+    float        m_seenTime  = 0.0f;
 
   };
 

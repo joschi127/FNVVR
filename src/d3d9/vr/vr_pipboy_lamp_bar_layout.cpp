@@ -26,6 +26,7 @@ namespace dxvk {
   void VrPipBoyPager::start(VrPipBoyView view, float now) {
     m_target    = view;
     m_pressedAt = VrPipBoyView::None;
+    m_seen      = VrPipBoyView::None;
     m_started   = now;
   }
 
@@ -41,6 +42,15 @@ namespace dxvk {
 
     // Between two views, or the last press not done: wait
     if (current == VrPipBoyView::None || pressing)
+      return 0;
+
+    // A view the game has just switched to takes no press yet
+    if (current != m_seen) {
+      m_seen     = current;
+      m_seenTime = now;
+    }
+
+    if (m_pressedAt != VrPipBoyView::None && current != m_pressedAt && now - m_seenTime < SettleAfter)
       return 0;
 
     // The last step not shown yet: wait for it a while, then press again
