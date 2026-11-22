@@ -91,3 +91,8 @@ values and console text back, without changing saves. Where this lives is decide
 expressions, console text in the reply, off by default, no performance cost when off). It replaces the
 "console `bat` files or the co-op lab channel" mentioned for game-level actions in layer 3 above; the co-op
 lab channel was looked at first and is not used.
+
+The VR side of layer 2 exists as the VR test channel ([docs/testing/vr-test-channel.md](../testing/vr-test-channel.md),
+`d3d9.vrTestChannel`): poses, actions, aiming at panels and captures through a named pipe, with the
+emulator, SteamVR's null driver or a headset. It replaces the `d3d9.vrTestScript` idea above: tests are
+driven step by step through the pipe instead of a timed script file.

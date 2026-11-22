@@ -30,16 +30,22 @@ Test automation is split by what it touches; each part lives where that knowledg
 
 | Part | Lives in | Contents |
 |---|---|---|
-| VR side | FNVVR (this repository) | Emulator backend, test script for emulated head and controllers, captures of eye images and panels, log markers ([ADR 0002](0002-headless-ai-testing-first.md) layer 2). Test-only options, off by default. |
-| Game side | [FNVVR-Test-Bridge](https://github.com/joschi127/FNVVR-Test-Bridge) (own repository, zlib) | xNVSE plugin: named pipe for the current Windows user on the same PC, runs console lines and `eval` expressions on the main thread, answers with the console text and `ok`/`err`. Off unless its INI says `Enabled=1`. Python client `tools/bridge.py`. |
+| VR side | FNVVR (this repository) | The VR test channel ([docs/testing/vr-test-channel.md](../testing/vr-test-channel.md)): `d3d9.vrTestChannel`, off by default, a layer in front of the real backend with its own named pipe; head and hand poses, named actions, sticks, aiming at panels, waiting for frames, captures of eyes and panels. Works with the emulator, SteamVR's null driver and a headset. |
+| Game side | [FNVVR-Test-Bridge](https://github.com/joschi127/FNVVR-Test-Bridge) (own repository, zlib) | xNVSE plugin: named pipe for the current Windows user on the same PC, runs console lines and `eval` expressions on the main thread, answers with the console text and `ok`/`err`. Off unless its INI says `Enabled=1`. Python tools `tools/fnvtest.py` and `tools/fnvtest/` for both channels. |
 | Co-op side | Co-op mod / [FNVVR-Coop-Compat](https://github.com/joschi127/FNVVR-Coop-Compat) | `fakefriend`, fake lag, second-copy mode, co-op debug commands, as they are. |
 | Orchestration | Generic parts public, machine details in the maintainer's local notes | Start a run, back up and restore, collect logs, verdict (ADR 0002). Helper scripts in Python. |
 
 The co-op mod's lab channel is not used; it stays off (`LabChannel=0`).
 
+Both channels are independent of each other and of the co-op mod: the VR channel needs only FNVVR, the
+game channel only xNVSE and the bridge. The Python tools (in FNVVR-Test-Bridge) use whichever channels a
+test needs; both channels report a frame number, and the tools measure the offset between them so a test
+can use one numbering.
+
 Requirements for FNVVR-Test-Bridge (maintainer, 2026-11-22):
 
 - run console commands and read values back (expression results and the console's printed text);
+- usable for FNVVR alone; the co-op mod is optional;
 - test changes stay in memory; nothing is saved unless someone saves;
 - **no performance cost**: with `Enabled=0` the plugin does nothing at all; enabled and idle it does one
   atomic load per frame. Whether enabled-and-idle is measurable has to be checked (frame times off against
