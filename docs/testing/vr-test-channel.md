@@ -28,9 +28,10 @@ It works with every backend:
   What the screen shows in the emulator: the game's window shows a flat view of the world, and the preview
   window ("VR preview") the two eye images FNVVR hands to the VR runtime. In VR the menus, the Pip-Boy on a
   panel, the HUD and the lamp bar are not drawn into those images but handed over as separate panels, which a
-  real runtime (SteamVR) composites into the headset's view. The emulator has no compositor, so neither window
-  shows the panels; the wrist Pip-Boy is part of the 3D scene and does show. Look at panels with
-  `capture panel <panel> <file>`.
+  real runtime (SteamVR) composites into the headset's view. The emulator has no compositor of its own, so its
+  preview window draws the panels and the lasers itself (`d3d9.vrPreviewPanels`, default on); the game's
+  window shows neither. `capture panel <panel> <file>` gives a panel's own image, `capture eyes` the eyes
+  without panels.
 - **OpenVR with SteamVR's null driver**: the real OpenVR path without a headset.
 - **OpenVR with a headset**: allowed, for example to press actions while a person watches. A set head
   pose makes the image disagree with the real head, so leave the head alone there.
