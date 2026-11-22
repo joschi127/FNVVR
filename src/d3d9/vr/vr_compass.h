@@ -30,6 +30,13 @@ namespace dxvk {
 
     VrCompass(VrPainter& painter, IVRBackend& backend, VrGameImages& images);
 
+    /**
+     * \brief Shows the panel through the renderer's frame submitter
+     */
+    void setSubmitter(VrFrameSubmitter* submitter) {
+      m_panel.setSubmitter(submitter);
+    }
+
     ~VrCompass();
 
     /**

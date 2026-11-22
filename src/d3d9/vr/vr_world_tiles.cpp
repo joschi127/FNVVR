@@ -239,8 +239,10 @@ namespace dxvk {
     if (!font)
       return false;
 
-    if (!slot.panel)
+    if (!slot.panel) {
       slot.panel = std::make_unique<VrPaintPanel>(m_painter, m_backend, VrPanelId(uint32_t(VrPanelId::WorldTile0) + uint32_t(&slot - m_slots.data())));
+      slot.panel->setSubmitter(m_submitter);
+    }
 
     std::vector<std::string> lines = vrTileTextLines(info.text);
     // A person's pointer line becomes their mark, as on the compass
@@ -387,6 +389,16 @@ namespace dxvk {
         slot.shownPose  = place.pose;
         slot.shownWidth = place.width;
       }
+    }
+  }
+
+
+  void VrWorldTiles::setSubmitter(VrFrameSubmitter* submitter) {
+    m_submitter = submitter;
+
+    for (Slot& slot : m_slots) {
+      if (slot.panel)
+        slot.panel->setSubmitter(submitter);
     }
   }
 

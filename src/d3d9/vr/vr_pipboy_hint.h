@@ -69,6 +69,13 @@ namespace dxvk {
     VrPipBoyHint(VrPainter& painter, IVRBackend& backend, VrGameImages& images, std::string action);
 
     /**
+     * \brief Shows the panel through the renderer's frame submitter
+     */
+    void setSubmitter(VrFrameSubmitter* submitter) {
+      m_panel.setSubmitter(submitter);
+    }
+
+    /**
      * \brief Shows the sign over the panel
      *
      * \param [in] panel The panel's pose in tracking space, +Y up

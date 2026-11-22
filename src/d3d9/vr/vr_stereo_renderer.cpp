@@ -355,12 +355,15 @@ namespace dxvk {
     renderer->m_ammoLabel  = std::make_unique<VrAmmoLabel>(*renderer->m_painter, backend, renderer->m_gameImages);
     renderer->m_pipBoyHint = std::make_unique<VrPipBoyHint>(*renderer->m_painter, backend, renderer->m_gameImages,
       texts.text("pipboy.close", "Close"));
+    renderer->m_pipBoyHint->setSubmitter(&renderer->m_submitter);
     renderer->m_pipBoyLampBar = std::make_unique<VrPipBoyLampBar>(*renderer->m_painter, backend, renderer->m_gameImages);
+    renderer->m_pipBoyLampBar->setSubmitter(&renderer->m_submitter);
     renderer->m_pipBoyArmTexture = std::make_unique<VrPipBoyArmTexture>(device);
     renderer->m_caravanValues = std::make_unique<VrCaravanValues>(*renderer->m_painter, backend, renderer->m_gameImages);
 
     if (renderer->m_hudAvailable) {
       renderer->m_worldTiles = std::make_unique<VrWorldTiles>(*renderer->m_painter, backend, renderer->m_gameImages);
+      renderer->m_worldTiles->setSubmitter(&renderer->m_submitter);
 
       if (renderer->m_worldTiles->initialize())
         renderer->m_worldTiles->setConfig(panel.worldTiles, panel.hudHeadTiles);
@@ -370,6 +373,7 @@ namespace dxvk {
 
     if (panel.compass.enabled) {
       renderer->m_compass = std::make_unique<VrCompass>(*renderer->m_painter, backend, renderer->m_gameImages);
+      renderer->m_compass->setSubmitter(&renderer->m_submitter);
 
       if (renderer->m_compass->initialize())
         renderer->m_compass->setConfig(panel.compass);
