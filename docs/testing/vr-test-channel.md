@@ -31,7 +31,8 @@ It works with every backend:
   real runtime (SteamVR) composites into the headset's view. The emulator has no compositor of its own, so its
   preview window draws the panels and the lasers itself (`d3d9.vrPreviewPanels`, default on); the game's
   window shows neither. `capture panel <panel> <file>` gives a panel's own image, `capture eyes` the eyes
-  without panels.
+  without panels, both at full resolution; a screenshot of the preview window shows everything together, as
+  sharp as `d3d9.vrPreviewWidth` (default 1000 pixels for both eyes) makes it.
 - **OpenVR with SteamVR's null driver**: the real OpenVR path without a headset.
 - **OpenVR with a headset**: allowed, for example to press actions while a person watches. A set head
   pose makes the image disagree with the real head, so leave the head alone there.

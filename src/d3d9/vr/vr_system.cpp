@@ -18,6 +18,7 @@
 #include "vr_emulator_backend.h"
 #include "vr_emulator_keyboard.h"
 #include "vr_preview_panels.h"
+#include "vr_preview_window.h"
 #include "vr_test_backend.h"
 #include "vr_extension_provider.h"
 #include "vr_game_console.h"
@@ -286,6 +287,9 @@ namespace dxvk {
       Logger::info("VR: The test channel is on: the emulator's controllers drive the game like a headset's");
 
     // The emulator has no compositor: its preview draws the panels and lasers itself
+    VrPreviewWindow::setWidth(uint32_t(std::max(config.getOption<int32_t>("d3d9.vrPreviewWidth",
+      int32_t(VrPreviewWindow::DefaultWidth)), 0)));
+
     if (showPreview && config.getOption<bool>("d3d9.vrPreviewPanels", true)) {
       if (auto* emulator = dynamic_cast<VrEmulatorBackend*>(backend.get()))
         VrPreviewPanels::enable(emulator);

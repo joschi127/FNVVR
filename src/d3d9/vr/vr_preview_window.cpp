@@ -17,8 +17,9 @@ namespace dxvk {
     constexpr const wchar_t* WindowClassName = L"DxvkVrPreviewWindow";
     constexpr const wchar_t* WindowTitle     = L"VR preview (left eye | right eye)";
 
-    // Width of the window's client area, the height follows the eye aspect ratio
-    constexpr uint32_t PreviewWidth = 1000;
+    // Width of the window's client area, the height follows the eye aspect
+    // ratio: d3d9.vrPreviewWidth, at most the screen's width
+    uint32_t g_previewWidth = VrPreviewWindow::DefaultWidth;
 
     LRESULT CALLBACK previewWindowProc(HWND window, UINT message, WPARAM wParam, LPARAM lParam) {
       // The swapchain needs the window, so closing it only hides it
@@ -53,13 +54,19 @@ namespace dxvk {
   }
 
 
+  void VrPreviewWindow::setWidth(uint32_t width) {
+    g_previewWidth = width;
+  }
+
+
   std::unique_ptr<VrPreviewWindow> VrPreviewWindow::create(
           IDirect3DDevice9*     device,
     const VrExtent&             eyeExtent) {
     if (!eyeExtent.width || !eyeExtent.height || !registerWindowClass())
       return nullptr;
 
-    uint32_t width  = PreviewWidth;
+    uint32_t width  = std::max(VrPreviewWindow::MinWidth,
+      std::min(g_previewWidth, uint32_t(std::max(GetSystemMetrics(SM_CXSCREEN), 1))));
     uint32_t height = std::max(1u, uint32_t(uint64_t(width) * eyeExtent.height / (2u * eyeExtent.width)));
 
     RECT rect = { 0, 0, LONG(width), LONG(height) };

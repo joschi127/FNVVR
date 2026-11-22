@@ -33,6 +33,12 @@ namespace dxvk {
      * \param [in] eyeExtent Size of one eye texture, sets the aspect ratio
      * \returns \c nullptr if the window or swapchain could not be created
      */
+    static constexpr uint32_t DefaultWidth = 1000;
+    static constexpr uint32_t MinWidth     = 400;
+
+    /// Width of the windows made from now on, see d3d9.vrPreviewWidth
+    static void setWidth(uint32_t width);
+
     static std::unique_ptr<VrPreviewWindow> create(
             IDirect3DDevice9*     device,
             const VrExtent&       eyeExtent);
