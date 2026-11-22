@@ -131,6 +131,7 @@ namespace dxvk {
   void VrCompass::setConfig(const VrCompassConfig& config) {
     m_config = config;
     m_drawn  = false;
+    m_placed = false;
   }
 
 

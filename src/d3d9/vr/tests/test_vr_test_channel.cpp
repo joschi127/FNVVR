@@ -311,6 +311,14 @@ TEST_CASE(test_channel_parses_memory) {
 }
 
 
+TEST_CASE(test_channel_parses_compass) {
+  CHECK(vrParseTestCommand("compass").verb == VrTestVerb::Compass);
+  VrTestCommand set = vrParseTestCommand("compass Width 0.5");
+  CHECK(set.verb == VrTestVerb::Compass && set.path == "width 0.5");
+  CHECK(vrParseTestCommand("compass width").verb == VrTestVerb::Invalid);
+}
+
+
 TEST_CASE(test_channel_parses_pipboy_and_signal) {
   CHECK(vrParseTestCommand("pipboy").verb == VrTestVerb::PipBoy);
   CHECK(vrParseTestCommand("pipboy open").verb == VrTestVerb::PipBoyOpen);

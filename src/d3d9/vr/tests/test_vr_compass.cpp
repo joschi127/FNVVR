@@ -152,3 +152,25 @@ TEST_CASE(paint_fills_and_strokes_convex_polygons) {
   CHECK(test::probePaint(outline, 10.2f, 20.3f).a > 0.99f);   // on the edge
   CHECK(test::probePaint(outline, 20.3f, 20.2f).a < 0.01f);   // hollow inside
 }
+
+
+TEST_CASE(compass_settings_change_by_name_for_live_tuning) {
+  VrCompassConfig config;
+  CHECK(vrSetCompassValue(config, "width", "0.5") && config.widthShare == 0.5f);
+  CHECK(vrSetCompassValue(config, "angle", "55") && config.angle == 55.0f);
+  CHECK(vrSetCompassValue(config, "angle", "auto") && config.angle == 0.0f);
+  CHECK(vrSetCompassValue(config, "backdrop", "off") && !config.backdrop);
+  CHECK(vrSetCompassValue(config, "gap", "-12") && config.markerGap == -12.0f);
+
+  // Unknown names and values leave the settings as they are
+  VrCompassConfig before = config;
+  CHECK(!vrSetCompassValue(config, "width", "7"));
+  CHECK(!vrSetCompassValue(config, "colour", "1"));
+  CHECK(!vrSetCompassValue(config, "backdrop", "maybe"));
+  CHECK(config.widthShare == before.widthShare && config.backdrop == before.backdrop);
+
+  std::string text = vrDescribeCompass(config);
+  CHECK(text.find("width=0.5") != std::string::npos);
+  CHECK(text.find("angle=auto") != std::string::npos);
+  CHECK(text.find("backdrop=off") != std::string::npos);
+}

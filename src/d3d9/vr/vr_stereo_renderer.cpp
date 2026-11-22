@@ -3313,6 +3313,23 @@ namespace dxvk {
         fov.angleDown  = std::min(fov.angleDown, view.fov.angleDown);
       }
 
+      // The VR test channel tunes the compass live, in memory only
+      if (VrTestHooks::enabled()) {
+        auto requests = VrTestHooks::takeCompassRequests();
+
+        if (!requests.empty()) {
+          VrCompassConfig config = m_compass->config();
+
+          for (const auto& [name, value] : requests)
+            vrSetCompassValue(config, name, value);
+
+          m_compass->setConfig(config);
+          Logger::info(str::format("VR: Compass set by the test channel: ", vrDescribeCompass(config)));
+        }
+
+        VrTestHooks::publishCompass(vrDescribeCompass(m_compass->config()));
+      }
+
       static const std::vector<VrWorldTileInfo> NoTiles;
       m_compass->show(shown, heading, m_worldTiles ? m_worldTiles->tiles() : NoTiles, fov);
     }

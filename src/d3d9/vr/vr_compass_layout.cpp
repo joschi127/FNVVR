@@ -1,5 +1,7 @@
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
 
 #include "vr_compass_layout.h"
 #include "vr_math.h"
@@ -225,6 +227,8 @@ namespace dxvk {
       VrCompassMarkerKind::Friend, VrCompassMarkerKind::Custom, VrCompassMarkerKind::Quest };
 
     float rowHeight = MarkerRowEnd - MarkerRowTop;
+    float rowTop    = MarkerRowTop + config.markerGap;
+    float rowEnd    = MarkerRowEnd + config.markerGap;
     float capitals  = font ? std::max(font->metrics.glyph('A').ascent, 1.0f) : 1.0f;
 
     for (VrCompassMarkerKind kind : DrawOrder) {
@@ -243,17 +247,17 @@ namespace dxvk {
 
           if (pictures.person) {
             float left = x - TickCentreX * scale;
-            float top  = MarkerRowTop - TickTop * scale;
+            float top  = rowTop - TickTop * scale;
             list.drawImage(*pictures.person, VrPaintImageUse::Shape, left, top,
               left + TickSize * scale, top + TickSize * scale, 0.0f, 0.0f, 1.0f, 1.0f, c);
           } else {
-            list.fillRect(x - 3.0f, MarkerRowTop, x + 3.0f, MarkerRowEnd, c);
+            list.fillRect(x - 3.0f, rowTop, x + 3.0f, rowEnd, c);
           }
 
           if (font && marker.initial) {
             std::string initial(1, marker.initial);
             float textScale = 22.0f / capitals;
-            list.drawText(*font, initial, x + 8.0f, MarkerRowEnd - 4.0f, textScale, c);
+            list.drawText(*font, initial, x + 8.0f, rowEnd - 4.0f, textScale, c);
           }
 
           continue;
@@ -263,17 +267,20 @@ namespace dxvk {
         VrColour c = colour.faded(alpha);
 
         if (picture) {
-          float scale = rowHeight / (MarkerBottom - MarkerTop);
+          // The quest's arrow may be larger; its tip stays at the row's top
+          float size  = kind == VrCompassMarkerKind::Quest ? std::clamp(config.questScale, 0.5f, 2.0f) : 1.0f;
+          float scale = size * rowHeight / (MarkerBottom - MarkerTop);
           float left = x - MarkerCentreX * scale;
-          float top  = MarkerRowTop - MarkerTop * scale;
+          float top  = rowTop - MarkerTop * scale;
           list.drawImage(*picture, VrPaintImageUse::Shape, left, top,
             left + MarkerSize * scale, top + MarkerSize * scale, 0.0f, 0.0f, 1.0f, 1.0f, c);
         } else {
           // The game's arrow: a pentagon pointing up, filled or hollow
-          float w = 0.33f * rowHeight;
+          float h = (kind == VrCompassMarkerKind::Quest ? std::clamp(config.questScale, 0.5f, 2.0f) : 1.0f) * rowHeight;
+          float w = 0.33f * h;
           const float arrow[] = {
-            x, MarkerRowTop,  x + w, MarkerRowTop + 0.45f * rowHeight,  x + w, MarkerRowEnd,
-            x - w, MarkerRowEnd,  x - w, MarkerRowTop + 0.45f * rowHeight };
+            x, rowTop,  x + w, rowTop + 0.45f * h,  x + w, rowTop + h,
+            x - w, rowTop + h,  x - w, rowTop + 0.45f * h };
 
           if (kind == VrCompassMarkerKind::Quest)
             list.fillPolygon(arrow, 5, c);
@@ -284,6 +291,78 @@ namespace dxvk {
     }
 
     (void)height;
+  }
+
+
+  bool vrSetCompassValue(VrCompassConfig& config, const std::string& name, const std::string& value) {
+    auto number = [&] (float low, float high, float& out) {
+      char* end = nullptr;
+      float v = std::strtof(value.c_str(), &end);
+
+      if (value.empty() || !end || *end != '\0' || !std::isfinite(v) || v < low || v > high)
+        return false;
+
+      out = v;
+      return true;
+    };
+
+    // Degrees, or "auto" for a share of the field of view (stored as 0)
+    auto degrees = [&] (float low, float high, float& out) {
+      if (value == "auto") {
+        out = 0.0f;
+        return true;
+      }
+
+      float v = 0.0f;
+
+      if (!number(low, high, v))
+        return false;
+
+      out = v == 0.0f ? 0.01f : v;
+      return true;
+    };
+
+    VrCompassConfig c = config;
+    bool ok = false;
+
+    if (name == "width")         ok = number(0.05f, 1.0f, c.widthShare);
+    else if (name == "top")      ok = number(-1.0f, 1.0f, c.topShare);
+    else if (name == "angle")    ok = degrees(10.0f, 120.0f, c.angle);
+    else if (name == "topdeg")   ok = degrees(-60.0f, 80.0f, c.top);
+    else if (name == "distance") ok = number(0.3f, 10.0f, c.distance);
+    else if (name == "span")     ok = number(30.0f, 360.0f, c.span);
+    else if (name == "opacity")  ok = number(0.0f, 1.0f, c.backdropOpacity);
+    else if (name == "gap")      ok = number(-40.0f, 14.0f, c.markerGap);
+    else if (name == "quest")    ok = number(0.5f, 2.0f, c.questScale);
+    else if (name == "backdrop") {
+      ok = value == "on" || value == "off";
+      c.backdrop = value == "on";
+    }
+
+    if (ok)
+      config = c;
+
+    return ok;
+  }
+
+
+  std::string vrDescribeCompass(const VrCompassConfig& c) {
+    char text[256];
+    auto deg = [] (float v, char* out, size_t size) {
+      if (v == 0.0f)
+        std::snprintf(out, size, "auto");
+      else
+        std::snprintf(out, size, "%g", v);
+    };
+    char angle[16];
+    char top[16];
+    deg(c.angle, angle, sizeof(angle));
+    deg(c.top, top, sizeof(top));
+    std::snprintf(text, sizeof(text),
+      "width=%g top=%g angle=%s topdeg=%s distance=%g span=%g backdrop=%s opacity=%g gap=%g quest=%g",
+      c.widthShare, c.topShare, angle, top, c.distance, c.span, c.backdrop ? "on" : "off",
+      c.backdropOpacity, c.markerGap, c.questScale);
+    return text;
   }
 
 

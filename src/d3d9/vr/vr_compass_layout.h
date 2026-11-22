@@ -37,6 +37,11 @@ namespace dxvk {
     /// bright sky, and its opacity
     bool  backdrop        = true;
     float backdropOpacity = 0.25f;
+    /// Markers moved down (positive) or up towards the strip (negative), in
+    /// pixels of the strip's image
+    float markerGap  = 0.0f;
+    /// Size of the quest objective's marker against the others
+    float questScale = 1.0f;
     /// Colour of friends' markers, 0xRRGGBB, green as the game's companions;
     /// the others take the HUD's colour
     uint32_t friendColour = 0x4CE04C;
@@ -63,7 +68,7 @@ namespace dxvk {
    */
   struct VrCompassImage {
     constexpr static uint32_t Width  = 768;
-    constexpr static uint32_t Height = 150;
+    constexpr static uint32_t Height = 166;
   };
 
   enum class VrCompassMarkerKind : uint32_t {
@@ -124,6 +129,21 @@ namespace dxvk {
   void vrPaintCompass(VrPaintList& list, const VrCompassConfig& config, float heading,
     const std::vector<VrCompassMarker>& markers, const VrColour& colour, const VrPaintFont* font,
     const VrCompassPictures& pictures);
+
+  /**
+   * \brief Changes one setting by name, for tuning it live (VR test channel)
+   *
+   * Names: width, top (shares of the field of view), angle, topdeg (degrees
+   * or "auto"), distance, span, backdrop (on|off), opacity, gap, quest.
+   *
+   * \returns \c false, the settings unchanged, for an unknown name or value
+   */
+  bool vrSetCompassValue(VrCompassConfig& config, const std::string& name, const std::string& value);
+
+  /**
+   * \brief The settings vrSetCompassValue changes, as "name=value" words
+   */
+  std::string vrDescribeCompass(const VrCompassConfig& config);
 
   /**
    * \brief Size and place of the strip in the view

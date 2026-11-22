@@ -6,6 +6,7 @@
 #include "../../util/log/log.h"
 #include "../../util/util_string.h"
 
+#include "vr_compass_layout.h"
 #include "vr_test_commands.h"
 #include "vr_test_hooks.h"
 #include "vr_test_png.h"
@@ -324,6 +325,24 @@ namespace dxvk {
       case VrTestVerb::PipBoyClose:
         VrTestHooks::requestPipBoy(VrTestPipBoyRequest::Close);
         return { "ok asked; see 'pipboy' for its state" };
+
+      case VrTestVerb::Compass: {
+        if (command.path.empty()) {
+          const std::string& settings = VrTestHooks::compass();
+          return { settings.empty() ? "err no compass yet" : "ok " + settings };
+        }
+
+        size_t space = command.path.find(' ');
+        std::string name  = command.path.substr(0, space);
+        std::string value = command.path.substr(space + 1);
+        VrCompassConfig check;
+
+        if (!vrSetCompassValue(check, name, value))
+          return { "err unknown setting or value; names: width top angle topdeg distance span backdrop opacity gap quest" };
+
+        VrTestHooks::requestCompass(name, value);
+        return { "ok asked; see 'compass' a frame later" };
+      }
 
       case VrTestVerb::SignalOn:
         m_signal.arm(true);

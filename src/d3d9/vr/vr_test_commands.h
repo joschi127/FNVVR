@@ -36,6 +36,7 @@ namespace dxvk {
     PipBoyClose, ///< pipboy close: closes it as B or the close sign do
     SignalOn,    ///< signal on: counts the "done" signal (both hands above the head) from now on
     SignalOff,   ///< signal off
+    Compass,     ///< compass: its settings; compass <name> <value>: changes one, in memory only
   };
 
   /**

@@ -1,6 +1,9 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "vr_types.h"
 
@@ -57,6 +60,24 @@ namespace dxvk {
 
     static void publishPipBoy(const VrTestPipBoyInfo& info) { s_pipBoy = info; }
 
+    /// Asks the renderer to change one of the compass's settings (name, value), in memory only
+    static void requestCompass(std::string name, std::string value) {
+      if (s_compassRequests.size() < 16)
+        s_compassRequests.emplace_back(std::move(name), std::move(value));
+    }
+
+    /// The settings asked for since the last call
+    static std::vector<std::pair<std::string, std::string>> takeCompassRequests() {
+      std::vector<std::pair<std::string, std::string>> requests;
+      requests.swap(s_compassRequests);
+      return requests;
+    }
+
+    /// The compass's settings as the renderer uses them, see vrDescribeCompass
+    static void publishCompass(std::string settings) { s_compass = std::move(settings); }
+
+    static const std::string& compass() { return s_compass; }
+
     static const VrTestPipBoyInfo& pipBoy() { return s_pipBoy; }
 
   private:
@@ -64,6 +85,8 @@ namespace dxvk {
     static inline bool                s_enabled       = false;
     static inline VrTestPipBoyRequest s_pipBoyRequest = VrTestPipBoyRequest::None;
     static inline VrTestPipBoyInfo    s_pipBoy;
+    static inline std::vector<std::pair<std::string, std::string>> s_compassRequests;
+    static inline std::string         s_compass;
 
   };
 

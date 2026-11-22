@@ -39,6 +39,10 @@ namespace dxvk {
 
     void setConfig(const VrCompassConfig& config);
 
+    const VrCompassConfig& config() const {
+      return m_config;
+    }
+
     /**
      * \brief Shows the compass, or hides it
      *

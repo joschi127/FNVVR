@@ -287,6 +287,15 @@ namespace dxvk {
         command.verb = VrTestVerb::PipBoyClose;
       else
         return invalid("pipboy [open|close]");
+    } else if (verb == "compass") {
+      if (n != 1 && n != 3)
+        return invalid("compass [<name> <value>]");
+
+      command.verb = VrTestVerb::Compass;
+
+      // Name and value in path, checked by the backend
+      if (n == 3)
+        command.path = lower(words[1]) + " " + lower(words[2]);
     } else if (verb == "signal") {
       std::string what = n == 2 ? lower(words[1]) : std::string();
 
