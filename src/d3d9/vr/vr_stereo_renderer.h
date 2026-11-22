@@ -658,6 +658,7 @@ namespace dxvk {
     // The casing drawn around it, painted once per size
     Com<IDirect3DTexture9> m_pipBoyCasing;
     uint32_t            m_pipBoyCasingKey[6] = { };
+    uint32_t            m_pipBoyCasingFailedKey[6] = { };
     // The head's last pose while it looked ahead, not at the Pip-Boy: the
     // panel showing it is placed ahead of the player, not towards the wrist
     VrPose              m_lookAheadPose;

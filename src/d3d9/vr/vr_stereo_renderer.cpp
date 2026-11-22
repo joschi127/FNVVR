@@ -2962,8 +2962,8 @@ namespace dxvk {
     }
 
     if (!m_loggedPipBoyPanel) {
-      Logger::info(str::format("VR: The Pip-Boy's screen is shown on the panel, from the top left ",
-        used.right, "x", used.bottom, " of a ", desc.Width, "x", desc.Height, " texture"));
+      Logger::info(str::format("VR: The Pip-Boy's screen is shown on the panel, ", used.right - used.left, "x",
+        used.bottom - used.top, " at ", used.left, ",", used.top, " of a ", desc.Width, "x", desc.Height, " texture"));
       m_loggedPipBoyPanel = true;
     }
 
@@ -2986,7 +2986,13 @@ namespace dxvk {
     uint32_t key[6] = { width, height, left, top, right, bottom };
 
     if (!m_pipBoyCasing.ptr() || std::memcmp(key, m_pipBoyCasingKey, sizeof(key)) != 0) {
+      // Tried once per size: a failure, as with the address space nearly
+      // full, is not retried every frame with a few MB each time
+      if (std::memcmp(key, m_pipBoyCasingFailedKey, sizeof(key)) == 0)
+        return false;
+
       m_pipBoyCasing = nullptr;
+      std::memcpy(m_pipBoyCasingFailedKey, key, sizeof(key));
       Com<IDirect3DTexture9> staging;
 
       if (FAILED(m_device->CreateTexture(width, height, 1, 0, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM,
@@ -3021,6 +3027,7 @@ namespace dxvk {
       }
 
       std::memcpy(m_pipBoyCasingKey, key, sizeof(key));
+      std::memset(m_pipBoyCasingFailedKey, 0, sizeof(m_pipBoyCasingFailedKey));
     }
 
     // A quad over the bound target, blended by the casing's alpha
