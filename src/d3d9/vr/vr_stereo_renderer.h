@@ -65,6 +65,7 @@
 #include "vr_text_field_keyboard.h"
 #include "vr_tile_texture_retry.h"
 #include "vr_pipboy_icons.h"
+#include "vr_pipboy_panel_layout.h"
 #include "vr_weapon_hand.h"
 
 namespace dxvk {
@@ -254,15 +255,13 @@ namespace dxvk {
      *
      * The game draws the Pip-Boy's menus into the top left of the texture.
      *
-     * \param [in] width Share of the texture's width, from the left
-     * \param [in] height Share of its height, from the top
-     * \param [in] margins Black border around it, each side a share of the
+     * \param [in] crop Part of the texture to show, see VrPipBoyPanelDefaultCrop
+     * \param [in] frame Width of the drawn casing around it, a share of the
      *    panel's width
      */
-    void setPipBoyPanelCrop(float width, float height, const VrPanelMargins& margins) {
-      m_pipBoyCropWidth  = width;
-      m_pipBoyCropHeight = height;
-      m_pipBoyMargins    = margins;
+    void setPipBoyPanelCrop(const VrShareRect& crop, float frame) {
+      m_pipBoyCropWanted = crop;
+      m_pipBoyFrame      = frame;
     }
 
     /**
@@ -651,12 +650,14 @@ namespace dxvk {
     bool                m_pipBoyPanel = false;
     bool                m_pipBoyPanelDrawn = false;
     bool                m_pipBoyOnPanel = false;
-    float               m_pipBoyCropWidth  = 0.87f;
-    float               m_pipBoyCropHeight = 0.87f;
-    // Black border around the copy, each side a share of the panel's
-    // width, and the copy's rectangle as shares of the panel's sides
-    VrPanelMargins      m_pipBoyMargins;
+    VrShareRect         m_pipBoyCropWanted = VrPipBoyPanelDefaultCrop;
+    float               m_pipBoyFrame = VrPipBoyPanelDefaultFrame;
+    // The part of the screen shown, and its place on the panel, as shares
+    VrShareRect         m_pipBoyCrop;
     VrPanelMargins      m_pipBoyInside = { 0.0f, 0.0f, 1.0f, 1.0f };
+    // The casing drawn around it, painted once per size
+    Com<IDirect3DTexture9> m_pipBoyCasing;
+    uint32_t            m_pipBoyCasingKey[6] = { };
     // The head's last pose while it looked ahead, not at the Pip-Boy: the
     // panel showing it is placed ahead of the player, not towards the wrist
     VrPose              m_lookAheadPose;
@@ -881,6 +882,9 @@ namespace dxvk {
     void renderMenuScenes();
 
     bool copyPipBoyScreen(IDirect3DSurface9* target);
+
+    bool drawPipBoyCasing(IDirect3DSurface9* target, const D3DSURFACE_DESC& layer,
+      const D3DSURFACE_DESC& targetDesc, const VrPipBoyPanelLayout& layout, const RECT* cornersOf);
 
     void showPipBoyExtras();
 

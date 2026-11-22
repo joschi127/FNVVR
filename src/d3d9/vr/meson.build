@@ -70,6 +70,7 @@ vr_src = files([
   'vr_test_input.cpp',
   'vr_test_png.cpp',
   'vr_preview_projection.cpp',
+  'vr_pipboy_panel_layout.cpp',
 ])
 
 # Parts that depend on DXVK and Vulkan, only built into d3d9.dll
@@ -257,6 +258,7 @@ if add_languages('cpp', native: true, required: false)
     'tests/test_vr_foveation.cpp',
     'tests/test_vr_test_channel.cpp',
     'tests/test_vr_preview_projection.cpp',
+    'tests/test_vr_pipboy_panel_layout.cpp',
   ])
 
   vr_test = executable('vr_tests', vr_test_sources, vr_src,

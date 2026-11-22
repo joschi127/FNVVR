@@ -1,6 +1,8 @@
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 #include <iterator>
+#include <vector>
 
 #include "../../util/log/log.h"
 #include "../../util/util_string.h"
@@ -991,8 +993,7 @@ namespace dxvk {
     m_pipBoyOnPanel  = m_overPipBoy && m_menuRendered && m_pipBoyPanelDrawn;
     // A menu over the Pip-Boy, such as a message box, is picked at the
     // cursor as on the other menus
-    VrMenuCursor::setPipBoyPanel(m_pipBoyOnPanel && !m_menuDrawn, m_pipBoyCropWidth, m_pipBoyCropHeight,
-      m_pipBoyInside);
+    VrMenuCursor::setPipBoyPanel(m_pipBoyOnPanel && !m_menuDrawn, m_pipBoyCrop, m_pipBoyInside);
 
     if (m_preview)
       m_preview->present(eyes, views);
@@ -2909,36 +2910,38 @@ namespace dxvk {
     Com<IDirect3DSurface9> screen;
     D3DSURFACE_DESC desc = { };
 
-    // Only the top left part of the texture holds the menus
+    // The part of the texture with the menus, around which the panel draws
+    // a casing like the wrist's; the panel's image is the menu layer's, in
+    // square pixels, while the target may be the narrower window's
     RECT used = { };
-
-    bool found = pipBoyScreenSurface(screen) && SUCCEEDED(screen->GetDesc(&desc));
-
-    if (found) {
-      used.right  = LONG(std::max(1.0f, std::round(float(desc.Width)  * m_pipBoyCropWidth)));
-      used.bottom = LONG(std::max(1.0f, std::round(float(desc.Height) * m_pipBoyCropHeight)));
-    }
-
-    // A black border around it, each side's width a share of the panel's
-    // width, so that the menus' own frame stands clear of the panel's edge
     D3DSURFACE_DESC targetDesc = { };
+    D3DSURFACE_DESC layerDesc = { };
     RECT inside = { };
 
-    if (found && SUCCEEDED(target->GetDesc(&targetDesc))) {
-      float width = float(targetDesc.Width);
-      inside.left   = LONG(std::round(m_pipBoyMargins.left   * width));
-      inside.top    = LONG(std::round(m_pipBoyMargins.top    * width));
-      inside.right  = LONG(targetDesc.Width)  - LONG(std::round(m_pipBoyMargins.right  * width));
-      inside.bottom = LONG(targetDesc.Height) - LONG(std::round(m_pipBoyMargins.bottom * width));
+    bool found = pipBoyScreenSurface(screen) && SUCCEEDED(screen->GetDesc(&desc))
+      && SUCCEEDED(target->GetDesc(&targetDesc)) && SUCCEEDED(m_menuTexture->GetLevelDesc(0, &layerDesc));
 
-      m_pipBoyInside.left   = float(inside.left)   / float(targetDesc.Width);
-      m_pipBoyInside.top    = float(inside.top)    / float(targetDesc.Height);
-      m_pipBoyInside.right  = float(inside.right)  / float(targetDesc.Width);
-      m_pipBoyInside.bottom = float(inside.bottom) / float(targetDesc.Height);
-      m_device->Clear(0, nullptr, D3DCLEAR_TARGET, D3DCOLOR_ARGB(0xFF, 0, 0, 0), 1.0f, 0);
+    if (found) {
+      VrPipBoyPanelLayout layout = vrComputePipBoyPanelLayout(layerDesc.Width, layerDesc.Height,
+        desc.Width, desc.Height, m_pipBoyCropWanted, m_pipBoyFrame);
+      m_pipBoyCrop = layout.crop;
+      m_pipBoyInside = { layout.inside.left, layout.inside.top, layout.inside.right, layout.inside.bottom };
+
+      used.left   = LONG(std::round(layout.crop.left   * float(desc.Width)));
+      used.top    = LONG(std::round(layout.crop.top    * float(desc.Height)));
+      used.right  = LONG(std::round(layout.crop.right  * float(desc.Width)));
+      used.bottom = LONG(std::round(layout.crop.bottom * float(desc.Height)));
+
+      inside.left   = LONG(std::round(layout.inside.left   * float(targetDesc.Width)));
+      inside.top    = LONG(std::round(layout.inside.top    * float(targetDesc.Height)));
+      inside.right  = LONG(std::round(layout.inside.right  * float(targetDesc.Width)));
+      inside.bottom = LONG(std::round(layout.inside.bottom * float(targetDesc.Height)));
+
+      if (!drawPipBoyCasing(target, layerDesc, targetDesc, layout, nullptr))
+        m_device->Clear(0, nullptr, D3DCLEAR_TARGET, D3DCOLOR_ARGB(0xFF, 0, 0, 0), 1.0f, 0);
     }
 
-    if (!found || inside.right <= inside.left || inside.bottom <= inside.top
+    if (!found || inside.right <= inside.left || inside.bottom <= inside.top || used.right <= used.left
      || FAILED(m_device->StretchRect(screen.ptr(), &used, target, &inside, D3DTEXF_LINEAR))) {
       if (!m_loggedPipBoyPanelFailure) {
         Logger::warn("VR: The Pip-Boy's screen texture was not found, the Pip-Boy is not shown on the panel");
@@ -2947,6 +2950,12 @@ namespace dxvk {
 
       return false;
     }
+
+    // The screen's rounded corners, over the copy's dark rim
+    VrPipBoyPanelLayout drawn;
+    drawn.crop = m_pipBoyCrop;
+    drawn.inside = { m_pipBoyInside.left, m_pipBoyInside.top, m_pipBoyInside.right, m_pipBoyInside.bottom };
+    drawPipBoyCasing(target, layerDesc, targetDesc, drawn, &inside);
 
     // The alpha the game leaves in the texture is not usable: the panel is
     // opaque, as the wrist screen is
@@ -2960,6 +2969,87 @@ namespace dxvk {
     }
 
     m_pipBoyPanelDrawn = true;
+    return true;
+  }
+
+
+  bool VrStereoRenderer::drawPipBoyCasing(IDirect3DSurface9* target, const D3DSURFACE_DESC& layer,
+      const D3DSURFACE_DESC& targetDesc, const VrPipBoyPanelLayout& layout, const RECT* cornersOf) {
+    // Painted at half the panel's size: a smooth surface, and only a few MB
+    // of the game's address space for a moment while it is painted
+    uint32_t width  = std::max<uint32_t>(1, layer.Width  / 2);
+    uint32_t height = std::max<uint32_t>(1, layer.Height / 2);
+    uint32_t left   = uint32_t(std::round(layout.inside.left   * float(width)));
+    uint32_t top    = uint32_t(std::round(layout.inside.top    * float(height)));
+    uint32_t right  = uint32_t(std::round(layout.inside.right  * float(width)));
+    uint32_t bottom = uint32_t(std::round(layout.inside.bottom * float(height)));
+    uint32_t radius = std::max<uint32_t>(2, uint32_t(std::round(0.018f * float(width))));
+    uint32_t key[6] = { width, height, left, top, right, bottom };
+
+    if (!m_pipBoyCasing.ptr() || std::memcmp(key, m_pipBoyCasingKey, sizeof(key)) != 0) {
+      m_pipBoyCasing = nullptr;
+      Com<IDirect3DTexture9> staging;
+
+      if (FAILED(m_device->CreateTexture(width, height, 1, 0, D3DFMT_A8R8G8B8, D3DPOOL_SYSTEMMEM,
+            &staging, nullptr))
+       || FAILED(m_device->CreateTexture(width, height, 1, 0, D3DFMT_A8R8G8B8, D3DPOOL_DEFAULT,
+            &m_pipBoyCasing, nullptr)))
+        return false;
+
+      std::vector<uint8_t> rgba = vrPaintPipBoyCasing(width, height, left, top, right, bottom, radius);
+      D3DLOCKED_RECT locked;
+
+      if (FAILED(staging->LockRect(0, &locked, nullptr, 0)))
+        return false;
+
+      for (uint32_t y = 0; y < height; y++) {
+        uint8_t* row = static_cast<uint8_t*>(locked.pBits) + size_t(y) * locked.Pitch;
+        const uint8_t* src = &rgba[size_t(y) * width * 4];
+
+        for (uint32_t x = 0; x < width; x++) {
+          row[x * 4 + 0] = src[x * 4 + 2];
+          row[x * 4 + 1] = src[x * 4 + 1];
+          row[x * 4 + 2] = src[x * 4 + 0];
+          row[x * 4 + 3] = src[x * 4 + 3];
+        }
+      }
+
+      staging->UnlockRect(0);
+
+      if (FAILED(m_device->UpdateTexture(staging.ptr(), m_pipBoyCasing.ptr()))) {
+        m_pipBoyCasing = nullptr;
+        return false;
+      }
+
+      std::memcpy(m_pipBoyCasingKey, key, sizeof(key));
+    }
+
+    Com<IDirect3DSurface9> casing;
+
+    if (FAILED(m_pipBoyCasing->GetSurfaceLevel(0, &casing)))
+      return false;
+
+    if (!cornersOf)
+      return SUCCEEDED(m_device->StretchRect(casing.ptr(), nullptr, target, nullptr, D3DTEXF_LINEAR));
+
+    // The four corners of the screen's place, from the casing's same spot
+    float sx = float(targetDesc.Width)  / float(width);
+    float sy = float(targetDesc.Height) / float(height);
+    const RECT corners[4] = {
+      { LONG(left), LONG(top), LONG(left + radius), LONG(top + radius) },
+      { LONG(right - radius), LONG(top), LONG(right), LONG(top + radius) },
+      { LONG(left), LONG(bottom - radius), LONG(left + radius), LONG(bottom) },
+      { LONG(right - radius), LONG(bottom - radius), LONG(right), LONG(bottom) },
+    };
+
+    for (const RECT& source : corners) {
+      RECT dest = { LONG(std::round(float(source.left) * sx)), LONG(std::round(float(source.top) * sy)),
+                    LONG(std::round(float(source.right) * sx)), LONG(std::round(float(source.bottom) * sy)) };
+
+      if (dest.right > dest.left && dest.bottom > dest.top)
+        m_device->StretchRect(casing.ptr(), &source, target, &dest, D3DTEXF_LINEAR);
+    }
+
     return true;
   }
 

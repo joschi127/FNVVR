@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vr_menu_pointer.h"
+#include "vr_pipboy_panel_layout.h"
 
 namespace dxvk {
 
@@ -68,7 +69,7 @@ namespace dxvk {
      * top left part of the screen given by the crop's shares, on the
      * rectangle \c inside, its edges as shares of the panel's sides.
      */
-    static void setPipBoyPanel(bool shown, float cropWidth, float cropHeight,
+    static void setPipBoyPanel(bool shown, const VrShareRect& crop,
       const VrPanelMargins& inside);
   };
 
