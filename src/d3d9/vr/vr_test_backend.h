@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+#include "../../util/thread.h"
+
 #include "vr_backend.h"
 #include "vr_test_capture.h"
 #include "vr_test_input.h"
@@ -22,6 +24,12 @@ namespace dxvk {
    * the named pipe: head and hand poses, actions, sticks, aiming at panels,
    * waiting for frames and captures of the eyes and panels. Without requests
    * it only forwards; see docs/testing/vr-test-channel.md.
+   *
+   * With d3d9.vrAsyncSubmit or the performance mode, submitFrame,
+   * submitPanel and hidePanel come from the renderer's submission thread
+   * (see VrFrameSubmitter) while the game thread takes requests in
+   * pollInput. What both use (the panels' places, the pending request and
+   * its capture) is guarded by m_mutex.
    */
   class VrTestBackend : public IVRBackend {
 
@@ -99,6 +107,9 @@ namespace dxvk {
     VrInputContext              m_context = VrInputContext::Game;
     VrTestSignal                m_signal;
     std::chrono::steady_clock::time_point m_lastPoll = std::chrono::steady_clock::now();
+
+    /// Guards m_places and the pending request with its capture
+    dxvk::mutex                 m_mutex;
 
     std::array<VrTestPanelPlace, VrPanelCount> m_places;
 

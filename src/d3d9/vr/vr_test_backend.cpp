@@ -71,14 +71,21 @@ namespace dxvk {
 
     m_waitedSincePoll = false;
     m_lastReal = m_inner->pollInput(displayTime);
-    takeRequests();
+
+    { std::lock_guard<dxvk::mutex> lock(m_mutex);
+      takeRequests();
+    }
+
     m_lastMerged = m_input.merge(m_lastReal, m_frame);
 
     auto now = std::chrono::steady_clock::now();
     m_signal.update(m_lastMerged, std::chrono::duration<float>(now - m_lastPoll).count());
     m_lastPoll = now;
 
-    finishWaits();
+    { std::lock_guard<dxvk::mutex> lock(m_mutex);
+      finishWaits();
+    }
+
     return m_lastMerged;
   }
 
@@ -95,6 +102,8 @@ namespace dxvk {
 
 
   bool VrTestBackend::submitFrame(const VrFrameSubmission& frame) {
+    std::unique_lock<dxvk::mutex> lock(m_mutex);
+
     if (m_pending && m_captureKind == CaptureKind::Eyes) {
       std::string error;
       std::vector<std::string> files;
@@ -111,6 +120,7 @@ namespace dxvk {
       answer(m_pending, { error.empty() ? "ok " + files[0] + " " + files[1] : "err " + error });
     }
 
+    lock.unlock();
     return m_inner->submitFrame(frame);
   }
 
@@ -119,6 +129,7 @@ namespace dxvk {
     uint32_t index = uint32_t(id);
 
     if (index < VrPanelCount) {
+      std::lock_guard<dxvk::mutex> lock(m_mutex);
       VrTestPanelPlace& place = m_places[index];
       place.shown  = true;
       place.pose   = panel.pose;
@@ -140,8 +151,10 @@ namespace dxvk {
 
 
   void VrTestBackend::hidePanel(VrPanelId id) {
-    if (uint32_t(id) < VrPanelCount)
+    if (uint32_t(id) < VrPanelCount) {
+      std::lock_guard<dxvk::mutex> lock(m_mutex);
       m_places[uint32_t(id)].shown = false;
+    }
 
     m_inner->hidePanel(id);
   }
@@ -153,6 +166,7 @@ namespace dxvk {
 
     // Moved, its image as before: its height keeps the image's aspect
     if (uint32_t(id) < VrPanelCount) {
+      std::lock_guard<dxvk::mutex> lock(m_mutex);
       VrTestPanelPlace& place = m_places[uint32_t(id)];
       place.height = place.width > 0.0f ? place.height * width / place.width : 0.0f;
       place.pose   = pose;
