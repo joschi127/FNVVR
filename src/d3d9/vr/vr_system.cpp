@@ -299,7 +299,9 @@ namespace dxvk {
     if (testChannel) {
       // String options come back empty, not as the fallback, when they are not set
       std::string pipeName = config.getOption<std::string>("d3d9.vrTestPipeName", "");
-      backend = std::make_unique<VrTestBackend>(std::move(backend), pipeName.empty() ? "FNVVR-Test-VR" : pipeName);
+      float signalHold = std::min(std::max(config.getOption<float>("d3d9.vrTestSignalHold", 1.0f), 0.2f), 10.0f);
+      backend = std::make_unique<VrTestBackend>(std::move(backend), pipeName.empty() ? "FNVVR-Test-VR" : pipeName,
+        signalHold);
     }
 
     g_vrSystem.reset(new VrSystem(std::move(backend), showPreview, panel, turn, weaponInHand, headsetResolution,

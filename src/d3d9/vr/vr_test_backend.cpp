@@ -7,6 +7,7 @@
 #include "../../util/util_string.h"
 
 #include "vr_test_commands.h"
+#include "vr_test_hooks.h"
 #include "vr_test_png.h"
 
 namespace dxvk {
@@ -28,8 +29,10 @@ namespace dxvk {
   }
 
 
-  VrTestBackend::VrTestBackend(std::unique_ptr<IVRBackend> inner, const std::string& pipeName)
-  : m_inner(std::move(inner)) {
+  VrTestBackend::VrTestBackend(std::unique_ptr<IVRBackend> inner, const std::string& pipeName, float signalHold)
+  : m_inner(std::move(inner)), m_signal(signalHold) {
+    VrTestHooks::enable();
+
     std::string path = m_pipe.start(pipeName);
 
     if (!path.empty()) {
@@ -69,6 +72,11 @@ namespace dxvk {
     m_lastReal = m_inner->pollInput(displayTime);
     takeRequests();
     m_lastMerged = m_input.merge(m_lastReal, m_frame);
+
+    auto now = std::chrono::steady_clock::now();
+    m_signal.update(m_lastMerged, std::chrono::duration<float>(now - m_lastPoll).count());
+    m_lastPoll = now;
+
     finishWaits();
     return m_lastMerged;
   }
@@ -260,7 +268,8 @@ namespace dxvk {
 
     return str::format("frame=", m_frame, " backend=", m_inner->name(),
       " context=", m_context == VrInputContext::Menu ? "menu" : "game",
-      " panels=", panels.empty() ? "-" : panels, " ", m_input.describe());
+      " panels=", panels.empty() ? "-" : panels, " ", m_input.describe(),
+      " signal=", m_signal.armed() ? std::to_string(m_signal.count()) : std::string("off"));
   }
 
 
@@ -279,6 +288,33 @@ namespace dxvk {
 
       case VrTestVerb::Memory:
         return { "ok " + vrTestMemoryStatus() };
+
+      case VrTestVerb::PipBoy: {
+        const VrTestPipBoyInfo& info = VrTestHooks::pipBoy();
+        static const char* const States[] = { "closed", "changing", "open" };
+        std::string where = info.known
+          ? str::format(" screen ", info.screen.x, " ", info.screen.y, " ", info.screen.z,
+                        " facing ", info.facing.x, " ", info.facing.y, " ", info.facing.z)
+          : std::string(" screen unknown");
+        return { str::format("ok state=", States[info.state < 3 ? info.state : 1],
+          " looking=", info.looking ? 1 : 0, where) };
+      }
+
+      case VrTestVerb::PipBoyOpen:
+        VrTestHooks::requestPipBoy(VrTestPipBoyRequest::Open);
+        return { "ok asked; see 'pipboy' for its state" };
+
+      case VrTestVerb::PipBoyClose:
+        VrTestHooks::requestPipBoy(VrTestPipBoyRequest::Close);
+        return { "ok asked; see 'pipboy' for its state" };
+
+      case VrTestVerb::SignalOn:
+        m_signal.arm(true);
+        return { str::format("ok signal=", m_signal.count()) };
+
+      case VrTestVerb::SignalOff:
+        m_signal.arm(false);
+        return { "ok signal=off" };
 
       case VrTestVerb::Head:
         m_input.setHead(command.pose);

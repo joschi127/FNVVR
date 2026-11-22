@@ -31,6 +31,11 @@ namespace dxvk {
     WaitFrame,   ///< waitframe <frame number>
     CaptureEyes, ///< capture eyes <file prefix>, the rest of the line (may hold spaces)
     CapturePanel,///< capture panel <panel> <file>, the rest of the line (may hold spaces)
+    PipBoy,      ///< pipboy: where its screen is on the left hand, and whether it is open or looked at
+    PipBoyOpen,  ///< pipboy open: opens it the way the gesture does, when the game allows
+    PipBoyClose, ///< pipboy close: closes it the way looking away does
+    SignalOn,    ///< signal on: counts the "done" signal (both hands above the head) from now on
+    SignalOff,   ///< signal off
   };
 
   /**

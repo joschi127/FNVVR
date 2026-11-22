@@ -68,6 +68,7 @@ vr_src = files([
   'vr_pipboy_lamp_bar_layout.cpp',
   'vr_test_commands.cpp',
   'vr_test_input.cpp',
+  'vr_test_signal.cpp',
   'vr_test_png.cpp',
   'vr_preview_projection.cpp',
   'vr_pipboy_panel_layout.cpp',

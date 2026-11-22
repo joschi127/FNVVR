@@ -22,6 +22,7 @@
 #include "vr_math.h"
 #include "vr_menu_cursor.h"
 #include "vr_stereo_renderer.h"
+#include "vr_test_hooks.h"
 #include "vr_tree_leaves.h"
 #include "vr_water_reflection.h"
 #include "vr_weapon_types.h"
@@ -2269,7 +2270,36 @@ namespace dxvk {
     gaze.canClose = state == VrGameStateKind::PipBoy && !m_menuOverPipBoy;
     gaze.dt       = dt;
 
-    switch (m_pipBoyGaze.update(gaze)) {
+    VrPipBoyRequest request = m_pipBoyGaze.update(gaze);
+
+    // The VR test channel opens and closes it the same way, and sees where
+    // its screen is
+    if (VrTestHooks::enabled()) {
+      VrTestPipBoyInfo info;
+      info.known   = offset && facing;
+      info.screen  = offset ? *offset : VrVector3();
+      info.facing  = facing ? *facing : VrVector3();
+      info.looking = m_pipBoyGaze.isLooking();
+      info.state   = gaze.state == VrPipBoyState::Closed ? 0 : gaze.state == VrPipBoyState::Open ? 2 : 1;
+      VrTestHooks::publishPipBoy(info);
+
+      switch (VrTestHooks::takePipBoyRequest()) {
+        case VrTestPipBoyRequest::Open:
+          if (gaze.canOpen && gaze.state == VrPipBoyState::Closed)
+            request = VrPipBoyRequest::Open;
+          break;
+
+        case VrTestPipBoyRequest::Close:
+          if (gaze.canClose)
+            request = VrPipBoyRequest::Close;
+          break;
+
+        case VrTestPipBoyRequest::None:
+          break;
+      }
+    }
+
+    switch (request) {
       case VrPipBoyRequest::Open:
         m_pipBoyControl.open();
 

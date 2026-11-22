@@ -51,7 +51,7 @@ Poses are `<x> <y> <z> <yaw> <pitch> [roll]`: metres in tracking space (+Y up, -
 |---|---|---|
 | `ping` | `ok pong fnvvr-test-vr 1` | |
 | `memory` | `ok vfree=<MB> vlargest=<MB> vused=<MB> vtotal=<MB> private=<MB> workingset=<MB>` | The game process's address space (free, largest free block, used, total) and committed / resident memory; answered on the pipe's thread, so also during loading screens |
-| `state` | `ok frame=<n> backend=<name> context=<game\|menu> panels=<shown> head=<real\|set> left=... right=... move=... turn=... actions=<held>` | `frame` counts VR frames since start (during loading screens and movies, each present counts as a frame) |
+| `state` | `ok frame=<n> backend=<name> context=<game\|menu> panels=<shown> head=<real\|set> left=... right=... move=... turn=... actions=<held> signal=<n\|off>` | `frame` counts VR frames since start (during loading screens and movies, each present counts as a frame) |
 | `head <pose>` | `ok` | Sets the head until released; the eyes keep their place relative to the head |
 | `hand left\|right <pose>` | `ok` | Sets a controller's grip and aim pose until released |
 | `release head\|left\|right\|move\|turn\|all` | `ok` | Gives it back to the real backend (`all` also lets go of held actions) |
@@ -63,6 +63,9 @@ Poses are `<x> <y> <z> <yaw> <pitch> [roll]`: metres in tracking space (+Y up, -
 | `waitframe <n>` | `ok frame=<n>` | Answers once frame `n` is reached |
 | `capture eyes <prefix>` | `ok <prefix>-left.png <prefix>-right.png` | Both eye images of the next frame, full resolution |
 | `capture panel <panel> <file>` | `ok <file>` | The panel's image the next time it is submitted (at once for panels drawn from system memory) |
+| `pipboy` | `ok state=<closed\|changing\|open> looking=<0\|1> screen <f> <u> <r> facing <f> <u> <r>` | Where the Pip-Boy's screen is on the left controller (metres forward, up and right of it, and the way it faces) and whether the wrist is looked at; `screen unknown` before the game placed it |
+| `pipboy open` / `pipboy close` | `ok asked; ...` | Opens it the way looking at the wrist does (only when the game could open it then), or closes it the way looking away does; `pipboy` shows the result a few frames later |
+| `signal on` / `signal off` | `ok signal=<n\|off>` | Counts the person's "done" signal from now on: both hands held above the head for `d3d9.vrTestSignalHold` seconds (default 1), once per raise; `state` shows `signal=<n>`. Off by default and after each start, in memory only |
 
 Actions are FNVVR's named actions, not controller buttons (bindings are the runtime's business):
 `attack twohandgrip activate jump reload sneak pausehold vats pause grab wait magazine menuselect

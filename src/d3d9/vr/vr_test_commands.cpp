@@ -275,6 +275,26 @@ namespace dxvk {
       } else {
         return invalid("capture eyes <file prefix> | capture panel <panel> <file>");
       }
+    } else if (verb == "pipboy") {
+      std::string what = n == 2 ? lower(words[1]) : std::string();
+
+      if (n == 1)
+        command.verb = VrTestVerb::PipBoy;
+      else if (what == "open")
+        command.verb = VrTestVerb::PipBoyOpen;
+      else if (what == "close")
+        command.verb = VrTestVerb::PipBoyClose;
+      else
+        return invalid("pipboy [open|close]");
+    } else if (verb == "signal") {
+      std::string what = n == 2 ? lower(words[1]) : std::string();
+
+      if (what == "on")
+        command.verb = VrTestVerb::SignalOn;
+      else if (what == "off")
+        command.verb = VrTestVerb::SignalOff;
+      else
+        return invalid("signal on|off");
     } else {
       return invalid("unknown request '" + std::string(words[0]) + "'");
     }

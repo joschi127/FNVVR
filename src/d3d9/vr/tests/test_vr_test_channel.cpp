@@ -8,6 +8,7 @@
 #include "../vr_test_commands.h"
 #include "../vr_test_input.h"
 #include "../vr_test_png.h"
+#include "../vr_test_signal.h"
 
 using namespace dxvk;
 
@@ -307,4 +308,69 @@ TEST_CASE(test_png_writer_refuses_missing_rows) {
 TEST_CASE(test_channel_parses_memory) {
   CHECK(vrParseTestCommand("memory").verb == VrTestVerb::Memory);
   CHECK(vrParseTestCommand("memory now").verb == VrTestVerb::Invalid);
+}
+
+
+TEST_CASE(test_channel_parses_pipboy_and_signal) {
+  CHECK(vrParseTestCommand("pipboy").verb == VrTestVerb::PipBoy);
+  CHECK(vrParseTestCommand("pipboy open").verb == VrTestVerb::PipBoyOpen);
+  CHECK(vrParseTestCommand("PIPBOY Close").verb == VrTestVerb::PipBoyClose);
+  CHECK(vrParseTestCommand("pipboy toss").verb == VrTestVerb::Invalid);
+  CHECK(vrParseTestCommand("signal on").verb == VrTestVerb::SignalOn);
+  CHECK(vrParseTestCommand("signal off").verb == VrTestVerb::SignalOff);
+  CHECK(vrParseTestCommand("signal").verb == VrTestVerb::Invalid);
+}
+
+
+namespace {
+
+  VrInputState signalPose(float head, float left, float right) {
+    VrInputState input;
+    input.isHeadTracked = true;
+    input.headPose.position = { 0.0f, head, 0.0f };
+    input.controllers[0].isActive = true;
+    input.controllers[0].gripPose.position = { -0.2f, left, 0.0f };
+    input.controllers[1].isActive = true;
+    input.controllers[1].gripPose.position = { 0.2f, right, 0.0f };
+    return input;
+  }
+
+}
+
+
+TEST_CASE(test_signal_counts_hands_above_the_head_only_when_armed) {
+  VrTestSignal signal(1.0f);
+  VrInputState up = signalPose(1.65f, 1.85f, 1.9f);
+
+  // Not armed: nothing, however long
+  for (int i = 0; i < 30; i++)
+    signal.update(up, 0.1f);
+  CHECK(signal.count() == 0);
+
+  signal.arm(true);
+  for (int i = 0; i < 9; i++)
+    signal.update(up, 0.1f);
+  CHECK(signal.count() == 0);
+  signal.update(up, 0.11f);
+  CHECK(signal.count() == 1);
+
+  // Held on: still one; one hand down a little is not enough to count again
+  for (int i = 0; i < 30; i++)
+    signal.update(up, 0.1f);
+  CHECK(signal.count() == 1);
+
+  // Hands down, then up again for the hold time: two
+  signal.update(signalPose(1.65f, 1.2f, 1.9f), 0.1f);
+  for (int i = 0; i < 11; i++)
+    signal.update(up, 0.1f);
+  CHECK(signal.count() == 2);
+}
+
+
+TEST_CASE(test_signal_needs_both_hands) {
+  VrTestSignal signal(0.5f);
+  signal.arm(true);
+  for (int i = 0; i < 20; i++)
+    signal.update(signalPose(1.65f, 1.85f, 1.3f), 0.1f);
+  CHECK(signal.count() == 0);
 }

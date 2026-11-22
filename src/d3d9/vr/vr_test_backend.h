@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <chrono>
 #include <memory>
 #include <string>
 #include <vector>
@@ -9,6 +10,7 @@
 #include "vr_test_capture.h"
 #include "vr_test_input.h"
 #include "vr_test_pipe.h"
+#include "vr_test_signal.h"
 
 namespace dxvk {
 
@@ -25,7 +27,7 @@ namespace dxvk {
 
   public:
 
-    VrTestBackend(std::unique_ptr<IVRBackend> inner, const std::string& pipeName);
+    VrTestBackend(std::unique_ptr<IVRBackend> inner, const std::string& pipeName, float signalHold);
     ~VrTestBackend();
 
     const char* name() const override { return m_inner->name(); }
@@ -92,6 +94,8 @@ namespace dxvk {
     VrInputState                m_lastReal;
     VrInputState                m_lastMerged;
     VrInputContext              m_context = VrInputContext::Game;
+    VrTestSignal                m_signal;
+    std::chrono::steady_clock::time_point m_lastPoll = std::chrono::steady_clock::now();
 
     std::array<VrTestPanelPlace, VrPanelCount> m_places;
 
