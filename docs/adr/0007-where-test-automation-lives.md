@@ -44,7 +44,11 @@ can use one numbering.
 
 Requirements for FNVVR-Test-Bridge (maintainer, 2026-11-22):
 
-- run console commands and read values back (expression results and the console's printed text);
+- run console commands and read values back (expression results and the console's printed text). Found
+  2026-11-22 (run c29): many game commands (`tgm`, `getav`, `getgamesetting`) print only when typed into the
+  console itself, so through the bridge they print nothing; values are read with `eval`, which always works,
+  and the printed text is captured for everything that prints anyway (`help`, plugin and script messages).
+  Maintainer's decision: leave it so;
 - usable for FNVVR alone; the co-op mod is optional;
 - test changes stay in memory; nothing is saved unless someone saves;
 - a memory status of the game process (address space free, largest free block, used; committed and resident
