@@ -1,8 +1,8 @@
 # 0003: Co-op name markers in VR: drawn by FNVVR in the direction of the friend
 
-- Status: Proposed
-- Date: 2026-11-16
-- Decided by: open (the maintainer; direction agreed, details open)
+- Status: Accepted (2026-11-22: C2 as a general interface, see "Decision 2026-11-22" below)
+- Date: 2026-11-16, updated 2026-11-22
+- Decided by: the maintainer
 
 ## Context
 
@@ -106,3 +106,23 @@ without any marker code in FNVVR:
   author.
 - Test: in the harness of [ADR 0002](0002-headless-ai-testing-first.md) with `fakefriend` standing in
   view and behind the player; captures must show the marker over or in the direction of the friend.
+
+## Decision 2026-11-22
+
+The first runs of co-op in the emulator (fakefriend, run c34) showed the flat placement clearly off: at 3 and
+8 m straight ahead the plate stood about a body width beside the friend, in both eyes at the same image place
+(no depth), and it is missing whenever the friend is outside the flat camera's view. The maintainer decided:
+
+- **Way: C2, as a general interface** ([docs/hud-world-tiles.md](../hud-world-tiles.md)). Any mod may anchor a
+  HUD tile in the world with traits the game does not use (`user5` = 1, anchor in `user2` to `user4`,
+  `user6` = 1 for a person). FNVVR draws such tiles at their place and hides them from its interface passes;
+  FNVVR holds no co-op code. FNVVR-Coop-Compat sets the traits on the co-op name plates and chat above heads,
+  also off the flat screen.
+- **Placement**: at the anchor up to 20 m, farther at 20 m in its direction (so the eyes do not converge on
+  something far behind nearer scenery); the same angular size up to 5 m, shrinking to about 60 % at 40 m as a
+  cue for distance. All values in `dxvk.conf` (`d3d9.vrWorldTile*`). No occlusion (panels have no depth test);
+  drawing into the eye images with a depth test was judged too much effort for now.
+- **Scope**: name plates, "DOWNED" and chat above heads; the co-op mod's screen-fixed tiles (chat line,
+  revive text, talk list) can be kept on the head panel with `d3d9.vrHudHeadTiles`.
+- **Look**: like the game's (its font and the tile's colour), as on the flat screen.
+

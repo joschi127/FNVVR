@@ -28,6 +28,7 @@
 #include "vr_hand_hud.h"
 #include "vr_hud_layers.h"
 #include "vr_hud_meters.h"
+#include "vr_world_tiles.h"
 #include "vr_charge_ring.h"
 #include "vr_console_terminal.h"
 #include "vr_hand_throw.h"
@@ -111,6 +112,10 @@ namespace dxvk {
     /// How far the messages and objectives, drawn by the game in the top
     /// left corner, are moved towards the centre of the HUD panel, in metres
     float hudMessagesOffset = 0.25f;
+    /// HUD tiles another mod anchors in the world, see VrWorldTiles
+    VrWorldTileConfig        worldTiles;
+    /// Names (prefixes) of HUD tiles shown on the head's panel only
+    std::vector<std::string> hudHeadTiles;
   };
 
   /**
@@ -496,6 +501,9 @@ namespace dxvk {
     float               m_pipBoyExtrasCentre  = 0.0f;
     float               m_pipBoyExtrasPanelHeight = 0.0f;
     std::unique_ptr<VrCaravanValues>    m_caravanValues;
+    std::unique_ptr<VrWorldTiles>       m_worldTiles;
+    // Kept between frames, so that the interface pass does not allocate
+    std::vector<uintptr_t>              m_cullTiles;
     // The left hand held ammunition at the last frame, and the reload
     // button was down
     bool                                m_ammoInHand     = false;
@@ -912,6 +920,9 @@ namespace dxvk {
     bool createMenuSceneResources();
 
     void isolateHud();
+
+    // Shows the tiles anchored in the world, or hides them
+    void showWorldHud();
 
     bool createInterfaceTextures();
 

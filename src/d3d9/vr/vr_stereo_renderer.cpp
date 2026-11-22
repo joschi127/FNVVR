@@ -358,6 +358,16 @@ namespace dxvk {
     renderer->m_pipBoyArmTexture = std::make_unique<VrPipBoyArmTexture>(device);
     renderer->m_caravanValues = std::make_unique<VrCaravanValues>(*renderer->m_painter, backend, renderer->m_gameImages);
 
+    if (renderer->m_hudAvailable) {
+      renderer->m_worldTiles = std::make_unique<VrWorldTiles>(*renderer->m_painter, backend, renderer->m_gameImages);
+
+      if (renderer->m_worldTiles->initialize())
+        renderer->m_worldTiles->setConfig(panel.worldTiles, panel.hudHeadTiles);
+      else
+        renderer->m_worldTiles = nullptr;
+    }
+
+
     if (VrGameConsole::install())
       renderer->m_terminal = std::make_unique<VrConsoleTerminal>(*renderer->m_painter, backend, texts);
 
@@ -870,6 +880,11 @@ namespace dxvk {
     updateHandPick(input, state);
     updatePipBoyGaze(input, state, dt);
 
+    // The HUD tiles other mods anchor in the world, before the interface
+    // passes hide them
+    if (m_worldTiles)
+      m_worldTiles->update();
+
     // Before the interface's tiles are updated for this frame
     D3DSURFACE_DESC targetDesc = { };
     m_gameTarget->GetDesc(&targetDesc);
@@ -948,6 +963,8 @@ namespace dxvk {
       submitHandHud(input, dt);
     else
       hideHandHud();
+
+    showWorldHud();
 
     // A menu keeps its last image for a frame where it was not drawn. The
     // console's terminal stands in front of the menu it is opened from,
@@ -3252,6 +3269,23 @@ namespace dxvk {
       m_hudIsolated = m_hudLayers.isolateFromMenus(HeadHudGroups, std::size(HeadHudGroups));
     else
       m_hudIsolated = m_hudLayers.isolate(HeadHudGroups, std::size(HeadHudGroups));
+
+    // Tiles other mods anchor in the world are drawn at their place, not
+    // flat; their screen-fixed tiles named for the head stay off the others
+    if (m_hudIsolated && m_worldTiles) {
+      m_cullTiles.clear();
+      m_worldTiles->tilesToCull(layer == InterfaceLayer::Hud, m_cullTiles);
+      m_hudLayers.cullTiles(m_cullTiles.data(), m_cullTiles.size());
+    }
+  }
+
+
+  void VrStereoRenderer::showWorldHud() {
+    // In the world with the HUD shown in front of the head, not over a menu
+    bool shown = m_layer == InterfaceLayer::Hud && m_hudRendered && m_hasReference && m_hasHeadPose;
+
+    if (m_worldTiles)
+      m_worldTiles->show(shown, m_reference, m_gameCameraPose, m_headPose);
   }
 
 

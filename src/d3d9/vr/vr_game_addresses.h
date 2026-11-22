@@ -4188,6 +4188,21 @@ namespace dxvk {
     constexpr uintptr_t LockFreeMapCount                    = 0x18;
     constexpr uint8_t   ModelLoaderUpdateReferencesPrologue[] = { 0x55, 0x8B, 0xEC, 0x6A, 0xFF, 0x68, 0x40, 0xCD, 0xEE, 0x00 };
 
+    /**
+     * HUD tiles anchored in the world (VrWorldTiles): the interface's trait
+     * names a mod sets on a tile of the HUD to have it shown at a place in
+     * the world. See docs/hud-world-tiles.md.
+     */
+    constexpr char      WorldTileFlagTrait[]  = "user5";
+    constexpr char      WorldTileXTrait[]     = "user2";
+    constexpr char      WorldTileYTrait[]     = "user3";
+    constexpr char      WorldTileZTrait[]     = "user4";
+    constexpr char      WorldTileKindTrait[]  = "user6";
+    constexpr char      TileSystemColourTrait[] = "systemcolor";
+    constexpr char      TileRedTrait[]        = "red";
+    constexpr char      TileGreenTrait[]      = "green";
+    constexpr char      TileBlueTrait[]       = "blue";
+
   }
 
 }

@@ -2,6 +2,7 @@
 #include <tlhelp32.h>
 
 #include <algorithm>
+#include <cstdlib>
 #include <cwctype>
 #include <memory>
 
@@ -177,6 +178,16 @@ namespace dxvk {
     panel.hudWidth    = config.getOption<float>("d3d9.vrHudWidth",    panel.hudWidth);
     panel.hudHeight   = config.getOption<float>("d3d9.vrHudHeight",   panel.hudHeight);
     panel.hudMessagesOffset = config.getOption<float>("d3d9.vrHudMessagesOffset", panel.hudMessagesOffset);
+
+    // HUD tiles other mods anchor in the world, and their tiles kept in front of the head
+    VrWorldTileConfig& worldTiles = panel.worldTiles;
+    worldTiles.enabled      = config.getOption<bool>("d3d9.vrWorldTiles", worldTiles.enabled);
+    worldTiles.maxDistance  = std::max(config.getOption<float>("d3d9.vrWorldTileMaxDistance", worldTiles.maxDistance), 1.0f);
+    worldTiles.angle        = std::clamp(config.getOption<float>("d3d9.vrWorldTileAngle", worldTiles.angle), 1.0f, 60.0f);
+    worldTiles.nearDistance = std::max(config.getOption<float>("d3d9.vrWorldTileNearDistance", worldTiles.nearDistance), 0.0f);
+    worldTiles.farDistance  = std::max(config.getOption<float>("d3d9.vrWorldTileFarDistance", worldTiles.farDistance), 0.0f);
+    worldTiles.farScale     = std::clamp(config.getOption<float>("d3d9.vrWorldTileFarScale", worldTiles.farScale), 0.1f, 1.0f);
+    panel.hudHeadTiles = vrSplitNameList(config.getOption<std::string>("d3d9.vrHudHeadTiles", ""));
 
     VrTurnConfig turn;
     turn.smooth      = config.getOption<bool>("d3d9.vrSmoothTurn", turn.smooth);

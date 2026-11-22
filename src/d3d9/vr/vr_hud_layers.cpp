@@ -270,6 +270,12 @@ namespace dxvk {
   }
 
 
+  void VrHudLayers::cullTiles(const uintptr_t* tiles, size_t count) {
+    for (size_t i = 0; m_available && i < count; i++)
+      cullTile(tiles[i]);
+  }
+
+
   void VrHudLayers::cullTile(uintptr_t tile) {
     uintptr_t node = tile ? readField<uintptr_t>(tile, VrGame::TileNode) : 0;
 

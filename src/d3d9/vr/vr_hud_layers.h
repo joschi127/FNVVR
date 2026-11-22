@@ -51,6 +51,17 @@ namespace dxvk {
     bool isolateFromMenus(const uintptr_t* keep, size_t count);
 
     /**
+     * \brief Also culls the given tiles until restore
+     *
+     * For tiles that are not HUD groups, such as another mod's, after
+     * isolate or isolateFromMenus.
+     *
+     * \param [in] tiles The tiles
+     * \param [in] count Number of tiles
+     */
+    void cullTiles(const uintptr_t* tiles, size_t count);
+
+    /**
      * \brief Checks whether isolateFromMenus can find the menus
      */
     bool menusFound() const {
