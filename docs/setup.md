@@ -140,3 +140,13 @@ How True Co-op 0.1.11 handles saves and characters, read from its source (`src/l
 - FNVVR needs **OpenVR (SteamVR)**. With a Pico 4 over Virtual Desktop, SteamVR is the runtime (not
   VDXR).
 - Headset-free runs use FNVVR's emulator backend or SteamVR's null driver (ADR 0002).
+
+## Known problems
+
+- **SteamVR left on its null driver.** SteamVR's null driver (a virtual headset for headset-free tests, also
+  used by other projects) is switched on in `Steam/config/steamvr.vrsettings` (`steamvr.forcedDriver = "null"`,
+  `driver_null.enable = true`). As long as it is, the real headset shows nothing and FNVVR talks to the virtual
+  one. Check it before playing or a headset session: `python -I tools/fnvtest/steamvr.py` in
+  [FNVVR-Test-Bridge](https://github.com/joschi127/FNVVR-Test-Bridge) warns (it only reads). Switch it back in
+  SteamVR's settings or restore the file from a backup made before the change. FNVVR's emulator backend does
+  not use SteamVR and is not affected.
