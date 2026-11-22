@@ -28,10 +28,12 @@ mod as bloat); whether that changes after more play is the maintainer's decision
 - Only the part of the texture that holds the menus is shown, centred, with the dark rim around them that the wrist
   screen shows too (`d3d9.vrPipBoyPanelCropLeft` / `Top` / `Right` / `Bottom`). It is widened to the panel's aspect,
   so nothing is stretched. Around it a thin casing like the wrist's is drawn, as wide on every side
-  (`d3d9.vrPipBoyPanelFrame`), with rounded screen corners; it is blended over the copy. The laser maps through the
+  (`d3d9.vrPipBoyPanelFrame`), with rounded screen corners; it is blended over the copy. The panel's own corners are
+  rounded too and clear outside (`d3d9.vrPipBoyPanelCornerRadius`), so it has the shape of a device; other panels show
+  only their content as well. The laser maps through the
   same crop. Tuning values in `dxvk.conf`. Large Pip-Boy text comes first: the casing stays thin. It is painted
   once, at half the panel's size (a few MB for a moment; full size would cost about four times as much and looks the
-  same, the casing being a smooth shade). Checked in the emulator on ITEMS, STATS and DATA (runs c21, c22).
+  same, the casing being a smooth shade). Checked in the emulator on ITEMS, STATS and DATA (runs c21, c22, c25); casing and list fix confirmed in the headset.
 - Looking away does not close it (looking at the panel would); B closes it.
 - A sign above the panel's top right corner shows "Close" and the game's B button image, drawn like the game's own
   text buttons (its menus' `text_box` prefab, as the container menu's Exit): text and button dimmed until a laser is
@@ -42,7 +44,9 @@ mod as bloat); whether that changes after more play is the maintainer's decision
 - **Lamp bar** ("lamp bar", German "Leiste mit Lampen") directly below the panel: the strip of the Pip-Boy arm with
   STATS, ITEMS and DATA and their three knobs, read at run time from the player's own game texture (no game asset is
   shipped), the active view's knob lit with the game's button glow, and arrow tabs with the grips' names (LG, RG) in
-  place of LT and RT. The knobs are clicked with the laser to switch the view.
+  place of LT and RT. The knobs are clicked with the laser to switch the view: the view is paged to a step at a time
+  (LT/RT), each step pressed only once the game shows the last, as it ignores a press while it switches (headset run
+  h02: STATS to DATA ended on ITEMS before; fixed, emulator run c24).
 
 **Buttons in VR, panel or not:**
 - While the Pip-Boy is open, the grips page through the main views (they press LT and RT) and the triggers press LB
