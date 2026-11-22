@@ -53,8 +53,11 @@ Requirements for FNVVR-Test-Bridge (maintainer, 2026-11-22):
   with a sound and a chosen time on screen (`notify`, bridge; default 8 s), repeated by the tools after 30 s
   while the person has not reacted (texts kept short: a long one is hard to read in time); questions with up
   to four answer buttons in the game's message box (`ask`/`answer`, bridge; one question at a time); and a
-  "done" signal without an open question: both sticks pressed for about a second, counted by the VR channel
-  (`signal=N` in `state`, hold time `d3d9.vrTestSignalHold`), confirmed by a short HUD notification;
+  "done" signal without an open question: both hands held above the head for about a second (a pose, no
+  buttons: the sticks' clicks are sneak and VATS), counted by the VR channel (`signal=N` in `state`, hold time
+  `d3d9.vrTestSignalHold`) and confirmed by a short HUD notification. It is active only after a test tool
+  turned it on through the VR channel (`signal on`, once per test session, in memory only), so it never
+  fires while someone plays alone with the channels left on;
 - opening the Pip-Boy on its panel testable without a person (maintainer, 2026-11-22): directly
   (`pipboy open|close` in the VR channel, the same path as the gesture, only when the game could open it) and
   by the gesture of looking at the left wrist (the VR channel reports where the Pip-Boy's screen is on the
