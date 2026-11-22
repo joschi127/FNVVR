@@ -21,6 +21,8 @@
 >   game itself: a greeting, short numbered steps in the HUD, questions with buttons in the game's message box,
 >   both hands raised for "done", thanks at the end. No taking the headset off, many topics in one session.
 >   How it works: [FNVVR-Test-Bridge's guide](https://github.com/joschi127/FNVVR-Test-Bridge/blob/main/docs/headset-sessions.md).
+>
+>   <img src="https://github.com/user-attachments/assets/440124fa-b395-4867-80d1-dfe853a1c849" width="300" alt="A question from the test tool in the game's message box, answered with the laser">
 
 A VR mod for *Fallout: New Vegas*, built into a fork of [DXVK](https://github.com/doitsujin/dxvk). The game is played with motion controllers: a weapon in your hand, a Pip-Boy on your forearm, objects you pick up, throw and reload by hand.
 
