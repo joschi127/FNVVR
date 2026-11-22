@@ -37,7 +37,8 @@ Poses are `<x> <y> <z> <yaw> <pitch> [roll]`: metres in tracking space (+Y up, -
 | Request | Answer | What it does |
 |---|---|---|
 | `ping` | `ok pong fnvvr-test-vr 1` | |
-| `state` | `ok frame=<n> backend=<name> context=<game\|menu> panels=<shown> head=<real\|set> left=... right=... move=... turn=... actions=<held>` | `frame` counts VR frames since start |
+| `memory` | `ok vfree=<MB> vlargest=<MB> vused=<MB> vtotal=<MB> private=<MB> workingset=<MB>` | The game process's address space (free, largest free block, used, total) and committed / resident memory; answered on the pipe's thread, so also during loading screens |
+| `state` | `ok frame=<n> backend=<name> context=<game\|menu> panels=<shown> head=<real\|set> left=... right=... move=... turn=... actions=<held>` | `frame` counts VR frames since start (during loading screens and movies, each present counts as a frame) |
 | `head <pose>` | `ok` | Sets the head until released; the eyes keep their place relative to the head |
 | `hand left\|right <pose>` | `ok` | Sets a controller's grip and aim pose until released |
 | `release head\|left\|right\|move\|turn\|all` | `ok` | Gives it back to the real backend (`all` also lets go of held actions) |
@@ -60,7 +61,13 @@ Panels: `menu hudhead hudwrist hudprompt hudcharge hudammo quickwheel terminal c
 pipboylampbar`. The Pip-Boy on a panel ([ADR 0006](../adr/0006-pipboy-on-a-panel.md)) is shown on `menu`.
 
 Captures cost one stalled frame each (the image is copied back from the GPU); without a capture request
-nothing is copied. Paths may contain spaces; the folder has to exist.
+nothing is copied. The rows go from the GPU's staging buffer straight into the file, so the game's address
+space only holds that buffer (the size of one image, about 9 MB at 1440x1600) for the moment of the
+capture. The PNG is stored uncompressed. Floating-point images are converted from linear to sRGB. Paths
+may contain spaces; the folder has to exist.
+
+A request the pipe gave up on (after 60 seconds) is dropped by the render thread too, so a long `wait`
+does not block later requests.
 
 ## Frame numbers across both channels
 
