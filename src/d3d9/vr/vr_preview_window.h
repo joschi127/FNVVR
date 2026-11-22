@@ -57,6 +57,7 @@ namespace dxvk {
     IDirect3DDevice9*       m_device;
     HWND                    m_window;
     Com<IDirect3DSwapChain9> m_swapChain;
+    Com<IDirect3DStateBlock9> m_overlayState;
 
     uint32_t                m_width  = 0;
     uint32_t                m_height = 0;

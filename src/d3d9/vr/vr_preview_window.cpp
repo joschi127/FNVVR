@@ -141,10 +141,13 @@ namespace dxvk {
       VrPanelId::HudCharge, VrPanelId::HudAmmo, VrPanelId::QuickWheel,
     };
 
-    Com<IDirect3DStateBlock9> state;
-
-    if (FAILED(m_device->CreateStateBlock(D3DSBT_ALL, &state)))
+    // Made once: a state block of all state is large
+    if (m_overlayState == nullptr && FAILED(m_device->CreateStateBlock(D3DSBT_ALL, &m_overlayState))) {
+      m_overlayState = nullptr;
       return;
+    }
+
+    m_overlayState->Capture();
 
     Com<IDirect3DSurface9> oldTarget;
     Com<IDirect3DSurface9> oldDepth;
@@ -167,9 +170,13 @@ namespace dxvk {
     m_device->SetRenderState(D3DRS_SCISSORTESTENABLE, FALSE);
     m_device->SetRenderState(D3DRS_COLORWRITEENABLE, 0xF);
     m_device->SetRenderState(D3DRS_SRGBWRITEENABLE, FALSE);
+    m_device->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
     m_device->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+    m_device->SetRenderState(D3DRS_SEPARATEALPHABLENDENABLE, FALSE);
     m_device->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
     m_device->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+    m_device->SetTextureStageState(0, D3DTSS_TEXCOORDINDEX, 0);
+    m_device->SetTextureStageState(0, D3DTSS_TEXTURETRANSFORMFLAGS, D3DTTFF_DISABLE);
     m_device->SetTextureStageState(1, D3DTSS_COLOROP, D3DTOP_DISABLE);
     m_device->SetTextureStageState(1, D3DTSS_ALPHAOP, D3DTOP_DISABLE);
     m_device->SetSamplerState(0, D3DSAMP_MINFILTER, D3DTEXF_LINEAR);
@@ -258,7 +265,7 @@ namespace dxvk {
 
     m_device->SetRenderTarget(0, oldTarget.ptr());
     m_device->SetDepthStencilSurface(oldDepth.ptr());
-    state->Apply();
+    m_overlayState->Apply();
   }
 
 }

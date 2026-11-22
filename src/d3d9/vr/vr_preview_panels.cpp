@@ -16,6 +16,13 @@ namespace dxvk {
 
   void VrPreviewPanels::enable(VrEmulatorBackend* emulator) {
     g_emulator = emulator;
+    clear();
+  }
+
+
+  void VrPreviewPanels::clear() {
+    for (VrPreviewPanel& panel : g_panels)
+      panel = VrPreviewPanel();
   }
 
 
@@ -43,8 +50,14 @@ namespace dxvk {
   bool VrPreviewPanels::panel(VrPanelId id, VrPreviewPanel& result) {
     uint32_t index = uint32_t(id);
 
-    if (!g_emulator || index >= VrPanelCount || !g_panels[index].texture.ptr() || !g_emulator->isPanelVisible(id))
+    if (!g_emulator || index >= VrPanelCount || !g_panels[index].texture.ptr())
       return false;
+
+    // A hidden panel's texture is let go, so that it does not live on
+    if (!g_emulator->isPanelVisible(id)) {
+      g_panels[index] = VrPreviewPanel();
+      return false;
+    }
 
     result = g_panels[index];
     return true;

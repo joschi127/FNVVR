@@ -120,6 +120,9 @@ namespace dxvk {
 
   VrSystem::~VrSystem() {
     detachDevice();
+
+    // The emulator goes with the backend
+    VrPreviewPanels::enable(nullptr);
   }
 
 
@@ -520,6 +523,7 @@ namespace dxvk {
       return;
 
     // The eye textures belong to the device and must go before the session
+    VrPreviewPanels::clear();
     m_stereoRenderer = nullptr;
     m_backend->endSession();
     m_hasSession = false;

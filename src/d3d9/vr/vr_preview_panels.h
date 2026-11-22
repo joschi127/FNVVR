@@ -33,8 +33,11 @@ namespace dxvk {
 
   public:
 
-    /// Turns the recording on, with the emulator that knows what is shown
+    /// Turns the recording on, with the emulator that knows what is shown, or off with \c nullptr
     static void enable(VrEmulatorBackend* emulator);
+
+    /// Lets go of every recorded panel's texture, as the device's textures go
+    static void clear();
 
     static bool enabled();
 
