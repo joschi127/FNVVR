@@ -15,9 +15,9 @@ namespace dxvk {
     // The game's B button, as its menus show it with a gamepad
     constexpr char ButtonImage[] = "interface\\shared\\button\\general_button_b.dds";
 
-    // Without the font, the frame is as wide as with "Close"
-    constexpr float TextWidthWithoutFont = 65.0f;
-    constexpr float LineHeightWithoutFont = 31.0f;
+    // Without the font, the frame is as wide and high as with "Close", in units
+    constexpr float TextWidthWithoutFont  = 123.0f;
+    constexpr float LineHeightWithoutFont = 64.0f;
 
   }
 
@@ -34,20 +34,24 @@ namespace dxvk {
 
     // From the right: the button's image, and the frame its left part
     // overlaps, around the text
-    float textWidth  = font ? VrPaintList::measureText(*font, action, 1.0f) : TextWidthWithoutFont;
-    float lineHeight = font ? font->metrics.lineHeight() : LineHeightWithoutFont;
+    // The text's capitals as high, for the button, as on the Pip-Boy's own
+    // hints: pixels of the image per pixel of the font
+    float capitals   = font ? std::max(font->metrics.glyph('A').ascent, 1.0f) : 1.0f;
+    float textScale  = Layout::CapitalsShare * Layout::ButtonSize * unit / capitals;
+    float textWidth  = font ? VrPaintList::measureText(*font, action, 1.0f) * textScale : TextWidthWithoutFont * unit;
+    float lineHeight = font ? font->metrics.lineHeight() * textScale : LineHeightWithoutFont * unit;
 
     float buttonRight = width - Layout::Edge * unit;
     float buttonLeft  = buttonRight - Layout::ButtonSize * unit;
     float boxRight    = buttonLeft + Layout::ButtonOverlap * unit;
-    float boxLeft     = std::max(0.0f, boxRight - (textWidth + Layout::HorizontalSpace) * unit);
-    float boxHeight   = (lineHeight + Layout::VerticalSpace) * unit;
+    float boxLeft     = std::max(0.0f, boxRight - textWidth - Layout::HorizontalSpace * unit);
+    float boxHeight   = std::min(lineHeight + Layout::VerticalSpace * unit, height);
     float boxTop      = 0.5f * (height - boxHeight);
     float boxBottom   = boxTop + boxHeight;
 
-    // The text and the button are dimmed until a laser is on the sign,
-    // which also frames it
-    VrColour ink = colour.faded(hovered ? 1.0f : Layout::IdleAlpha);
+    // In the colour of the Pip-Boy's hints that can be used; a laser on
+    // the sign frames it
+    VrColour ink = colour;
 
     if (hovered) {
       VrColour line = { colour.r * Layout::LineBrightness, colour.g * Layout::LineBrightness,
@@ -68,9 +72,8 @@ namespace dxvk {
     if (font) {
       // Right-aligned in the frame, the capitals centred in its height
       float textRight = boxRight - 0.5f * Layout::HorizontalSpace * unit;
-      float capitals  = font->metrics.glyph('A').ascent;
-      float baseline  = 0.5f * (boxTop + boxBottom) + 0.5f * capitals * unit;
-      list.drawText(*font, action, textRight - textWidth * unit, baseline, unit, ink);
+      float baseline  = 0.5f * (boxTop + boxBottom) + 0.5f * capitals * textScale;
+      list.drawText(*font, action, textRight - textWidth, baseline, textScale, ink);
     }
   }
 

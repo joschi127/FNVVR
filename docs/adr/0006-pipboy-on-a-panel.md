@@ -35,9 +35,10 @@ mod as bloat); whether that changes after more play is the maintainer's decision
   once, at half the panel's size (a few MB for a moment; full size would cost about four times as much and looks the
   same, the casing being a smooth shade). Checked in the emulator on ITEMS, STATS and DATA (runs c21, c22, c25); casing and list fix confirmed in the headset.
 - Looking away does not close it (looking at the panel would); B closes it.
-- A sign above the panel's top right corner shows "Close" and the game's B button image, drawn like the game's own
-  text buttons (its menus' `text_box` prefab, as the container menu's Exit): text and button dimmed until a laser is
-  on it, then lit, with a thin frame around the text and the game's focus sound. It is clicked with the laser as well.
+- A sign above the panel's top right corner shows "Close" and the game's B button image like the Pip-Boy's own button
+  hints on the panel ("Equip A"): no box behind it, the same size (capitals 2.16 %, button 3.95 % of the panel's width)
+  and the full colour of a hint that can be used. A laser on it adds a thin frame around the text and the game's focus
+  sound. It is clicked with the laser as well.
 - The lasers point at the panel; the laser's point becomes the point the Pip-Boy picks its tiles at
   (InterfaceManager's Pip-Boy point, as named in public layouts of the game). The triggers click. A message box over
   the Pip-Boy takes the laser as other menus do.

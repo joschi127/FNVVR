@@ -11,23 +11,26 @@ namespace dxvk {
    * \brief Layout of the sign that tells how to close the Pip-Boy's panel
    */
   struct VrPipBoyHintLayout {
-    constexpr static uint32_t ImageWidth  = 296;
+    constexpr static uint32_t ImageWidth  = 406;
     constexpr static uint32_t ImageHeight = 150;
-    /// Width of the sign, as a share of the panel's width: the size the
-    /// game's menus on the Pip-Boy's screen give a button of this size
-    constexpr static float    WidthShare  = 0.12f;
+    /// Width of the sign, as a share of the panel's width: its button as
+    /// high as the Pip-Boy's own button hints on the panel ("Equip A"),
+    /// 3.95 % of the panel's width
+    constexpr static float    WidthShare  = 0.107f;
     /// Space between the panel's top edge and the sign, in metres
     constexpr static float    Gap         = 0.01f;
 
-    // The game's text button with a gamepad button (its menus' text_box
-    // prefab, as the container menu's Exit), in the menus' units
+    // Text and button as the Pip-Boy's button hints, in units of the image
 
-    /// Height of the image (its width is 148)
+    /// Height of the image (its width is 203)
     constexpr static float    Units           = 75.0f;
+    /// Height of the text's capitals, as a share of the button's (46 to 84
+    /// pixels for "Equip A" on the panel)
+    constexpr static float    CapitalsShare   = 46.0f / 84.0f;
     /// Space around the text in the frame, both sides together
     constexpr static float    HorizontalSpace = 20.0f;
     /// Space above and below the text, together
-    constexpr static float    VerticalSpace   = 15.0f;
+    constexpr static float    VerticalSpace   = 8.0f;
     /// The button's image, and how far it overlaps the frame's right end
     constexpr static float    ButtonSize      = 75.0f;
     constexpr static float    ButtonOverlap   = 17.0f;
@@ -35,8 +38,6 @@ namespace dxvk {
     constexpr static float    Edge            = 2.0f;
     constexpr static float    LineThickness   = 2.0f;
     constexpr static float    LineBrightness  = 200.0f / 255.0f;
-    /// Text and button while no laser is on it
-    constexpr static float    IdleAlpha       = 128.0f / 255.0f;
   };
 
   /**
