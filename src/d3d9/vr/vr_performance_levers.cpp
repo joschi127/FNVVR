@@ -24,7 +24,8 @@ namespace dxvk {
     // The function each redirected call reached: the game's or another mod's
     // hook. Each site keeps its own, since another mod may have taken one of
     // them (JohnnyGuitar NVSE takes the second one, to save the renderer's
-    // settings too, and calls the game's function itself).
+    // settings too, and calls what it found there: the game's function, or
+    // this hook if it was installed after it).
     std::array<uintptr_t, SaveSiteCount> g_previousSaveAll = { };
 
     template<size_t Site>
@@ -43,7 +44,7 @@ namespace dxvk {
     }
 
     template<size_t... Sites>
-    constexpr std::array<const void*, SaveSiteCount> makeSaveHooks(std::index_sequence<Sites...>) {
+    std::array<const void*, SaveSiteCount> makeSaveHooks(std::index_sequence<Sites...>) {
       return { { reinterpret_cast<const void*>(&saveSettingsHook<Sites>)... } };
     }
 
@@ -326,13 +327,22 @@ namespace dxvk {
 
     // Every save is taken or none: a save left out would write the lowered
     // values into the player's INI
+    // A site still taken by this hook (an earlier performance mode, whose
+    // device the game made anew) keeps the function it reached
+    auto taken = [] (size_t i) {
+      uintptr_t current = 0;
+      return g_previousSaveAll[i]
+        && VrGameMemory::callTarget(VrGame::SettingsSaveAllCallSites[i], &current)
+        && current == reinterpret_cast<uintptr_t>(SaveHooks[i]);
+    };
+
     bool all = true;
 
     for (size_t i = 0; i < SaveSiteCount; i++)
-      all = VrGameMemory::canChainCall(VrGame::SettingsSaveAllCallSites[i], VrGame::SettingsSaveAll) && all;
+      all = (taken(i) || VrGameMemory::canChainCall(VrGame::SettingsSaveAllCallSites[i], VrGame::SettingsSaveAll)) && all;
 
     for (size_t i = 0; i < SaveSiteCount && all; i++) {
-      all = VrGameMemory::chainCall(VrGame::SettingsSaveAllCallSites[i], VrGame::SettingsSaveAll,
+      all = taken(i) || VrGameMemory::chainCall(VrGame::SettingsSaveAllCallSites[i], VrGame::SettingsSaveAll,
         SaveHooks[i], &g_previousSaveAll[i]);
     }
 
