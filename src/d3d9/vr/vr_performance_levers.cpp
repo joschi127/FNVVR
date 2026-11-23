@@ -2,6 +2,7 @@
 #include <array>
 #include <cstring>
 #include <iterator>
+#include <utility>
 
 #include "../../util/log/log.h"
 #include "../../util/util_string.h"
@@ -18,22 +19,35 @@ namespace dxvk {
 
     VrPerformanceLevers* g_levers = nullptr;
 
-    // The function the redirected calls reached: the game's or another mod's hook
-    uintptr_t g_previousSaveAll = VrGame::SettingsSaveAll;
+    constexpr size_t SaveSiteCount = std::size(VrGame::SettingsSaveAllCallSites);
 
+    // The function each redirected call reached: the game's or another mod's
+    // hook. Each site keeps its own, since another mod may have taken one of
+    // them (JohnnyGuitar NVSE takes the second one, to save the renderer's
+    // settings too, and calls the game's function itself).
+    std::array<uintptr_t, SaveSiteCount> g_previousSaveAll = { };
+
+    template<size_t Site>
     bool __fastcall saveSettingsHook(void* collection, void* unused, const char* path) {
       VrPerformanceLevers* levers = g_levers;
 
       if (levers)
         levers->lendSettings();
 
-      bool saved = reinterpret_cast<SaveAllFn>(g_previousSaveAll)(collection, nullptr, path);
+      bool saved = reinterpret_cast<SaveAllFn>(g_previousSaveAll[Site])(collection, nullptr, path);
 
       if (levers)
         levers->retakeSettings();
 
       return saved;
     }
+
+    template<size_t... Sites>
+    constexpr std::array<const void*, SaveSiteCount> makeSaveHooks(std::index_sequence<Sites...>) {
+      return { { reinterpret_cast<const void*>(&saveSettingsHook<Sites>)... } };
+    }
+
+    const std::array<const void*, SaveSiteCount> SaveHooks = makeSaveHooks(std::make_index_sequence<SaveSiteCount>());
 
     constexpr char WaterReflectionsName[]  = "bUseWaterReflections:Water";
     constexpr char WaterDepthName[]        = "bUseWaterDepth:Water";
@@ -310,9 +324,22 @@ namespace dxvk {
     if (g_levers)
       return false;
 
-    if (!VrGameMemory::chainCalls(VrGame::SettingsSaveAllCallSites, std::size(VrGame::SettingsSaveAllCallSites),
-          VrGame::SettingsSaveAll, reinterpret_cast<const void*>(&saveSettingsHook),
-          &g_previousSaveAll)) {
+    // Every save is taken or none: a save left out would write the lowered
+    // values into the player's INI
+    bool all = true;
+
+    for (size_t i = 0; i < SaveSiteCount; i++)
+      all = VrGameMemory::canChainCall(VrGame::SettingsSaveAllCallSites[i], VrGame::SettingsSaveAll) && all;
+
+    for (size_t i = 0; i < SaveSiteCount && all; i++) {
+      all = VrGameMemory::chainCall(VrGame::SettingsSaveAllCallSites[i], VrGame::SettingsSaveAll,
+        SaveHooks[i], &g_previousSaveAll[i]);
+    }
+
+    if (!all) {
+      for (size_t i = 0; i < SaveSiteCount; i++)
+        VrGameMemory::callsTo(VrGame::SettingsSaveAllCallSites[i], VrGame::SettingsSaveAll);
+
       Logger::warn("VR: The game's INI saves were not found, the performance mode leaves water reflections, depth maps, refractions and grass alone");
       return false;
     }
