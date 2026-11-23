@@ -225,11 +225,17 @@ namespace dxvk {
     if (current == reinterpret_cast<uintptr_t>(newTarget))
       return false;
 
-    if (!redirectCall(site, current, newTarget))
+    // The hook may run as soon as the call reaches it: it must find where
+    // to go on first
+    uintptr_t before = *previous;
+    *previous = current;
+
+    if (!redirectCall(site, current, newTarget)) {
+      *previous = before;
       return false;
+    }
 
     reportForeignCode(site, current);
-    *previous = current;
     return true;
   }
 
