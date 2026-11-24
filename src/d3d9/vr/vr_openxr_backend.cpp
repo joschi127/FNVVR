@@ -1262,6 +1262,26 @@ namespace dxvk {
   }
 
 
+  bool VrOpenXrBackend::movePanel(VrPanelId id, const VrPose& pose, float width, VrPanelAnchor anchor) {
+    uint32_t index = uint32_t(id);
+
+    if (index >= VrPanelCount)
+      return false;
+
+    // Every frame gives the quads from this state: placing it is enough
+    std::lock_guard<dxvk::mutex> lock(m_panelMutex);
+    Panel& panel = m_panels[index];
+
+    if (!panel.visible || !panel.swapchain.hasImage)
+      return false;
+
+    panel.pose   = pose;
+    panel.width  = width;
+    panel.anchor = anchor;
+    return true;
+  }
+
+
   bool VrOpenXrBackend::panelsNeedFrames() const {
     // Quad layers are only given to the runtime with xrEndFrame
     return true;
