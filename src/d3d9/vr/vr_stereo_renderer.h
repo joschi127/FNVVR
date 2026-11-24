@@ -49,9 +49,6 @@
 #include "vr_foveation.h"
 #include "vr_frame_submitter.h"
 #include "vr_occlusion_culling.h"
-#include "vr_performance_mode.h"
-#include "vr_stereo_replay.h"
-#include "vr_render_scale.h"
 #include "vr_part_highlight.h"
 #include "vr_npc_gaze.h"
 #include "vr_painter.h"
@@ -211,10 +208,12 @@ namespace dxvk {
      * The game also plays movies, such as the intro of a new game, in a
      * loop of its own that presents every movie frame and polls the
      * gamepad to let the player skip the movie. The controllers are read
-     * here for those frames, see \ref updateBlockedInput.
+     * here for those frames, see \ref updateBlockedInput. A backend whose
+     * panels need frames also gets a frame of its own for each of them,
+     * see \ref endFrameOutsideLoop.
      *
-     * Frames drawn by the game's main loop were paced by the runtime, so
-     * they are presented without waiting for the desktop display.
+     * Frames paced by the runtime are presented without waiting for the
+     * desktop display.
      *
      * \param [in] swapchain Swap chain being presented
      * \returns What the swap chain does with the present
@@ -349,27 +348,18 @@ namespace dxvk {
     void setFoveationEnabled(bool enabled);
 
     /**
-     * \brief Turns the performance mode on or off
-     *
-     * See VrPerformanceMode. Called from the game's options page, on the
-     * game's thread.
-     */
-    void setPerformanceMode(bool enabled);
-
-    /**
      * \brief Hands frames to the runtime from a thread of their own
      *
-     * See VrFrameSubmitter (d3d9.vrAsyncSubmit). The performance mode also
-     * uses the thread while it is on.
+     * See VrFrameSubmitter (d3d9.vrAsyncSubmit).
      */
     void setAsyncSubmit(bool enabled);
 
     /**
-     * \brief Sets when occlusion culling runs (d3d9.vrOcclusionCulling)
+     * \brief Turns occlusion culling on or off (d3d9.vrOcclusionCulling)
      *
-     * See VrOcclusionCulling. Installed the first time it is wanted.
+     * See VrOcclusionCulling. Installed the first time it is turned on.
      */
-    void setOcclusionUse(VrOcclusionUse use);
+    void setOcclusionCulling(bool enabled);
 
   private:
 
@@ -402,21 +392,9 @@ namespace dxvk {
     // Every panel and frame of the renderer goes to the backend through it
     VrFrameSubmitter   m_submitter;
 
-    VrPerformanceMode  m_performance;
-    // The performance mode's world resolution, installed when it is first on
-    std::unique_ptr<VrRenderScale> m_renderScale;
-    bool               m_renderScaleTried  = false;
-    bool               m_performanceOn     = false;
-    bool               m_asyncSubmitWanted = false;
-
     // Occlusion culling, installed the first time it is wanted
     std::unique_ptr<VrOcclusionCulling> m_occlusion;
-
-    // The performance mode's first distance level: the right eye drawn
-    // from the left eye's commands
-    std::unique_ptr<VrStereoReplay> m_stereoReplay;
     bool               m_occlusionTried    = false;
-    VrOcclusionUse     m_occlusionUse      = VrOcclusionUse::Performance;
     // Shown once in the world when the Occlusion Culling plugin is loaded,
     // after NoticeDelayFrames frames there, then cleared
     const char*        m_occlusionPluginNotice = nullptr;
@@ -576,9 +554,6 @@ namespace dxvk {
     // The scenes of the mini-games, in the eye images instead of the panel
     std::unique_ptr<VrMinigames> m_minigames;
     std::array<bool, VrEyeCount> m_minigameDrawn = { };
-    // Drawn before the first-person model, inside the world render that
-    // the stereo replay runs again for the right eye
-    std::array<bool, VrEyeCount> m_minigameInWorld = { };
     uint32_t            m_minigamePanelRevision = 0;
 
     // The activation target, picked along the hands instead of the view
@@ -676,8 +651,6 @@ namespace dxvk {
     VrGazeHold m_gazeHold;
     bool m_foveationEnabled  = false;
     bool m_foveationTestGaze = false;
-    // World resolution forced while the performance mode is on, 0 for none
-    float m_worldScaleTest = 0.0f;
 
     // The game's flat scope is off with a headset, findings/optics.md §10
     std::unique_ptr<VrScopeGame> m_scopeGame;
@@ -757,6 +730,7 @@ namespace dxvk {
     high_resolution_clock::time_point m_blockedInputTime;
     bool   m_blockedInput  = false;
     bool   m_loggedBlockedInput = false;
+    bool   m_loggedFrameOutsideLoop = false;
 
     // Latest tracked head pose, used to place the panel
     VrPose m_headPose;
@@ -839,6 +813,8 @@ namespace dxvk {
 
     void updateBlockedInput();
 
+    bool endFrameOutsideLoop();
+
     VrGameStateKind readGameState();
 
     bool createEyeTextures();
@@ -860,16 +836,6 @@ namespace dxvk {
     VrGameCameraPose eyeInGame(const VrEyeView& view) const;
 
     void applyEyePose();
-
-    /**
-     * \brief Camera of an eye in game space, as applyEyePose gives it
-     */
-    VrGameCameraPose eyeCameraPose(const VrEyeView& view) const;
-
-    /**
-     * \brief Starts the stereo replay's frame, if the performance mode wants it
-     */
-    void beginStereoReplay(VrGameStateKind state, const std::array<VrEyeView, VrEyeCount>& views);
 
     void setScreenPass(const VrVector3* shift);
 
@@ -925,8 +891,6 @@ namespace dxvk {
     /**
      * \brief Sets the frame's shading rates from where the eyes look
      */
-    void updateOcclusion();
-
     void showOcclusionPluginNotice(VrGameStateKind state);
 
     void updateFoveation(const std::array<VrEyeView, VrEyeCount>& views, float dt);

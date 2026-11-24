@@ -222,7 +222,7 @@ namespace dxvk {
   VrStereoRenderer::VrStereoRenderer(IVRBackend& backend, IDirect3DDevice9* device,
     bool showPreview, const VrPanelConfig& panel)
   : m_backend(backend), m_device(device), m_showPreview(showPreview), m_panelConfig(panel),
-    m_submitter(device, backend), m_performance(backend), m_controls(backend) { }
+    m_submitter(device, backend), m_controls(backend) { }
 
 
   VrStereoRenderer::~VrStereoRenderer() {
@@ -388,7 +388,7 @@ namespace dxvk {
     if (VrOcclusionCulling::pluginLoaded()) {
       renderer->m_occlusionPluginNotice = texts.text("occlusion.plugin",
         "Uninstall the Occlusion Culling plugin: in VR it gives both eyes the same answers. "
-        "FNVVR's performance mode has its own occlusion culling.");
+        "FNVVR has its own, made for VR.");
     }
 
     if (VrGameTextEdit::install())
@@ -542,35 +542,16 @@ namespace dxvk {
     if (renderer->m_renderPasses) {
       renderer->m_foveation = VrFoveation::create(device, passes.foveationZones);
       renderer->m_foveationTestGaze = passes.foveationTestGaze;
-      renderer->m_worldScaleTest = passes.worldScaleTest;
-
-      renderer->m_stereoReplay = VrStereoReplay::install(device, passes.stereoReplayTest);
-
-      if (renderer->m_stereoReplay) {
-        renderer->m_performance.forceStereoReplay(renderer->m_stereoReplay->forced());
-        renderer->m_renderPasses->setAfterShadows([self] { self->m_stereoReplay->afterShadows(); });
-
-        // The mini-game drawn in the left eye's world is in the replay
-        renderer->m_stereoReplay->setOnReplay([self] { self->m_minigameDrawn[1] = self->m_minigameInWorld[0]; });
-      }
 
       renderer->m_renderPasses->setWorldCallbacks(
         [self] (uint32_t eye) {
           if (self->m_foveation)
             self->m_foveation->beginWorld(eye);
 
-          // A replayed right eye would run the left eye's queries again
-          // and overwrite their answers: no occlusion culling then
-          bool replayed = self->m_stereoReplay && self->m_stereoReplay->active();
-
-          if (self->m_occlusion && !replayed)
+          if (self->m_occlusion)
             self->m_occlusion->beginWorld(eye);
         },
         [self] {
-          // The image space passes are drawn as they are in a replay
-          if (self->m_stereoReplay)
-            self->m_stereoReplay->beforeScreenPasses();
-
           if (self->m_foveation)
             self->m_foveation->endWorld();
 
@@ -695,11 +676,19 @@ namespace dxvk {
     bool paced = m_swapped && m_paced;
 
     if (m_eye == NoEye) {
-      if (!m_swapped && m_mainThread == GetCurrentThreadId())
+      // No main loop frame came before: a movie, or the game's start before
+      // its main loop, which runs on the thread that will be the main one
+      bool outsideLoop = !m_swapped
+        && (!m_mainThread || m_mainThread == GetCurrentThreadId());
+
+      if (outsideLoop && m_mainThread)
         updateBlockedInput();
 
       m_swapped = false;
       updatePanel(swapchain);
+
+      if (outsideLoop && m_backend.panelsNeedFrames())
+        paced = endFrameOutsideLoop();
     }
 
     if (!paced)
@@ -799,13 +788,6 @@ namespace dxvk {
     VrD3D9Bridge::beginFrame(m_device, m_backend);
     m_paced = timing.paced;
     countFrame(timing);
-    m_performance.update(state == VrGameStateKind::InGame || state == VrGameStateKind::PipBoy, timing);
-
-    if (m_renderScale) {
-      bool forced = m_performanceOn && m_worldScaleTest > 0.0f;
-      m_renderScale->setScale(forced ? m_worldScaleTest : m_performance.renderScale());
-    }
-
     showOcclusionPluginNotice(state);
 
     if (!timing.shouldRender) {
@@ -966,7 +948,6 @@ namespace dxvk {
     gpuEnd(scopeGpu);
 
     m_minigameDrawn = { };
-    m_minigameInWorld = { };
 
     // After the game's update, for both eyes only
     if (m_minigames)
@@ -977,16 +958,10 @@ namespace dxvk {
     if (m_pipBoyArmTexture && m_weaponHand)
       m_pipBoyArmTexture->beginDraw(m_weaponHand->pipBoyDevice(), m_gameImages);
 
-    if (m_stereoReplay)
-      beginStereoReplay(state, views);
-
     for (uint32_t eye = 0; eye < VrEyeCount; eye++) {
       m_eyeCopied[eye] = false;
       renderEye(eye, views[eye], main);
     }
-
-    if (m_stereoReplay)
-      m_stereoReplay->endFrame();
 
     if (m_pipBoyArmTexture)
       m_pipBoyArmTexture->endDraw();
@@ -1105,8 +1080,6 @@ namespace dxvk {
     VrD3D9Bridge::beginFrame(m_device, m_backend);
     m_paced = timing.paced;
     countFrame(timing);
-    m_performance.update(false, timing);
-
     // Answers of the world's last frames age while it is not drawn
     if (m_occlusion)
       m_occlusion->endFrame();
@@ -1238,6 +1211,22 @@ namespace dxvk {
   }
 
 
+  bool VrStereoRenderer::endFrameOutsideLoop() {
+    // The panel's new image is only shown with a frame. The movie paces
+    // itself at a lower rate than the headset, so waiting for the headset
+    // takes less than one movie frame.
+    if (!m_loggedFrameOutsideLoop) {
+      Logger::info("VR: Presents outside of the main loop end a headset frame each, to show the panel's new image");
+      m_loggedFrameOutsideLoop = true;
+    }
+
+    VrFrameTiming timing = waitFrame();
+    VrD3D9Bridge::beginFrame(m_device, m_backend);
+    VrD3D9Bridge::submitEmptyFrame(m_device, m_backend, timing.predictedDisplayTime);
+    return timing.paced;
+  }
+
+
   void VrStereoRenderer::trackHead(const VrInputState& input) {
     if (!input.isHeadTracked)
       return;
@@ -1355,15 +1344,6 @@ namespace dxvk {
     if (m_renderPasses)
       m_renderPasses->beginEye(eye);
 
-    if (m_stereoReplay)
-      m_stereoReplay->beginEye(eye);
-
-    if (m_renderScale) {
-      D3DSURFACE_DESC screen = { };
-      m_gameTarget->GetDesc(&screen);
-      m_renderScale->beginEye(VrExtent { screen.Width, screen.Height });
-    }
-
     // The left eye's pass moves time on for the frame
     bool repeat = eye != 0 && m_repeatedPasses;
 
@@ -1374,12 +1354,6 @@ namespace dxvk {
 
     if (repeat)
       m_repeatedPasses->endRepeat();
-
-    if (m_renderScale)
-      m_renderScale->endEye();
-
-    if (m_stereoReplay)
-      m_stereoReplay->endEye();
 
     if (m_renderPasses)
       m_renderPasses->endEye();
@@ -1439,39 +1413,24 @@ namespace dxvk {
     D3DSURFACE_DESC target = { };
     m_gameTarget->GetDesc(&target);
 
-    VrExtent world = { target.Width, target.Height };
-
-    if (m_renderScale)
-      world = m_renderScale->worldExtent(world);
-
-    m_foveation->prepareFrame(views, gaze, world);
-  }
-
-
-  void VrStereoRenderer::setPerformanceMode(bool enabled) {
-    m_performanceOn = enabled;
-    m_performance.setEnabled(enabled);
-
-    if (enabled && !m_renderScaleTried && m_renderPasses) {
-      m_renderScaleTried = true;
-      m_renderScale = VrRenderScale::install(m_device, *m_painter);
-      m_renderPasses->setRenderScale(m_renderScale.get());
-    }
-
-    m_submitter.setThreaded(m_asyncSubmitWanted || m_performanceOn);
-    updateOcclusion();
+    m_foveation->prepareFrame(views, gaze, VrExtent { target.Width, target.Height });
   }
 
 
   void VrStereoRenderer::setAsyncSubmit(bool enabled) {
-    m_asyncSubmitWanted = enabled;
-    m_submitter.setThreaded(m_asyncSubmitWanted || m_performanceOn);
+    m_submitter.setThreaded(enabled);
   }
 
 
-  void VrStereoRenderer::setOcclusionUse(VrOcclusionUse use) {
-    m_occlusionUse = use;
-    updateOcclusion();
+  void VrStereoRenderer::setOcclusionCulling(bool enabled) {
+    // Its eyes are told by the render passes' world callbacks
+    if (enabled && !m_occlusionTried && m_renderPasses) {
+      m_occlusionTried = true;
+      m_occlusion = VrOcclusionCulling::install(m_device);
+    }
+
+    if (m_occlusion)
+      m_occlusion->setEnabled(enabled);
   }
 
 
@@ -1493,21 +1452,6 @@ namespace dxvk {
     }
 
     m_occlusionPluginNotice = nullptr;
-  }
-
-
-  void VrStereoRenderer::updateOcclusion() {
-    bool wanted = m_occlusionUse == VrOcclusionUse::Always
-      || (m_occlusionUse == VrOcclusionUse::Performance && m_performanceOn);
-
-    // Its eyes are told by the render passes' world callbacks
-    if (wanted && !m_occlusionTried && m_renderPasses) {
-      m_occlusionTried = true;
-      m_occlusion = VrOcclusionCulling::install(m_device);
-    }
-
-    if (m_occlusion)
-      m_occlusion->setEnabled(wanted);
   }
 
 
@@ -1678,35 +1622,14 @@ namespace dxvk {
   }
 
 
-  VrGameCameraPose VrStereoRenderer::eyeCameraPose(const VrEyeView& view) const {
+  void VrStereoRenderer::applyEyePose() {
     VrPose eyeInReference = m_hasReference
-      ? vrComputeEyeInReference(m_reference, view.pose)
+      ? vrComputeEyeInReference(m_reference, m_eyeView->pose)
       : VrPose();
 
-    return m_scopeCamera
+    VrGameCameraPose pose = m_scopeCamera
       ? *m_scopeCamera
       : vrComputeEyeCameraPose(m_gameCameraPose, eyeInReference, VrGameUnitsPerMetre);
-  }
-
-
-  void VrStereoRenderer::beginStereoReplay(VrGameStateKind state, const std::array<VrEyeView, VrEyeCount>& views) {
-    bool inWorld = state == VrGameStateKind::InGame || state == VrGameStateKind::PipBoy;
-    bool active = m_performanceOn && inWorld
-      && m_performance.stereoReplay();
-
-    std::array<VrStereoEyeCamera, VrEyeCount> eyeCameras;
-
-    for (uint32_t eye = 0; eye < VrEyeCount; eye++) {
-      eyeCameras[eye].pose    = eyeCameraPose(views[eye]);
-      eyeCameras[eye].frustum = vrComputeGameFrustum(views[eye].fov);
-    }
-
-    m_stereoReplay->beginFrame(active, eyeCameras);
-  }
-
-
-  void VrStereoRenderer::applyEyePose() {
-    VrGameCameraPose pose = eyeCameraPose(*m_eyeView);
     m_eyePosition = pose.position;
 
     if (m_screenPass)
@@ -2731,10 +2654,8 @@ namespace dxvk {
     if (m_renderPasses) {
       m_renderPasses->setBeforeFirstPerson([this] {
         if (m_minigames && m_minigames->drawsBeforeFirstPerson()
-         && m_eye != NoEye && m_eyeView && !m_minigameDrawn[m_eye]) {
+         && m_eye != NoEye && m_eyeView && !m_minigameDrawn[m_eye])
           drawMinigame();
-          m_minigameInWorld[m_eye] = true;
-        }
       });
     }
   }

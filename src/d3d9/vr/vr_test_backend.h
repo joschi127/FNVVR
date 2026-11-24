@@ -63,10 +63,9 @@ namespace dxvk {
     bool locateGaze(std::array<VrGaze, VrEyeCount>& gaze) override { return m_inner->locateGaze(gaze); }
 
     bool submitFrame(const VrFrameSubmission& frame) override;
-    bool readFrameLoad(VrFrameLoad& load) override { return m_inner->readFrameLoad(load); }
-    std::string headsetModel() const override { return m_inner->headsetModel(); }
     void submitEmptyFrame(int64_t displayTime) override { m_inner->submitEmptyFrame(displayTime); }
     bool submitPanel(VrPanelId id, const VrPanelSubmission& panel) override;
+    bool panelsNeedFrames() const override { return m_inner->panelsNeedFrames(); }
     void hidePanel(VrPanelId id) override;
     bool movePanel(VrPanelId id, const VrPose& pose, float width, VrPanelAnchor anchor) override;
     bool submitPanelPixels(VrPanelId id, const VrPanelPixels& panel) override;

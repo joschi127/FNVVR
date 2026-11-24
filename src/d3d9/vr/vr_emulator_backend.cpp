@@ -177,18 +177,6 @@ namespace dxvk {
   }
 
 
-  bool VrEmulatorBackend::readFrameLoad(VrFrameLoad& load) {
-    // Simulated frames have no GPU timing
-    load = VrFrameLoad();
-    return false;
-  }
-
-
-  std::string VrEmulatorBackend::headsetModel() const {
-    return "Emulator";
-  }
-
-
   bool VrEmulatorBackend::submitFrame(const VrFrameSubmission& frame) {
     if (m_state != VrSessionState::Running)
       return false;
@@ -223,6 +211,11 @@ namespace dxvk {
       m_sink->onPanel(id, panel);
 
     return true;
+  }
+
+
+  bool VrEmulatorBackend::panelsNeedFrames() const {
+    return false;
   }
 
 

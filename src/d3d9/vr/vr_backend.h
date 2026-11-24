@@ -189,22 +189,6 @@ namespace dxvk {
   };
 
   /**
-   * \brief How the runtime saw a recent frame
-   *
-   * For the performance mode, see VrPerformanceGovernor.
-   */
-  struct VrFrameLoad {
-    /// Runtime's own number of the frame, to count each frame once
-    uint32_t frameIndex     = 0;
-    /// GPU time of the frame, the runtime's work included, in milliseconds
-    double   gpuMs          = -1.0;
-    /// The runtime reprojected the frame because the CPU was late
-    bool     cpuReprojected = false;
-    /// The runtime reprojected the frame because the GPU was late
-    bool     gpuReprojected = false;
-  };
-
-  /**
    * \brief Abstract VR runtime
    *
    * All game-facing VR code talks to this interface. The implementation is
@@ -354,31 +338,28 @@ namespace dxvk {
      */
     virtual bool submitFrame(const VrFrameSubmission& frame) = 0;
 
-    /**
-     * \brief Reads how the runtime saw the latest frame it showed
-     *
-     * \param [out] load GPU time and reprojection of the frame
-     * \returns \c false if the runtime does not tell
-     */
-    virtual bool readFrameLoad(VrFrameLoad& load) = 0;
-
-    /**
-     * \brief Model name of the headset, as the runtime gives it
-     */
-    virtual std::string headsetModel() const = 0;
-
     virtual void submitEmptyFrame(int64_t displayTime) = 0;
 
     /**
      * \brief Shows a flat panel, or updates it if it is shown
      *
      * The panel is drawn over the stereo frames and stays visible with its
-     * last image until hidePanel is called for it. It does not depend on the
-     * frame loop: it may be submitted while no stereo frames are rendered,
-     * for example while the game loads. Panels are independent of each other.
-     * HudHead is drawn over Menu, and the hand panels over HudHead.
+     * last image until hidePanel is called for it. It may be submitted while
+     * no stereo frames are rendered, for example while the game loads, see
+     * panelsNeedFrames. Panels are independent of each other. HudHead is
+     * drawn over Menu, and the hand panels over HudHead.
      */
     virtual bool submitPanel(VrPanelId id, const VrPanelSubmission& panel) = 0;
+
+    /**
+     * \brief Tells whether panels are only shown in the frames the game ends
+     *
+     * When true, a new panel image reaches the headset with the next
+     * submitFrame or submitEmptyFrame, so code that submits panels outside
+     * of the game's frame loop must also wait for, begin and end a frame.
+     * When false, the runtime shows the panels on its own.
+     */
+    virtual bool panelsNeedFrames() const = 0;
 
     virtual void hidePanel(VrPanelId id) = 0;
 

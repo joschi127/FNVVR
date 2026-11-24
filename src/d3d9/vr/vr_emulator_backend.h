@@ -97,10 +97,6 @@ namespace dxvk {
     /// The emulated eyes look straight ahead
     bool locateGaze(std::array<VrGaze, VrEyeCount>& gaze) override;
 
-    bool readFrameLoad(VrFrameLoad& load) override;
-
-    std::string headsetModel() const override;
-
     bool submitFrame(const VrFrameSubmission& frame) override;
 
     void submitEmptyFrame(int64_t displayTime) override;
@@ -108,6 +104,8 @@ namespace dxvk {
     bool beginPanelSession() override;
 
     bool submitPanel(VrPanelId id, const VrPanelSubmission& panel) override;
+
+    bool panelsNeedFrames() const override;
 
     bool submitPanelPixels(VrPanelId id, const VrPanelPixels& panel) override;
 
