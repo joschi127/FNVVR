@@ -212,7 +212,7 @@ namespace dxvk {
 
     bool notBlinking(Record& record, EyeState& state, bool hide);
 
-    void resetEye(EyeState& state);
+    void resetEye(Record& record, uint32_t eye);
 
     void releaseAll();
 

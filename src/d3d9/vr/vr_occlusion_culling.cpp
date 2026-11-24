@@ -691,7 +691,20 @@ namespace dxvk {
   }
 
 
-  void VrOcclusionCulling::resetEye(EyeState& state) {
+  void VrOcclusionCulling::resetEye(Record& record, uint32_t eye) {
+    EyeState& state = record.eyes[eye];
+
+    // Out of the eye's waiting list too: a record left there could be
+    // pruned while the world is not drawn (menus, loading screens), and
+    // the next readAnswers would then read it after it was freed
+    if (state.pending) {
+      std::vector<Record*>& pending = m_pending[eye];
+      auto entry = std::find(pending.begin(), pending.end(), &record);
+
+      if (entry != pending.end())
+        pending.erase(entry);
+    }
+
     if (state.pending && state.query) {
       state.query->Release();
       state.query = nullptr;
@@ -758,8 +771,8 @@ namespace dxvk {
       && (moving || (r.scale == scale && !std::memcmp(r.key, position, sizeof(r.key))));
 
     if (!same) {
-      for (EyeState& state : r.eyes)
-        resetEye(state);
+      for (uint32_t eye = 0; eye < EyeCount; eye++)
+        resetEye(r, eye);
 
       r.kind     = kind;
       r.formId   = formId;
@@ -886,8 +899,8 @@ namespace dxvk {
       && !std::memcmp(r.box.max, box.max, sizeof(box.max));
 
     if (!same) {
-      for (EyeState& state : r.eyes)
-        resetEye(state);
+      for (uint32_t eye = 0; eye < EyeCount; eye++)
+        resetEye(r, eye);
 
       r.kind     = Kind::Land;
       r.formId   = 0;
