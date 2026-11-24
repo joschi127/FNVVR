@@ -307,6 +307,10 @@ namespace dxvk {
     Swapchain                         m_fadeImage;
     /// Opacity the fade's image was last filled with, or -1
     float                             m_fadeFilled     = -1.0f;
+    /// Layers the runtime takes in one frame (the spec's minimum until it says)
+    uint32_t                          m_maxLayers      = XR_MIN_COMPOSITION_LAYERS_SUPPORTED;
+    /// Panels were left out of the last frame for the runtime's layer limit
+    bool                              m_layersDropped  = false;
 
     FrameClock                        m_frameClock;
     VrFrameStats                      m_stats          = VrFrameStats(1, 0.0);

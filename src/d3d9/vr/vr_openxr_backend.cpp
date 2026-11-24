@@ -356,6 +356,8 @@ namespace dxvk {
 
     if (check(m_xr->getSystemProperties(m_instance, m_system, &properties), "xrGetSystemProperties")) {
       m_eyeGaze = m_eyeGazeExtension && eyeGaze.supportsEyeGazeInteraction;
+      m_maxLayers = std::max<uint32_t>(properties.graphicsProperties.maxLayerCount,
+        XR_MIN_COMPOSITION_LAYERS_SUPPORTED);
 
       Logger::info(str::format("VR: OpenXR headset: ", properties.systemName,
         ", vendor ", properties.vendorId,
@@ -1026,14 +1028,16 @@ namespace dxvk {
     m_frameBegun = false;
 
     // The eyes, the fade over them, the panels, then the lasers over all
-    constexpr uint32_t QuadCount = 1 + VrPanelCount + VrHandCount;
+    constexpr uint32_t QuadCount = 1 + VrPanelCount;
 
     XrCompositionLayerProjection projection = { XR_TYPE_COMPOSITION_LAYER_PROJECTION };
     std::array<XrCompositionLayerQuad, QuadCount> quads;
-    std::array<const XrCompositionLayerBaseHeader*, QuadCount + 1> layers = { };
+    std::array<XrCompositionLayerQuad, VrHandCount> pointerQuads;
+    std::array<const XrCompositionLayerBaseHeader*, 1 + QuadCount + VrHandCount> layers = { };
     uint32_t layerCount = 0;
     uint32_t quadCount  = 0;
     uint32_t panelCount = 0;
+    uint32_t pointerCount = 0;
 
     if (eyes) {
       projection.space     = m_space;
@@ -1047,11 +1051,51 @@ namespace dxvk {
     if (eyes && prepareFade(quads[quadCount]))
       layers[layerCount++] = reinterpret_cast<const XrCompositionLayerBaseHeader*>(&quads[quadCount++]);
 
+    for (uint32_t i = 0; i < VrHandCount; i++) {
+      if (preparePointer(VrHand(i), pointerQuads[pointerCount]))
+        pointerCount += 1;
+    }
+
+    // The runtime refuses a frame with more layers than it takes: with many
+    // HUD tiles in the world, the tiles furthest down their list go first
+    std::array<bool, VrPanelCount> shown = { };
+    uint32_t shownCount = 0;
+
+    for (uint32_t i = 0; i < VrPanelCount; i++) {
+      shown[i] = m_panels[i].visible && m_panels[i].swapchain.hasImage;
+      shownCount += shown[i] ? 1 : 0;
+    }
+
+    uint32_t reserved = layerCount + pointerCount;
+    uint32_t budget   = m_maxLayers > reserved ? m_maxLayers - reserved : 0;
+    uint32_t dropped  = 0;
+
+    for (uint32_t i = uint32_t(VrPanelId::WorldTile0) + VrWorldTileCount; i-- > uint32_t(VrPanelId::WorldTile0) && shownCount > budget; ) {
+      if (shown[i]) {
+        shown[i] = false;
+        shownCount -= 1;
+        dropped += 1;
+      }
+    }
+
+    for (uint32_t i = VrPanelCount; i-- > 0 && shownCount > budget; ) {
+      if (shown[i]) {
+        shown[i] = false;
+        shownCount -= 1;
+        dropped += 1;
+      }
+    }
+
+    if (dropped && !m_layersDropped)
+      Logger::warn(str::format("VR: OpenXR takes ", m_maxLayers, " layers, left out ", dropped, " panel(s)"));
+
+    m_layersDropped = dropped != 0;
+
     // In the order of VrPanelId: the head HUD over the menu, the hand panels over the head HUD
     for (uint32_t i = 0; i < VrPanelCount; i++) {
       const Panel& panel = m_panels[i];
 
-      if (!panel.visible || !panel.swapchain.hasImage)
+      if (!shown[i])
         continue;
 
       XrCompositionLayerQuad& quad = quads[quadCount++];
@@ -1071,10 +1115,8 @@ namespace dxvk {
       panelCount += 1;
     }
 
-    for (uint32_t i = 0; i < VrHandCount; i++) {
-      if (preparePointer(VrHand(i), quads[quadCount]))
-        layers[layerCount++] = reinterpret_cast<const XrCompositionLayerBaseHeader*>(&quads[quadCount++]);
-    }
+    for (uint32_t i = 0; i < pointerCount; i++)
+      layers[layerCount++] = reinterpret_cast<const XrCompositionLayerBaseHeader*>(&pointerQuads[i]);
 
     XrFrameEndInfo info = { XR_TYPE_FRAME_END_INFO };
     info.displayTime          = m_frameState.predictedDisplayTime;
