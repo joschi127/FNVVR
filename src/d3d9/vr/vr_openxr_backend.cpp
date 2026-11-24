@@ -363,8 +363,9 @@ namespace dxvk {
 
     if (check(m_xr->getSystemProperties(m_instance, m_system, &properties), "xrGetSystemProperties")) {
       m_eyeGaze = m_eyeGazeExtension && eyeGaze.supportsEyeGazeInteraction;
-      m_maxLayers = std::max<uint32_t>(properties.graphicsProperties.maxLayerCount,
-        XR_MIN_COMPOSITION_LAYERS_SUPPORTED);
+      // As the runtime says (a test runtime may say less than the spec's 16); 0 would refuse every frame
+      if (properties.graphicsProperties.maxLayerCount)
+        m_maxLayers = properties.graphicsProperties.maxLayerCount;
 
       Logger::info(str::format("VR: OpenXR headset: ", properties.systemName,
         ", vendor ", properties.vendorId,
