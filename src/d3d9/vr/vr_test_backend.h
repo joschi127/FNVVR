@@ -20,15 +20,14 @@ namespace dxvk {
    * \brief Backend in front of the real one that lets test tools drive VR
    *
    * Only created with d3d9.vrTestChannel = True. Forwards every call to the
-   * real backend (emulator or OpenVR) and adds what a test tool sets through
+   * real backend (emulator, OpenVR or OpenXR) and adds what a test tool sets through
    * the named pipe: head and hand poses, actions, sticks, aiming at panels,
    * waiting for frames and captures of the eyes and panels. Without requests
    * it only forwards; see docs/testing/vr-test-channel.md.
    *
-   * With d3d9.vrAsyncSubmit or the performance mode, submitFrame,
-   * submitPanel and hidePanel come from the renderer's submission thread
-   * (see VrFrameSubmitter) while the game thread takes requests in
-   * pollInput. What both use (the panels' places, the pending request and
+   * With d3d9.vrAsyncSubmit, submitFrame, submitPanel and hidePanel come
+   * from the renderer's submission thread (see VrFrameSubmitter) while the
+   * game thread takes requests in pollInput. What both use (the panels' places, the pending request and
    * its capture) is guarded by m_mutex.
    */
   class VrTestBackend : public IVRBackend {

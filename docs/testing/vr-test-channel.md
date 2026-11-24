@@ -15,7 +15,7 @@ d3d9.vrTestChannel = True            # dxvk.conf; default False
 d3d9.vrTestPipeName = FNVVR-Test-VR  # optional
 ```
 
-FNVVR then puts a test layer in front of the real backend (emulator or OpenVR). With no requests it only
+FNVVR then puts a test layer in front of the real backend (emulator, OpenVR or OpenXR). With no requests it only
 passes everything through. The DXVK log names the pipe (`VR: Test channel listening on ...`). Leave it off
 on while playing if convenient: idle it costs no measurable frame time (measured 2026-11-22); switch it off
 for performance measurements of other changes.
@@ -36,7 +36,7 @@ It works with every backend:
   without panels, both at full resolution; a screenshot of the preview window shows everything together, as
   sharp as `d3d9.vrPreviewWidth` (default 1000 pixels for both eyes) makes it.
 - **OpenVR with SteamVR's null driver**: the real OpenVR path without a headset.
-- **OpenVR with a headset**: allowed, for example to press actions while a person watches. A set head
+- **OpenVR or OpenXR with a headset**: allowed, for example to press actions while a person watches. A set head
   pose makes the image disagree with the real head, so leave the head alone there.
 
 ## Protocol

@@ -91,6 +91,13 @@ namespace dxvk {
         case VrPanelId::QuickWheel:    return "quick wheel";
         case VrPanelId::Terminal:      return "terminal";
         case VrPanelId::CaravanValues: return "Caravan values";
+        case VrPanelId::Compass:       return "compass";
+        case VrPanelId::PipBoyHint:    return "Pip-Boy hint";
+        case VrPanelId::PipBoyLampBar: return "Pip-Boy lamp bar";
+        default:
+          if (id >= VrPanelId::WorldTile0 && uint32_t(id) < uint32_t(VrPanelId::WorldTile0) + VrWorldTileCount)
+            return "world tile";
+          break;
       }
 
       return "panel";

@@ -125,8 +125,9 @@ The full list of what to install (game, True Co-op requirements, VR runtime) is 
 - Mod managers: `d3d9.dll`, `dxvk.conf` and `fnvvr/` belong in the game root next to
   `FalloutNV.exe`, not in `Data/`. With Mod Organizer 2 that needs Root Builder or a manual copy;
   record in `local/NOTES.md` which manager and profile a test used.
-- VR runtime: FNVVR talks to OpenVR, so a headset needs SteamVR (an OpenXR backend exists only as
-  an upstream probe branch). Windows and Linux/Proton are both supported by upstream.
+- VR runtime: FNVVR talks to OpenVR (SteamVR) or, since upstream v1.0.0, to OpenXR
+  (`d3d9.vrBackend = openxr`, loader in `fnvvr/openxr_loader.dll`). Windows and Linux/Proton are both
+  supported by upstream.
 - Pin the game on test machines (Steam: "Only update this game when I launch it", no beta branch;
   GOG: auto-update off). Test results are only comparable with the same exe, xNVSE and mod list.
 

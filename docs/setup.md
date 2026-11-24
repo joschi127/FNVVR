@@ -137,8 +137,9 @@ How True Co-op 0.1.11 handles saves and characters, read from its source (`src/l
 
 ## VR runtime
 
-- FNVVR needs **OpenVR (SteamVR)**. With a Pico 4 over Virtual Desktop, SteamVR is the runtime (not
-  VDXR).
+- FNVVR runs on **OpenVR (SteamVR)** (`d3d9.vrBackend = openvr`) or, since upstream v1.0.0, on
+  **OpenXR** (`d3d9.vrBackend = openxr`, with `fnvvr/openxr_loader.dll`). With a Pico 4 over Virtual Desktop
+  that means SteamVR or VDXR as the runtime; this fork has tested SteamVR so far.
 - Headset-free runs use FNVVR's emulator backend or SteamVR's null driver (ADR 0002).
 
 ## Known problems
