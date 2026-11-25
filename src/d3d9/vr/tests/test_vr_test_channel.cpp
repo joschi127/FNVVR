@@ -423,9 +423,18 @@ TEST_CASE(test_repeat_ignores_raising_both_hands) {
   CHECK(signal.repeatCount() == 0);
   CHECK(signal.count() == 1);
 
+  // Done, then the right hand down first and the left one kept up: no repeat until the left comes down
+  for (int i = 0; i < 20; i++)
+    signal.update(signalPose(1.65f, 1.85f, 1.2f), 0.1f);
+  CHECK(signal.repeatCount() == 0);
+  signal.update(signalPose(1.65f, 1.3f, 1.2f), 0.1f);
+  for (int i = 0; i < 11; i++)
+    signal.update(signalPose(1.65f, 1.85f, 1.2f), 0.1f);
+  CHECK(signal.repeatCount() == 1);
+
   // The right hand alone up is nothing
   signal.arm(true);
   for (int i = 0; i < 20; i++)
     signal.update(signalPose(1.65f, 1.2f, 1.9f), 0.1f);
-  CHECK(signal.repeatCount() == 0);
+  CHECK(signal.repeatCount() == 1);
 }

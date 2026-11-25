@@ -48,8 +48,16 @@ namespace dxvk {
     }
 
     /// What the hook gave the game at the last poll it wrote, and whether it wrote
-    uint8_t g_lastButton = 0;
-    bool    g_wrote      = false;
+    uint8_t  g_lastButton = 0;
+    uint32_t g_lastLeft   = 0;
+    bool     g_wrote      = false;
+
+    /// Lets go of the button the hook last wrote, without a release the interface would take for a click
+    void letGo(void* input) {
+      field<uint8_t>(input, VrGame::InputMouseButtons + g_lastLeft)       = 0;
+      field<uint8_t>(input, VrGame::InputMouseButtonsBefore + g_lastLeft) = 0;
+      g_lastButton = 0;
+    }
 
     void __fastcall pollHook(void* input, void* unused) {
       reinterpret_cast<PollFn>(g_poll)(input, unused);
@@ -58,17 +66,20 @@ namespace dxvk {
 
       if (!g_state.cursorActive) {
         // Without a mouse device the game leaves the mouse state alone: let
-        // go of the button and the wheel once, without a release the
-        // interface would take for a click
+        // go of the button and the wheel once
         if (g_wrote) {
           field<int32_t>(input, VrGame::InputMouseWheel) = 0;
-          field<uint8_t>(input, VrGame::InputMouseButtons + left)       = 0;
-          field<uint8_t>(input, VrGame::InputMouseButtonsBefore + left) = 0;
-          g_lastButton = 0;
-          g_wrote      = false;
+          letGo(input);
+          g_wrote = false;
         }
         return;
       }
+
+      // The buttons were swapped while the laser was on: the other byte is ours
+      if (g_wrote && left != g_lastLeft)
+        letGo(input);
+
+      g_lastLeft = left;
 
       // The laser places the cursor, the real mouse would move it away
       field<int32_t>(input, VrGame::InputMouseX)     = 0;

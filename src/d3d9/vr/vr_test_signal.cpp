@@ -39,6 +39,10 @@ namespace dxvk {
       m_count  += 1;
       m_latched = true;
       m_held    = 0.0f;
+      // Lowering the right hand first after "done" is no repeat: the left
+      // hand has to come down before the next one
+      m_repeatLatched = true;
+      m_repeatHeld    = 0.0f;
     }
   }
 
