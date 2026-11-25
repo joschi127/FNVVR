@@ -382,3 +382,50 @@ TEST_CASE(test_signal_needs_both_hands) {
     signal.update(signalPose(1.65f, 1.85f, 1.3f), 0.1f);
   CHECK(signal.count() == 0);
 }
+
+
+TEST_CASE(test_repeat_counts_the_left_hand_alone_with_the_right_down) {
+  VrTestSignal signal(1.0f);
+  VrInputState left = signalPose(1.65f, 1.85f, 1.2f);
+
+  for (int i = 0; i < 20; i++)
+    signal.update(left, 0.1f);
+  CHECK(signal.repeatCount() == 0);
+
+  signal.arm(true);
+  for (int i = 0; i < 11; i++)
+    signal.update(left, 0.1f);
+  CHECK(signal.repeatCount() == 1);
+  CHECK(signal.count() == 0);
+
+  // Held on: still one; left hand down, then up again: two
+  for (int i = 0; i < 20; i++)
+    signal.update(left, 0.1f);
+  CHECK(signal.repeatCount() == 1);
+  signal.update(signalPose(1.65f, 1.3f, 1.2f), 0.1f);
+  for (int i = 0; i < 11; i++)
+    signal.update(left, 0.1f);
+  CHECK(signal.repeatCount() == 2);
+}
+
+
+TEST_CASE(test_repeat_ignores_raising_both_hands) {
+  VrTestSignal signal(1.0f);
+  signal.arm(true);
+
+  // The left hand first, the right one following through shoulder height: no repeat, then done
+  for (int i = 0; i < 3; i++)
+    signal.update(signalPose(1.65f, 1.85f, 1.2f), 0.1f);
+  for (int i = 0; i < 5; i++)
+    signal.update(signalPose(1.65f, 1.85f, 1.5f), 0.1f);
+  for (int i = 0; i < 11; i++)
+    signal.update(signalPose(1.65f, 1.85f, 1.9f), 0.1f);
+  CHECK(signal.repeatCount() == 0);
+  CHECK(signal.count() == 1);
+
+  // The right hand alone up is nothing
+  signal.arm(true);
+  for (int i = 0; i < 20; i++)
+    signal.update(signalPose(1.65f, 1.2f, 1.9f), 0.1f);
+  CHECK(signal.repeatCount() == 0);
+}

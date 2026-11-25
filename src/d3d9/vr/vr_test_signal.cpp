@@ -13,11 +13,14 @@ namespace dxvk {
 
     if (!input.isHeadTracked || !left.isActive || !right.isActive) {
       m_held = 0.0f;
+      m_repeatHeld = 0.0f;
       return;
     }
 
     float head   = input.headPose.position.y;
     float lowest = std::min(left.gripPose.position.y, right.gripPose.position.y);
+
+    updateRepeat(head, left.gripPose.position.y, right.gripPose.position.y, dt);
 
     if (m_latched) {
       if (lowest < head + Above - Lowered)
@@ -36,6 +39,28 @@ namespace dxvk {
       m_count  += 1;
       m_latched = true;
       m_held    = 0.0f;
+    }
+  }
+
+
+  void VrTestSignal::updateRepeat(float head, float left, float right, float dt) {
+    if (m_repeatLatched) {
+      if (left < head + Above - Lowered)
+        m_repeatLatched = false;
+      return;
+    }
+
+    if (left < head + Above || right > head - RightDown) {
+      m_repeatHeld = 0.0f;
+      return;
+    }
+
+    m_repeatHeld += std::max(dt, 0.0f);
+
+    if (m_repeatHeld >= m_hold) {
+      m_repeatCount  += 1;
+      m_repeatLatched = true;
+      m_repeatHeld    = 0.0f;
     }
   }
 

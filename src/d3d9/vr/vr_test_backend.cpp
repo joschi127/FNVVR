@@ -301,7 +301,8 @@ namespace dxvk {
     return str::format("frame=", m_frame, " backend=", m_inner->name(),
       " context=", m_context == VrInputContext::Menu ? "menu" : "game",
       " panels=", panels.empty() ? "-" : panels, " ", m_input.describe(),
-      " signal=", m_signal.armed() ? std::to_string(m_signal.count()) : std::string("off"));
+      " signal=", m_signal.armed() ? std::to_string(m_signal.count()) : std::string("off"),
+      " repeat=", m_signal.armed() ? std::to_string(m_signal.repeatCount()) : std::string("off"));
   }
 
 

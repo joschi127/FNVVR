@@ -62,7 +62,7 @@ Poses are `<x> <y> <z> <yaw> <pitch> [roll]`: metres in tracking space (+Y up, -
 |---|---|---|
 | `ping` | `ok pong fnvvr-test-vr 1` | |
 | `memory` | `ok vfree=<MB> vlargest=<MB> vused=<MB> vtotal=<MB> private=<MB> workingset=<MB>` | The game process's address space (free, largest free block, used, total) and committed / resident memory; answered on the pipe's thread, so also during loading screens |
-| `state` | `ok frame=<n> backend=<name> context=<game\|menu> panels=<shown> head=<real\|set> left=... right=... move=... turn=... actions=<held> signal=<n\|off>` | `frame` counts VR frames since start (during loading screens and movies, each present counts as a frame) |
+| `state` | `ok frame=<n> backend=<name> context=<game\|menu> panels=<shown> head=<real\|set> left=... right=... move=... turn=... actions=<held> signal=<n\|off> repeat=<n\|off>` | `frame` counts VR frames since start (during loading screens and movies, each present counts as a frame) |
 | `head <pose>` | `ok` | Sets the head until released; the eyes keep their place relative to the head |
 | `hand left\|right <pose>` | `ok` | Sets a controller's grip and aim pose until released |
 | `release head\|left\|right\|move\|turn\|all` | `ok` | Gives it back to the real backend (`all` also lets go of held actions) |
@@ -77,7 +77,7 @@ Poses are `<x> <y> <z> <yaw> <pitch> [roll]`: metres in tracking space (+Y up, -
 | `pipboy` | `ok state=<closed\|changing\|open> looking=<0\|1> screen <f> <u> <r> facing <f> <u> <r>` | Where the Pip-Boy's screen is on the left controller (metres forward, up and right of it, and the way it faces) and whether the wrist is looked at; `screen unknown` before the game placed it |
 | `pipboy open` / `pipboy close` | `ok asked; ...` | Opens it the way looking at the wrist does (only when the game could open it then), or closes it as B or the close sign do (also on the panel); `pipboy` shows the result a few frames later |
 | `compass` / `compass <name> <value>` | `ok width=... top=... angle=... topdeg=... distance=... span=... backdrop=... opacity=... gap=... quest=...` / `ok asked; ...` | The compass's settings, or changes one in memory (for tuning its defaults in a headset session): `width`, `top` (shares of the field of view), `angle`, `topdeg` (degrees or `auto`), `distance` (metres), `span` (degrees), `backdrop on\|off`, `opacity`, `gap` (markers' distance from the strip, image pixels, negative nearer), `quest` (quest marker size); `topdeg 0` reads back as 0.01, as 0 means `auto`. The values match `dxvk.conf`'s `d3d9.vrCompass*` |
-| `signal on` / `signal off` | `ok signal=<n\|off>` | Counts the person's "done" signal from now on: both hands held above the head for `d3d9.vrTestSignalHold` seconds (default 1), once per raise; `state` shows `signal=<n>`. Off by default and after each start, in memory only |
+| `signal on` / `signal off` | `ok signal=<n\|off>` | Counts the person's "done" signal from now on: both hands held above the head for `d3d9.vrTestSignalHold` seconds (default 1), once per raise; `state` shows `signal=<n>`. Also counts "repeat": the left hand alone above the head for the same time while the right hand stays at least 25 cm below the head (raising both hands never counts as repeat); `state` shows `repeat=<n>`. Off by default and after each start, in memory only |
 
 Actions are FNVVR's named actions, not controller buttons (bindings are the runtime's business):
 `attack twohandgrip activate jump reload sneak pausehold vats pause grab wait magazine menuselect

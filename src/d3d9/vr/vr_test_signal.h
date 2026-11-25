@@ -7,13 +7,17 @@
 namespace dxvk {
 
   /**
-   * \brief The "done" signal of a person in the headset: both hands held above the head
+   * \brief The signals of a person in the headset: "done" with both hands held
+   *    above the head, "repeat" with the left hand alone
    *
-   * A pose, no buttons (the sticks' clicks are sneak and VATS). Counted once
-   * per raise, after both hands have been above the head for the hold time;
-   * the next one needs a hand to come down first. Only while armed: a test
-   * tool turns it on for a test session, so it never fires while someone
-   * plays alone with the test channel left on.
+   * Poses, no buttons (the sticks' clicks are sneak and VATS). Each is
+   * counted once per raise, after the pose has been held for the hold time;
+   * the next one needs the hand to come down first. "Repeat" (show the
+   * current step again) needs the right hand, the weapon hand, well below
+   * the head the whole time, so raising both hands with the left a little
+   * first never counts as one. Only while armed: a test tool turns them on
+   * for a test session, so they never fire while someone plays alone with
+   * the test channel left on.
    */
   class VrTestSignal {
 
@@ -23,6 +27,8 @@ namespace dxvk {
     static constexpr float Above = 0.05f;
     /// How far a hand must come below that again before the next signal
     static constexpr float Lowered = 0.15f;
+    /// How far below the head the right hand must stay for "repeat", in metres
+    static constexpr float RightDown = 0.25f;
 
     explicit VrTestSignal(float holdSeconds) : m_hold(holdSeconds) { }
 
@@ -30,11 +36,16 @@ namespace dxvk {
       m_armed = on;
       m_held  = 0.0f;
       m_latched = false;
+      m_repeatHeld    = 0.0f;
+      m_repeatLatched = false;
     }
 
     bool armed() const { return m_armed; }
 
     uint32_t count() const { return m_count; }
+
+    /// How often "repeat" was given
+    uint32_t repeatCount() const { return m_repeatCount; }
 
     /// Looks at one frame's head and hands, \c dt seconds after the last
     void update(const VrInputState& input, float dt);
@@ -46,6 +57,12 @@ namespace dxvk {
     bool     m_latched = false;
     float    m_held    = 0.0f;
     uint32_t m_count   = 0;
+
+    bool     m_repeatLatched = false;
+    float    m_repeatHeld    = 0.0f;
+    uint32_t m_repeatCount   = 0;
+
+    void updateRepeat(float head, float left, float right, float dt);
 
   };
 
