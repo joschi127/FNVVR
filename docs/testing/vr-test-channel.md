@@ -36,8 +36,17 @@ It works with every backend:
   without panels, both at full resolution; a screenshot of the preview window shows everything together, as
   sharp as `d3d9.vrPreviewWidth` (default 1000 pixels for both eyes) makes it.
 - **OpenVR with SteamVR's null driver**: the real OpenVR path without a headset.
+- **OpenXR with a null runtime**: the real OpenXR path without a headset or VR software, with FNVVR-Test-Bridge's
+  [null OpenXR runtime](https://github.com/joschi127/FNVVR-Test-Bridge/tree/main/openxr-null-runtime), chosen for
+  the game's process only (`XR_RUNTIME_JSON`).
 - **OpenVR or OpenXR with a headset**: allowed, for example to press actions while a person watches. A set head
   pose makes the image disagree with the real head, so leave the head alone there.
+
+Tests do not need a screen to look at: captures are read back from the GPU, so `capture eyes` and
+`capture panel` give full images with the monitor switched off or showing another input (tried with the
+emulator and the null OpenXR runtime; in VR the game's window is hidden). Only screenshots of a window, such
+as the emulator's preview, need the window to be shown. A PC with no display at all reported by Windows is
+untested.
 
 ## Protocol
 
