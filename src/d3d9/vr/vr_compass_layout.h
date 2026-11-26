@@ -67,7 +67,7 @@ namespace dxvk {
     float    healthLow       = 0.5f;
     float    healthCritical  = 0.25f;
     uint32_t healthColour    = 0xA6E585;
-    uint32_t healthLowColour = 0xF0A040;
+    uint32_t healthLowColour = 0xF07830;
     uint32_t healthCriticalColour = 0xE0705A;
     bool     healthPulse     = true;
   };

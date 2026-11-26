@@ -201,7 +201,7 @@ TEST_CASE(compass_health_colour_turns_orange_then_red) {
   VrColour low  = vrHealthColour(config, 0.4f);
   VrColour critical = vrHealthColour(config, 0.1f);
   CHECK_NEAR(well.g, float(0xE5) / 255.0f, 1.0e-4);       // A6E585, green
-  CHECK_NEAR(low.r, float(0xF0) / 255.0f, 1.0e-4);        // F0A040, orange
+  CHECK_NEAR(low.g, float(0x78) / 255.0f, 1.0e-4);        // F07830, orange
   CHECK_NEAR(critical.r, float(0xE0) / 255.0f, 1.0e-4);   // E0705A, red
   CHECK_NEAR(critical.g, float(0x70) / 255.0f, 1.0e-4);
   // The shares are the bounds: at them the better colour still shows
