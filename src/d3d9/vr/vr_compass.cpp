@@ -147,6 +147,7 @@ namespace dxvk {
 
   void VrCompass::setConfig(const VrCompassConfig& config) {
     m_config = config;
+    m_health = VrHealthState();
     m_drawn  = false;
     m_placed = false;
   }
@@ -212,7 +213,7 @@ namespace dxvk {
 
 
   void VrCompass::readHealth(uintptr_t player) {
-    m_health.known = false;
+    m_health = VrHealthState();
 
     if (!player || !VrGameMemory::readable(player + VrGame::ActorValueOwnerBase, sizeof(uintptr_t)))
       return;
@@ -226,8 +227,10 @@ namespace dxvk {
     float current = virtualFunction<GetAvFloatFn>(values, VrGame::AvOwnerFloatSlot)(values, nullptr, VrGame::AvHealth);
     float full    = virtualFunction<GetAvFloatFn>(values, VrGame::AvOwnerBaseFloatSlot)(values, nullptr, VrGame::AvHealth);
 
-    if (!std::isfinite(current) || !std::isfinite(full) || full <= 0.0f)
+    if (!std::isfinite(current) || !std::isfinite(full) || full <= 0.0f) {
+      m_health.fraction = 1.0f;
       return;
+    }
 
     m_health.known    = true;
     m_health.fraction = std::clamp(current / full, 0.0f, 1.0f);
@@ -257,7 +260,14 @@ namespace dxvk {
       return;
     }
 
-    m_health.pulse = vrHealthPulse(m_config, m_health.fraction, steadySeconds());
+    bool healthShown = m_config.health && m_health.known;
+    m_health.pulse = healthShown ? vrHealthPulse(m_config, m_health.fraction, steadySeconds()) : 1.0f;
+
+    // Nothing to show: no layer of the runtime's few spent on an empty image
+    if (!m_config.enabled && !healthShown) {
+      hide();
+      return;
+    }
 
     // In an interior, headings count from the cell's north
     float compassHeading = heading - m_north;
@@ -265,6 +275,9 @@ namespace dxvk {
     std::vector<VrCompassMarker> markers;
 
     for (const Target& target : m_targets) {
+      if (!m_config.enabled)
+        break;
+
       VrCompassMarker marker;
       marker.kind    = target.kind;
       marker.bearing = vrCompassBearing(from, target.position) - m_north;
@@ -272,6 +285,9 @@ namespace dxvk {
     }
 
     for (const VrWorldTileInfo& tile : tiles) {
+      if (!m_config.enabled)
+        break;
+
       if (!tile.person)
         continue;
 
@@ -292,12 +308,15 @@ namespace dxvk {
     // Drawn again when the heading or a marker moved by a pixel of the strip
     float redraw = std::max(m_config.span, 1.0f) * 3.14159265f / 180.0f / float(VrCompassImage::Width);
     // The health in steps of half a percent, so that regeneration does not draw every frame
+    auto band = [&] (float fraction) {
+      return fraction < m_config.healthCritical ? 2 : fraction < m_config.healthLow ? 1 : 0;
+    };
     bool sameHealth = m_health.known == m_shownHealth.known && m_health.pulse == m_shownHealth.pulse
       && std::fabs(m_health.fraction - m_shownHealth.fraction) < 0.005f
-      && vrHealthColour(m_config, m_health.fraction).r == vrHealthColour(m_config, m_shownHealth.fraction).r
-      && vrHealthColour(m_config, m_health.fraction).g == vrHealthColour(m_config, m_shownHealth.fraction).g;
-    bool same = m_drawn && sameHealth && std::fabs(vrCompassOffset(compassHeading, m_shownHeading)) < redraw
-      && markers.size() == m_shownMarkers.size();
+      && band(m_health.fraction) == band(m_shownHealth.fraction);
+    // Without the strip the heading does not matter
+    bool sameHeading = !m_config.enabled || std::fabs(vrCompassOffset(compassHeading, m_shownHeading)) < redraw;
+    bool same = m_drawn && sameHealth && sameHeading && markers.size() == m_shownMarkers.size();
 
     for (size_t i = 0; same && i < markers.size(); i++) {
       same = markers[i].kind == m_shownMarkers[i].kind && markers[i].initial == m_shownMarkers[i].initial

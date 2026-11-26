@@ -94,7 +94,7 @@ namespace dxvk {
    *
    * Below the critical share, and with the pulse on, it rises and falls
    * between 0.45 and 1 about once a second, in steps of a sixth, so that the
-   * image is drawn again only a few times a second; 1 otherwise.
+   * image is drawn again at most twelve times a second; 1 otherwise.
    *
    * \param [in] seconds A steadily running time, in seconds
    */

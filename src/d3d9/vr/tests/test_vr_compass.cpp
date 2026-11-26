@@ -192,7 +192,7 @@ TEST_CASE(compass_large_quest_marker_stays_inside_the_image) {
   vrPaintCompass(list, config, 0.0f, markers, { 1.0f, 0.7f, 0.2f, 1.0f }, nullptr, VrCompassPictures());
 
   for (const VrPaintVertex& v : list.vertices())
-    CHECK(v.y <= float(VrCompassImage::Height));
+    CHECK(v.y <= 166.0f);   // above the health bar's row
 }
 
 TEST_CASE(compass_health_colour_turns_orange_then_red) {
