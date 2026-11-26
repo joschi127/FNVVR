@@ -1,3 +1,4 @@
+#include <cstdio>
 #include <cstring>
 #include <memory>
 #include <random>
@@ -15,6 +16,54 @@ using namespace dxvk;
 
 namespace {
 
+  constexpr uint64_t FourGiB = uint64_t(1) << 32;
+
+  /**
+   * \brief Reserves address space below 4 GiB, or returns MAP_FAILED
+   *
+   * Linux has MAP_32BIT for it. Elsewhere (MSYS2 on Windows) the range is
+   * asked for at hints below 4 GiB, which the system may or may not honour.
+   */
+  void* reserveLow(size_t total) {
+#ifdef MAP_32BIT
+    return mmap(nullptr, total, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_32BIT | MAP_NORESERVE, -1, 0);
+#else
+    for (uint64_t hint = 0x10000000; hint + total <= FourGiB; hint += 0x10000000) {
+      void* range = mmap(reinterpret_cast<void*>(uintptr_t(hint)), total, PROT_NONE,
+        MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
+
+      if (range == MAP_FAILED)
+        continue;
+
+      if (reinterpret_cast<uintptr_t>(range) + total <= FourGiB)
+        return range;
+
+      munmap(range, total);
+    }
+
+    return MAP_FAILED;
+#endif
+  }
+
+
+  /**
+   * \brief Whether this host gives address space below 4 GiB; the tests
+   *    that need it are skipped where it does not
+   */
+  bool lowPagesAvailable(const char* test) {
+    size_t total = VrBlockHeap::ArenaSize + VrBlockHeap::SlabSize;
+    void* range = reserveLow(total);
+
+    if (range == MAP_FAILED) {
+      std::printf("  %s skipped: no address space below 4 GiB on this host\n", test);
+      return false;
+    }
+
+    munmap(range, total);
+    return true;
+  }
+
+
   /**
    * \brief Address space below 4 GiB, as in the game's process
    */
@@ -24,7 +73,7 @@ namespace {
 
     uintptr_t reserve(size_t size) override {
       size_t total = size + VrBlockHeap::SlabSize;
-      void* range = mmap(nullptr, total, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_32BIT | MAP_NORESERVE, -1, 0);
+      void* range = reserveLow(total);
 
       if (range == MAP_FAILED)
         return 0;
@@ -83,6 +132,9 @@ TEST_CASE(block_heap_classes_fit_every_size_with_little_waste) {
 
 
 TEST_CASE(block_heap_gives_distinct_blocks_and_frees_them) {
+  if (!lowPagesAvailable("block_heap_gives_distinct_blocks_and_frees_them"))
+    return;
+
   LowPages pages;
   auto owner = std::make_unique<VrBlockHeap>(pages);
   VrBlockHeap& heap = *owner;
@@ -129,6 +181,9 @@ TEST_CASE(block_heap_gives_distinct_blocks_and_frees_them) {
 
 
 TEST_CASE(block_heap_reuses_empty_slabs_across_classes) {
+  if (!lowPagesAvailable("block_heap_reuses_empty_slabs_across_classes"))
+    return;
+
   LowPages pages;
   auto owner = std::make_unique<VrBlockHeap>(pages);
   VrBlockHeap& heap = *owner;
@@ -173,6 +228,9 @@ TEST_CASE(block_heap_without_address_space_lets_the_caller_fall_back) {
 
 
 TEST_CASE(block_heap_is_thread_safe) {
+  if (!lowPagesAvailable("block_heap_is_thread_safe"))
+    return;
+
   LowPages pages;
   auto owner = std::make_unique<VrBlockHeap>(pages);
   VrBlockHeap& heap = *owner;
