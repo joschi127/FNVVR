@@ -42,7 +42,9 @@ B, drawn with the game's own pictures so that it looks and feels like the game's
   that fits without changing `dxvk.conf`. Guided session h05 (2026-11-22): size and height fitted, the quest
   marker fitted, the markers' gap fitted with the band and was wanted nearer without it (-18). The maintainer
   then set the defaults: no band (with its nearer gap) and a 1.5 times wider strip (0.68 of the field of
-  view); to be confirmed in the next session.
+  view); to be confirmed in the next session. After playing with it (2026-11-26) the maintainer asked for a
+  smaller compass, about 75 to 80 percent: the default width is now 0.53 of the field of view (78 percent of
+  0.68). Markers and gaps are drawn in the strip's image, so they shrink by the same factor.
 - Size and place follow the field of view the headset reports (the maintainer often plays with a field of
   view reduced in Virtual Desktop): the width is a share of the horizontal field of view, the top edge a share
   of its upper half. `dxvk.conf` overrides them in degrees (`auto` or not set: from the field of view); the dark

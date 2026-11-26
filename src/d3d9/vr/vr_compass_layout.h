@@ -28,7 +28,7 @@ namespace dxvk {
     /// degrees; 0: a share of the upper half of the field of view (topShare)
     float top       = 0.0f;
     /// Width as a share of the horizontal field of view, when angle is 0
-    float widthShare = 0.68f;
+    float widthShare = 0.53f;
     /// Top edge as a share of the upper half of the field of view, when top is 0
     float topShare   = 0.8f;
     /// Distance from the head, in metres
