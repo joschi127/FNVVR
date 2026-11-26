@@ -75,10 +75,10 @@ what is played. Both are installed identically on every PC of a co-op session.
   comparison with and without the texture pack (address space, frame time in VR) is still open.
 - **Depth of field off** in VR: `FalloutPrefs.ini`, section `[Imagespace]`: `bDoDepthOfField=0`.
   Desert Natural Weathers turns depth of field off only through its weathers, which exist outside only;
-  interiors use their own image space settings and keep it on. In VR that blur costs a lot of GPU time
-  (measured in the Goodsprings saloon on a mid-range GPU at high settings: post-processing 3-5 ms per frame
-  instead of about 1 ms outside, the frame rate fell from 90 to 67-78 fps), and a fixed focus plane looks
-  odd in a headset anyway. Edit the file with the game closed.
+  interiors use their own image space settings and may keep it on. A fixed focus plane looks odd in a
+  headset, and turning it off costs nothing. It is not a performance fix: in the Goodsprings saloon, where
+  a mid-range GPU at high settings drops below 90 fps, it made no measurable difference. Edit the file with
+  the game closed.
 - Not part of the setup: New Vegas Reloaded and ReShade presets (too much for this setup, and untested
   with FNVVR).
 
