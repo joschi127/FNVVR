@@ -148,7 +148,7 @@ The fork is stripped down to what the 32-bit D3D9 build needs: the D3D8, D3D10, 
 
 ## Build
 
-Builds run natively on Linux with Meson and Ninja, cross-compiling with mingw-w64. The mingw compiler must use the posix thread model (on Arch: `pacman -S mingw-w64-gcc meson`).
+Builds run natively on Linux with Meson and Ninja, cross-compiling with mingw-w64. The mingw compiler must use the posix thread model (on Arch: `pacman -S mingw-w64-gcc meson`). Building on Windows with MSYS2, or on another machine over SSH: [docs/building.md](docs/building.md).
 
 ```
 git submodule update --init --recursive

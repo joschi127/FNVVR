@@ -142,8 +142,8 @@ ninja -C build.32                     # output: build.32/src/d3d9/d3d9.dll
 meson test -C build.32 --print-errorlogs
 ```
 
-On Windows this needs WSL or MSYS2 with an i686 mingw-w64 toolchain (posix thread model); which one
-this fork uses is recorded in `local/NOTES.md` once set up. The co-op mod builds with its own CMake
+On Windows, FNVVR builds with MSYS2 (`tools/build-msys2.sh`); WSL and building on another machine over SSH
+are the alternatives. All ways: [docs/building.md](building.md). The co-op mod builds with its own CMake
 presets (see its README).
 
 ## Tests: what they do and do not cover

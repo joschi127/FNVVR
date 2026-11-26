@@ -1,0 +1,18 @@
+# Cross file for building on Windows with MSYS2 (see docs/building.md): the i686 compiler from MSYS2's
+# MINGW32 environment (posix thread model), driven by meson, ninja and glslang from UCRT64. MSYS2 has no
+# i686-prefixed ar, strip and windres, so the plain ones from MINGW32 are named. Paths assume MSYS2 in C:\msys64.
+[binaries]
+c = 'C:/msys64/mingw32/bin/i686-w64-mingw32-gcc.exe'
+cpp = 'C:/msys64/mingw32/bin/i686-w64-mingw32-g++.exe'
+ar = 'C:/msys64/mingw32/bin/ar.exe'
+strip = 'C:/msys64/mingw32/bin/strip.exe'
+windres = 'C:/msys64/mingw32/bin/windres.exe'
+
+[properties]
+needs_exe_wrapper = true
+
+[host_machine]
+system = 'windows'
+cpu_family = 'x86'
+cpu = 'x86'
+endian = 'little'
