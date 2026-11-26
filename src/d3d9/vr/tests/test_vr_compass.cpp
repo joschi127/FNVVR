@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "test.h"
 #include "paint_probe.h"
 
@@ -191,4 +193,95 @@ TEST_CASE(compass_large_quest_marker_stays_inside_the_image) {
 
   for (const VrPaintVertex& v : list.vertices())
     CHECK(v.y <= float(VrCompassImage::Height));
+}
+
+TEST_CASE(compass_health_colour_turns_orange_then_red) {
+  VrCompassConfig config;
+  VrColour well = vrHealthColour(config, 0.8f);
+  VrColour low  = vrHealthColour(config, 0.4f);
+  VrColour critical = vrHealthColour(config, 0.1f);
+  CHECK_NEAR(well.g, float(0xE5) / 255.0f, 1.0e-4);       // A6E585, green
+  CHECK_NEAR(low.r, float(0xF0) / 255.0f, 1.0e-4);        // F0A040, orange
+  CHECK_NEAR(critical.r, float(0xE0) / 255.0f, 1.0e-4);   // E0705A, red
+  CHECK_NEAR(critical.g, float(0x70) / 255.0f, 1.0e-4);
+  // The shares are the bounds: at them the better colour still shows
+  CHECK_NEAR(vrHealthColour(config, 0.5f).g, well.g, 1.0e-6);
+  CHECK_NEAR(vrHealthColour(config, 0.25f).g, low.g, 1.0e-6);
+}
+
+
+TEST_CASE(compass_health_pulses_only_when_critical) {
+  VrCompassConfig config;
+  CHECK(vrHealthPulse(config, 0.6f, 0.37) == 1.0f);
+  CHECK(vrHealthPulse(config, 0.3f, 0.37) == 1.0f);
+
+  float lowest = 1.0f;
+  float highest = 0.0f;
+
+  for (int i = 0; i < 100; i++) {
+    float p = vrHealthPulse(config, 0.1f, 5.0 + 0.01 * i);
+    lowest  = std::min(lowest, p);
+    highest = std::max(highest, p);
+  }
+
+  CHECK_NEAR(lowest, 0.45, 1.0e-4);
+  CHECK_NEAR(highest, 1.0, 1.0e-4);
+
+  config.healthPulse = false;
+  CHECK(vrHealthPulse(config, 0.1f, 5.5) == 1.0f);
+}
+
+
+TEST_CASE(compass_health_bar_draws_in_its_row_and_follows_the_alignment) {
+  VrCompassConfig config;
+  VrHealthState health;
+  health.known    = true;
+  health.fraction = 0.5f;
+
+  auto extent = [&] (VrHealthAlign align, float& left, float& right) {
+    config.healthAlign = align;
+    VrPaintList list(VrCompassImage::Width, VrCompassImage::Height);
+    config.enabled = false;   // only the health bar
+    vrPaintCompass(list, config, 0.0f, { }, { 1.0f, 0.7f, 0.2f, 1.0f }, nullptr, VrCompassPictures(), health);
+    left = 1.0e9f;
+    right = -1.0e9f;
+
+    for (const VrPaintVertex& v : list.vertices()) {
+      CHECK(v.y >= 166.0f && v.y <= float(VrCompassImage::Height));
+      left  = std::min(left, v.x);
+      right = std::max(right, v.x);
+    }
+
+    return !list.vertices().empty();
+  };
+
+  float l = 0.0f, r = 0.0f;
+  CHECK(extent(VrHealthAlign::Centre, l, r));
+  CHECK_NEAR(0.5f * (l + r), 0.5 * VrCompassImage::Width, 2.0);
+  CHECK(extent(VrHealthAlign::Right, l, r));
+  CHECK(r > 0.9f * VrCompassImage::Width && r <= float(VrCompassImage::Width));
+
+  // Not known, or switched off: nothing
+  VrPaintList list(VrCompassImage::Width, VrCompassImage::Height);
+  health.known = false;
+  vrPaintCompass(list, config, 0.0f, { }, { 1.0f, 0.7f, 0.2f, 1.0f }, nullptr, VrCompassPictures(), health);
+  CHECK(list.vertices().empty());
+}
+
+
+TEST_CASE(compass_health_settings_change_by_name) {
+  VrCompassConfig config;
+  CHECK(vrSetCompassValue(config, "healthalign", "right") && config.healthAlign == VrHealthAlign::Right);
+  CHECK(vrSetCompassValue(config, "healthalign", "center") && config.healthAlign == VrHealthAlign::Centre);
+  CHECK(vrSetCompassValue(config, "health", "off") && !config.health);
+  CHECK(vrSetCompassValue(config, "compass", "off") && !config.enabled);
+  CHECK(vrSetCompassValue(config, "pulse", "off") && !config.healthPulse);
+  CHECK(vrSetCompassValue(config, "healthlow", "0.6") && config.healthLow == 0.6f);
+  CHECK(!vrSetCompassValue(config, "healthalign", "left"));
+  CHECK(!vrSetCompassValue(config, "healthwidth", "3"));
+
+  std::string text = vrDescribeCompass(config);
+  CHECK(text.find("health=off") != std::string::npos);
+  CHECK(text.find("healthalign=centre") != std::string::npos);
+  CHECK(text.find("healthlow=0.6") != std::string::npos);
 }

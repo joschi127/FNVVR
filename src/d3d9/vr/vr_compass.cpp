@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <string>
@@ -18,6 +19,22 @@ namespace dxvk {
     constexpr char QuestPicture[]  = "interface\\hud\\glow_hud_compass_objective_marker.dds";
     constexpr char CustomPicture[] = "interface\\hud\\glow_hud_compass_pc_marker.dds";
     constexpr char PersonPicture[] = "interface\\hud\\glow_hud_tick_mark.dds";
+    constexpr char HealthPicture[] = "interface\\main\\glow_hp_bar.dds";
+
+    // ActorValueOwner::GetActorFloatValue and GetBaseActorFloatValue
+    using GetAvFloatFn = float (__fastcall*)(uintptr_t owner, void* unused, uint32_t index);
+
+    template<typename Fn>
+    Fn virtualFunction(uintptr_t object, uintptr_t slot) {
+      auto vtable = *reinterpret_cast<const uintptr_t* const*>(object);
+      return reinterpret_cast<Fn>(vtable[slot / sizeof(uintptr_t)]);
+    }
+
+    // Seconds of a steady clock, for the health bar's pulse
+    double steadySeconds() {
+      using namespace std::chrono;
+      return duration<double>(steady_clock::now().time_since_epoch()).count();
+    }
 
     // Frames between reads of the targets
     constexpr uint32_t TargetReadInterval = 10;
@@ -194,22 +211,53 @@ namespace dxvk {
   }
 
 
+  void VrCompass::readHealth(uintptr_t player) {
+    m_health.known = false;
+
+    if (!player || !VrGameMemory::readable(player + VrGame::ActorValueOwnerBase, sizeof(uintptr_t)))
+      return;
+
+    uintptr_t values = player + VrGame::ActorValueOwnerBase;
+    uintptr_t vtable = readField<uintptr_t>(values, 0);
+
+    if (!vtable || !VrGameMemory::readable(vtable, VrGame::AvOwnerFloatSlot + sizeof(uintptr_t)))
+      return;
+
+    float current = virtualFunction<GetAvFloatFn>(values, VrGame::AvOwnerFloatSlot)(values, nullptr, VrGame::AvHealth);
+    float full    = virtualFunction<GetAvFloatFn>(values, VrGame::AvOwnerBaseFloatSlot)(values, nullptr, VrGame::AvHealth);
+
+    if (!std::isfinite(current) || !std::isfinite(full) || full <= 0.0f)
+      return;
+
+    m_health.known    = true;
+    m_health.fraction = std::clamp(current / full, 0.0f, 1.0f);
+  }
+
+
   void VrCompass::show(bool shown, float heading, const std::vector<VrWorldTileInfo>& tiles, const VrFov& fov) {
-    if (!shown || !m_available || m_failed || !m_config.enabled) {
+    if (!shown || !m_available || m_failed || !(m_config.enabled || m_config.health)) {
       hide();
       return;
     }
 
-    if (m_frame++ % TargetReadInterval == 0)
-      readTargets();
-
     uintptr_t player = readField<uintptr_t>(VrGame::Player, 0);
+
+    if (m_frame++ % TargetReadInterval == 0) {
+      if (m_config.enabled)
+        readTargets();
+
+      if (m_config.health)
+        readHealth(player);
+    }
+
     VrVector3 from;
 
     if (!readPosition(player, from)) {
       hide();
       return;
     }
+
+    m_health.pulse = vrHealthPulse(m_config, m_health.fraction, steadySeconds());
 
     // In an interior, headings count from the cell's north
     float compassHeading = heading - m_north;
@@ -243,7 +291,12 @@ namespace dxvk {
 
     // Drawn again when the heading or a marker moved by a pixel of the strip
     float redraw = std::max(m_config.span, 1.0f) * 3.14159265f / 180.0f / float(VrCompassImage::Width);
-    bool same = m_drawn && std::fabs(vrCompassOffset(compassHeading, m_shownHeading)) < redraw
+    // The health in steps of half a percent, so that regeneration does not draw every frame
+    bool sameHealth = m_health.known == m_shownHealth.known && m_health.pulse == m_shownHealth.pulse
+      && std::fabs(m_health.fraction - m_shownHealth.fraction) < 0.005f
+      && vrHealthColour(m_config, m_health.fraction).r == vrHealthColour(m_config, m_shownHealth.fraction).r
+      && vrHealthColour(m_config, m_health.fraction).g == vrHealthColour(m_config, m_shownHealth.fraction).g;
+    bool same = m_drawn && sameHealth && std::fabs(vrCompassOffset(compassHeading, m_shownHeading)) < redraw
       && markers.size() == m_shownMarkers.size();
 
     for (size_t i = 0; same && i < markers.size(); i++) {
@@ -257,8 +310,10 @@ namespace dxvk {
       pictures.quest  = m_images.picture(QuestPicture);
       pictures.custom = m_images.picture(CustomPicture);
       pictures.person = m_images.picture(PersonPicture);
+      pictures.healthBar = m_config.health ? m_images.picture(HealthPicture) : nullptr;
 
-      vrPaintCompass(m_list, m_config, compassHeading, markers, VrGameImages::hudColour(), m_images.font(), pictures);
+      vrPaintCompass(m_list, m_config, compassHeading, markers, VrGameImages::hudColour(), m_images.font(),
+        pictures, m_health);
 
       if (!m_panel.paint(m_list)) {
         Logger::err("VR: Failed to draw the compass, it is not shown");
@@ -271,6 +326,7 @@ namespace dxvk {
       m_placed       = false;
       m_shownHeading = compassHeading;
       m_shownMarkers = std::move(markers);
+      m_shownHealth  = m_health;
     }
 
     // Fixed to the head: given again for a new image or after it was hidden,

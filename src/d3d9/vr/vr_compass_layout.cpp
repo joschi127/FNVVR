@@ -42,6 +42,84 @@ namespace dxvk {
     constexpr float EdgeSpace     = 16.0f;   // markers held at an end stay this far inside
     constexpr float HeldAlpha     = 0.55f;   // a marker held at an end is fainter
 
+    // The health bar's row below the markers, and the game's HP meter
+    // (glow_hp_bar.dds, 512 x 32): its line and ticks cover x 98 to 413, y 6 to 25
+    constexpr float HealthRowTop    = 172.0f;
+    constexpr float HealthRowEnd    = 214.0f;
+    constexpr float HealthCap       = 24.0f;   // height of the "HP" label's capitals
+    constexpr float HealthLabelGap  = 12.0f;
+    constexpr float HealthEmpty     = 0.22f;   // brightness of the meter's empty part
+    constexpr float MeterTexels     = 512.0f;
+    constexpr float MeterRows       = 32.0f;
+    constexpr float MeterLeft       = 98.0f;
+    constexpr float MeterRight      = 414.0f;
+    constexpr float MeterTop        = 6.0f;
+    constexpr float MeterBottom     = 26.0f;
+
+    VrColour rgb(uint32_t colour, float alpha = 1.0f) {
+      return { float((colour >> 16) & 0xFF) / 255.0f, float((colour >> 8) & 0xFF) / 255.0f,
+        float(colour & 0xFF) / 255.0f, alpha };
+    }
+
+    // The label "HP" and the meter, its full part bright and the rest faint
+    void paintHealth(VrPaintList& list, const VrCompassConfig& config, const VrPaintFont* font,
+        const VrImage* meter, const VrHealthState& health) {
+      float width    = float(list.width());
+      float fraction = std::clamp(health.fraction, 0.0f, 1.0f);
+      VrColour c     = vrHealthColour(config, fraction).faded(std::clamp(health.pulse, 0.0f, 1.0f));
+
+      float group = std::clamp(config.healthWidth, 0.1f, 1.0f) * width;
+      float left  = config.healthAlign == VrHealthAlign::Right
+        ? width - EdgeSpace - group : 0.5f * (width - group);
+      float rowHeight = HealthRowEnd - HealthRowTop;
+
+      float labelWidth = 0.0f;
+
+      if (font) {
+        float capitals = std::max(font->metrics.glyph('H').ascent, 1.0f);
+        float scale = HealthCap / capitals;
+        labelWidth = VrPaintList::measureText(*font, "HP", scale) + HealthLabelGap;
+        list.drawText(*font, "HP", left, HealthRowTop + 0.5f * (rowHeight + HealthCap), scale, c);
+      }
+
+      float x0 = left + labelWidth;
+      float x1 = left + group;
+
+      if (x1 - x0 < 8.0f)
+        return;
+
+      float xs = x0 + (x1 - x0) * fraction;
+
+      if (meter) {
+        // The meter's visible part stretched over the row, cut where the health ends
+        float u0 = MeterLeft / MeterTexels;
+        float u1 = MeterRight / MeterTexels;
+        float v0 = MeterTop / MeterRows;
+        float v1 = MeterBottom / MeterRows;
+        float us = u0 + (u1 - u0) * fraction;
+
+        if (xs > x0)
+          list.drawImage(*meter, VrPaintImageUse::Shape, x0, HealthRowTop, xs, HealthRowEnd, u0, v0, us, v1, c);
+        if (xs < x1)
+          list.drawImage(*meter, VrPaintImageUse::Shape, xs, HealthRowTop, x1, HealthRowEnd, us, v0, u1, v1,
+            c.faded(HealthEmpty));
+      } else {
+        // Without the picture: a line with ticks in the same look
+        float line = HealthRowTop + 0.62f * rowHeight;
+        constexpr uint32_t Ticks = 14;
+
+        for (uint32_t i = 0; i <= Ticks; i++) {
+          float x = x0 + (x1 - x0) * float(i) / float(Ticks);
+          list.fillRect(x - 1.5f, HealthRowTop + 0.2f * rowHeight, x + 1.5f, line, x <= xs ? c : c.faded(HealthEmpty));
+        }
+
+        if (xs > x0)
+          list.fillRect(x0, line, xs, line + 0.3f * rowHeight, c);
+        if (xs < x1)
+          list.fillRect(xs, line, x1, line + 0.3f * rowHeight, c.faded(HealthEmpty));
+      }
+    }
+
     // Own marks, only without the game's strip, in its look
     const char* const Labels[] = { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
     constexpr float CardinalCap = 26.0f;
@@ -199,11 +277,20 @@ namespace dxvk {
 
   void vrPaintCompass(VrPaintList& list, const VrCompassConfig& config, float heading,
       const std::vector<VrCompassMarker>& markers, const VrColour& colour, const VrPaintFont* font,
-      const VrCompassPictures& pictures) {
+      const VrCompassPictures& pictures, const VrHealthState& health) {
     float width  = float(list.width());
     float height = float(list.height());
 
     list.clear();
+
+    if (config.health && health.known)
+      paintHealth(list, config, font, pictures.healthBar, health);
+
+    if (!config.enabled)
+      return;
+
+    // The markers keep out of the health bar's row
+    height = std::min(height, HealthRowTop - 6.0f);
 
     // A dark band behind the strip, round at its ends
     if (config.backdrop && config.backdropOpacity > 0.0f) {
@@ -338,9 +425,16 @@ namespace dxvk {
     else if (name == "gap")      ok = number(-40.0f, 14.0f, c.markerGap);
     else if (name == "gapnoband") ok = number(-40.0f, 14.0f, c.markerGapNoBackdrop);
     else if (name == "quest")    ok = number(0.5f, 2.0f, c.questScale);
-    else if (name == "backdrop") {
+    else if (name == "healthwidth")    ok = number(0.1f, 1.0f, c.healthWidth);
+    else if (name == "healthlow")      ok = number(0.0f, 1.0f, c.healthLow);
+    else if (name == "healthcritical") ok = number(0.0f, 1.0f, c.healthCritical);
+    else if (name == "healthalign") {
+      ok = value == "centre" || value == "center" || value == "right";
+      c.healthAlign = value == "right" ? VrHealthAlign::Right : VrHealthAlign::Centre;
+    } else if (name == "backdrop" || name == "compass" || name == "health" || name == "pulse") {
       ok = value == "on" || value == "off";
-      c.backdrop = value == "on";
+      bool on = value == "on";
+      (name == "backdrop" ? c.backdrop : name == "compass" ? c.enabled : name == "health" ? c.health : c.healthPulse) = on;
     }
 
     if (ok)
@@ -351,7 +445,7 @@ namespace dxvk {
 
 
   std::string vrDescribeCompass(const VrCompassConfig& c) {
-    char text[256];
+    char text[448];
     auto deg = [] (float v, char* out, size_t size) {
       if (v == 0.0f)
         std::snprintf(out, size, "auto");
@@ -363,10 +457,36 @@ namespace dxvk {
     deg(c.angle, angle, sizeof(angle));
     deg(c.top, top, sizeof(top));
     std::snprintf(text, sizeof(text),
-      "width=%g top=%g angle=%s topdeg=%s distance=%g span=%g backdrop=%s opacity=%g gap=%g gapnoband=%g quest=%g",
+      "width=%g top=%g angle=%s topdeg=%s distance=%g span=%g backdrop=%s opacity=%g gap=%g gapnoband=%g quest=%g"
+      " compass=%s health=%s healthalign=%s healthwidth=%g healthlow=%g healthcritical=%g pulse=%s",
       c.widthShare, c.topShare, angle, top, c.distance, c.span, c.backdrop ? "on" : "off",
-      c.backdropOpacity, c.markerGap, c.markerGapNoBackdrop, c.questScale);
+      c.backdropOpacity, c.markerGap, c.markerGapNoBackdrop, c.questScale,
+      c.enabled ? "on" : "off", c.health ? "on" : "off", c.healthAlign == VrHealthAlign::Right ? "right" : "centre",
+      c.healthWidth, c.healthLow, c.healthCritical, c.healthPulse ? "on" : "off");
     return text;
+  }
+
+
+  VrColour vrHealthColour(const VrCompassConfig& config, float fraction) {
+    if (fraction < config.healthCritical)
+      return rgb(config.healthCriticalColour);
+
+    if (fraction < config.healthLow)
+      return rgb(config.healthLowColour);
+
+    return rgb(config.healthColour);
+  }
+
+
+  float vrHealthPulse(const VrCompassConfig& config, float fraction, double seconds) {
+    if (!config.healthPulse || !(fraction < config.healthCritical))
+      return 1.0f;
+
+    // A smooth rise and fall once a second, in six steps between 0.45 and 1
+    double phase = std::fmod(seconds, 1.0);
+    float wave = 0.5f + 0.5f * float(std::cos(phase * 2.0 * 3.14159265358979));
+    float step = std::round(wave * 6.0f) / 6.0f;
+    return 0.45f + 0.55f * step;
   }
 
 

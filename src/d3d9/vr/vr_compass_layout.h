@@ -15,8 +15,17 @@ namespace dxvk {
    * and fading out towards its ends as on the HUD, and below it the game's
    * markers for the active quest's target and the player's own map marker,
    * and friends. Markers outside the strip's span stay at its nearer end.
+   * Below them, the player's health in the look of the game's HP meter.
    */
+  enum class VrHealthAlign : uint32_t {
+    /// Under the middle of the strip
+    Centre,
+    /// Under the strip's right end
+    Right,
+  };
+
   struct VrCompassConfig {
+    /// The strip and its markers (the health bar has its own switch)
     bool  enabled   = true;
     /// Degrees of heading across the strip; the game's own compass shows
     /// about 120 (345 of the 1024 pixels of its strip)
@@ -47,7 +56,49 @@ namespace dxvk {
     /// Colour of friends' markers, 0xRRGGBB: a phosphor green, as their name
     /// plates (VrWorldTileConfig::personColour); the others take the HUD's colour
     uint32_t friendColour = 0xA6E585;
+
+    /// The player's health below the markers, in the look of the game's HP
+    /// meter: green while well, orange below healthLow, red and pulsing
+    /// below healthCritical (shares of the full health)
+    bool     health          = true;
+    VrHealthAlign healthAlign = VrHealthAlign::Centre;
+    /// Width of the label and meter together, as a share of the strip's
+    float    healthWidth     = 0.42f;
+    float    healthLow       = 0.5f;
+    float    healthCritical  = 0.25f;
+    uint32_t healthColour    = 0xA6E585;
+    uint32_t healthLowColour = 0xF0A040;
+    uint32_t healthCriticalColour = 0xE0705A;
+    bool     healthPulse     = true;
   };
+
+  /**
+   * \brief The player's health as the compass shows it
+   */
+  struct VrHealthState {
+    /// Whether the health could be read
+    bool  known    = false;
+    /// Current health as a share of the full health, 0 to 1
+    float fraction = 1.0f;
+    /// Brightness of the pulse while critical, 1 otherwise
+    float pulse    = 1.0f;
+  };
+
+  /**
+   * \brief Colour of the health bar for a share of the full health
+   */
+  VrColour vrHealthColour(const VrCompassConfig& config, float fraction);
+
+  /**
+   * \brief Brightness of the health bar's pulse
+   *
+   * Below the critical share, and with the pulse on, it rises and falls
+   * between 0.45 and 1 about once a second, in steps of a sixth, so that the
+   * image is drawn again only a few times a second; 1 otherwise.
+   *
+   * \param [in] seconds A steadily running time, in seconds
+   */
+  float vrHealthPulse(const VrCompassConfig& config, float fraction, double seconds);
 
   /**
    * \brief The game's compass pictures, any of them may be missing
@@ -63,6 +114,8 @@ namespace dxvk {
     const VrImage* custom = nullptr;
     /// The mark of a person (the game tints it per kind of actor)
     const VrImage* person = nullptr;
+    /// The HP meter: a line with tick marks
+    const VrImage* healthBar = nullptr;
   };
 
   /**
@@ -70,7 +123,8 @@ namespace dxvk {
    */
   struct VrCompassImage {
     constexpr static uint32_t Width  = 768;
-    constexpr static uint32_t Height = 166;
+    /// The strip and markers in the top 166 rows, the health bar below
+    constexpr static uint32_t Height = 222;
   };
 
   enum class VrCompassMarkerKind : uint32_t {
@@ -127,17 +181,20 @@ namespace dxvk {
    * \param [in] colour The HUD's colour
    * \param [in] font Font of labels and initials, or \c nullptr to write none
    * \param [in] pictures The game's compass pictures
+   * \param [in] health The player's health, drawn when known and on
    */
   void vrPaintCompass(VrPaintList& list, const VrCompassConfig& config, float heading,
     const std::vector<VrCompassMarker>& markers, const VrColour& colour, const VrPaintFont* font,
-    const VrCompassPictures& pictures);
+    const VrCompassPictures& pictures, const VrHealthState& health = VrHealthState());
 
   /**
    * \brief Changes one setting by name, for tuning it live (VR test channel)
    *
    * Names: width, top (shares of the field of view), angle, topdeg (degrees
    * or "auto"), distance, span, backdrop (on|off), opacity, gap (with the
-   * band), gapnoband, quest.
+   * band), gapnoband, quest, compass (on|off: the strip and markers),
+   * health (on|off), healthalign (centre|right), healthwidth, healthlow,
+   * healthcritical, pulse (on|off).
    *
    * \returns \c false, the settings unchanged, for an unknown name or value
    */

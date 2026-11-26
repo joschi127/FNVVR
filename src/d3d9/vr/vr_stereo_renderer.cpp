@@ -372,7 +372,8 @@ namespace dxvk {
         renderer->m_worldTiles = nullptr;
     }
 
-    if (panel.compass.enabled) {
+    // The compass's panel also carries the health bar
+    if (panel.compass.enabled || panel.compass.health) {
       renderer->m_compass = std::make_unique<VrCompass>(*renderer->m_painter, backend, renderer->m_gameImages);
       renderer->m_compass->setSubmitter(&renderer->m_submitter);
 

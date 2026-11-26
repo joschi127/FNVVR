@@ -83,15 +83,20 @@ namespace dxvk {
     std::vector<Target> m_targets;
     float             m_north = 0.0f;
     std::string       m_loggedTargets;
+    // The player's health, read with the targets
+    VrHealthState     m_health;
 
     // What the image shows, to draw it only when it changes
     std::vector<VrCompassMarker> m_shownMarkers;
+    VrHealthState     m_shownHealth;
     float             m_shownHeading = -100.0f;
     bool              m_drawn = false;
     bool              m_placed = false;
     VrCompassPlacement m_place;
 
     void readTargets();
+
+    void readHealth(uintptr_t player);
 
   };
 
