@@ -54,6 +54,11 @@ namespace dxvk {
 
     VrWorldTiles(VrPainter& painter, IVRBackend& backend, VrGameImages& images);
 
+    /**
+     * \brief Shows the plates through the renderer's frame submitter
+     */
+    void setSubmitter(VrFrameSubmitter* submitter);
+
     ~VrWorldTiles();
 
     /**
@@ -114,6 +119,7 @@ namespace dxvk {
 
     VrPainter&     m_painter;
     IVRBackend&    m_backend;
+    VrFrameSubmitter* m_submitter = nullptr;
     VrGameImages&  m_images;
 
     bool           m_available = false;

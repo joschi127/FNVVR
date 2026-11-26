@@ -4,6 +4,8 @@ vr_src = files([
   'vr_emulator_backend.cpp',
   'vr_game_space.cpp',
   'vr_openvr_convert.cpp',
+  'vr_openxr_convert.cpp',
+  'vr_openxr_actions.cpp',
   'vr_virtual_gamepad.cpp',
   'vr_gamepad_head.cpp',
   'vr_controller_pad.cpp',
@@ -74,6 +76,7 @@ vr_src = files([
   'vr_pipboy_panel_layout.cpp',
   'vr_world_tile_place.cpp',
   'vr_compass_layout.cpp',
+  'vr_occlusion_rules.cpp',
 ])
 
 # Parts that depend on DXVK and Vulkan, only built into d3d9.dll
@@ -100,6 +103,11 @@ vr_dxvk_src = files([
   'vr_system.cpp',
   'vr_backend_factory.cpp',
   'vr_openvr_backend.cpp',
+  'vr_openxr_loader.cpp',
+  'vr_openxr_backend.cpp',
+  'vr_openxr_input.cpp',
+  'vr_openxr_image_copy.cpp',
+  'vr_openxr_vulkan_device.cpp',
   'vr_eye_transition.cpp',
   'vr_extension_provider.cpp',
   'vr_gamepad_hook.cpp',
@@ -113,6 +121,8 @@ vr_dxvk_src = files([
   'vr_launcher_windows.cpp',
   'vr_head_look.cpp',
   'vr_d3d9_bridge.cpp',
+  'vr_frame_submitter.cpp',
+  'vr_occlusion_culling.cpp',
   'vr_emulator_keyboard.cpp',
   'vr_game_camera.cpp',
   'vr_depth_resolve.cpp',
@@ -206,6 +216,8 @@ if add_languages('cpp', native: true, required: false)
     'tests/test_vr_virtual_gamepad.cpp',
     'tests/test_vr_gamepad_head.cpp',
     'tests/test_vr_openvr_convert.cpp',
+    'tests/test_vr_openxr_convert.cpp',
+    'tests/test_vr_openxr_actions.cpp',
     'tests/test_vr_controller_pad.cpp',
     'tests/test_vr_turn_input.cpp',
     'tests/test_vr_roomscale.cpp',
@@ -266,12 +278,13 @@ if add_languages('cpp', native: true, required: false)
     'tests/test_vr_pipboy_panel_layout.cpp',
     'tests/test_vr_world_tiles.cpp',
     'tests/test_vr_compass.cpp',
+    'tests/test_vr_occlusion.cpp',
   ])
 
   vr_test = executable('vr_tests', vr_test_sources, vr_src,
     files('../../util/util_matrix.cpp'),
     native              : true,
-    include_directories : include_directories('../../../include/vulkan/include'),
+    include_directories : include_directories('../../../include/vulkan/include', '../../../include'),
     cpp_args            : [ '-DVR_OPENVR_DIR="@0@"'.format(meson.current_source_dir() / 'openvr') ],
     override_options    : [ 'cpp_std=c++17' ])
 

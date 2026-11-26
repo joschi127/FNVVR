@@ -206,7 +206,11 @@ namespace dxvk {
    * beginFrame, submitFrame, submitEmptyFrame and submitPanel are called with
    * the device queue locked, so they may use it.
    *
-   * Methods are called from the render/game thread only.
+   * Methods are called from the render/game thread, except a stereo
+   * frame's submitFrame and the submitPanel and hidePanel calls of its
+   * panels, which may come from the renderer's submission thread (see
+   * VrFrameSubmitter) while the game thread runs the game's update. Those
+   * calls are made with the device queue locked, like any submitPanel.
    */
   class IVRBackend {
 
@@ -340,12 +344,22 @@ namespace dxvk {
      * \brief Shows a flat panel, or updates it if it is shown
      *
      * The panel is drawn over the stereo frames and stays visible with its
-     * last image until hidePanel is called for it. It does not depend on the
-     * frame loop: it may be submitted while no stereo frames are rendered,
-     * for example while the game loads. Panels are independent of each other.
-     * HudHead is drawn over Menu, and the hand panels over HudHead.
+     * last image until hidePanel is called for it. It may be submitted while
+     * no stereo frames are rendered, for example while the game loads, see
+     * panelsNeedFrames. Panels are independent of each other. HudHead is
+     * drawn over Menu, and the hand panels over HudHead.
      */
     virtual bool submitPanel(VrPanelId id, const VrPanelSubmission& panel) = 0;
+
+    /**
+     * \brief Tells whether panels are only shown in the frames the game ends
+     *
+     * When true, a new panel image reaches the headset with the next
+     * submitFrame or submitEmptyFrame, so code that submits panels outside
+     * of the game's frame loop must also wait for, begin and end a frame.
+     * When false, the runtime shows the panels on its own.
+     */
+    virtual bool panelsNeedFrames() const = 0;
 
     virtual void hidePanel(VrPanelId id) = 0;
 

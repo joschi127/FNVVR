@@ -19,6 +19,7 @@
 #include "vr_game_sound.h"
 #include "vr_head_hud.h"
 #include "vr_options_file.h"
+#include "vr_preview_panels.h"
 #include "vr_math.h"
 #include "vr_menu_cursor.h"
 #include "vr_stereo_renderer.h"
@@ -221,7 +222,7 @@ namespace dxvk {
   VrStereoRenderer::VrStereoRenderer(IVRBackend& backend, IDirect3DDevice9* device,
     bool showPreview, const VrPanelConfig& panel)
   : m_backend(backend), m_device(device), m_showPreview(showPreview), m_panelConfig(panel),
-    m_controls(backend) { }
+    m_submitter(device, backend), m_controls(backend) { }
 
 
   VrStereoRenderer::~VrStereoRenderer() {
@@ -230,6 +231,7 @@ namespace dxvk {
     hidePanel();
     hideHud();
     hideHandHud();
+    m_submitter.finish();
   }
 
 
@@ -354,12 +356,15 @@ namespace dxvk {
     renderer->m_ammoLabel  = std::make_unique<VrAmmoLabel>(*renderer->m_painter, backend, renderer->m_gameImages);
     renderer->m_pipBoyHint = std::make_unique<VrPipBoyHint>(*renderer->m_painter, backend, renderer->m_gameImages,
       texts.text("pipboy.close", "Close"));
+    renderer->m_pipBoyHint->setSubmitter(&renderer->m_submitter);
     renderer->m_pipBoyLampBar = std::make_unique<VrPipBoyLampBar>(*renderer->m_painter, backend, renderer->m_gameImages);
+    renderer->m_pipBoyLampBar->setSubmitter(&renderer->m_submitter);
     renderer->m_pipBoyArmTexture = std::make_unique<VrPipBoyArmTexture>(device);
     renderer->m_caravanValues = std::make_unique<VrCaravanValues>(*renderer->m_painter, backend, renderer->m_gameImages);
 
     if (renderer->m_hudAvailable) {
       renderer->m_worldTiles = std::make_unique<VrWorldTiles>(*renderer->m_painter, backend, renderer->m_gameImages);
+      renderer->m_worldTiles->setSubmitter(&renderer->m_submitter);
 
       if (renderer->m_worldTiles->initialize())
         renderer->m_worldTiles->setConfig(panel.worldTiles, panel.hudHeadTiles);
@@ -369,6 +374,7 @@ namespace dxvk {
 
     if (panel.compass.enabled) {
       renderer->m_compass = std::make_unique<VrCompass>(*renderer->m_painter, backend, renderer->m_gameImages);
+      renderer->m_compass->setSubmitter(&renderer->m_submitter);
 
       if (renderer->m_compass->initialize())
         renderer->m_compass->setConfig(panel.compass);
@@ -378,6 +384,12 @@ namespace dxvk {
 
     if (VrGameConsole::install())
       renderer->m_terminal = std::make_unique<VrConsoleTerminal>(*renderer->m_painter, backend, texts);
+
+    if (VrOcclusionCulling::pluginLoaded()) {
+      renderer->m_occlusionPluginNotice = texts.text("occlusion.plugin",
+        "Uninstall the Occlusion Culling plugin: in VR it gives both eyes the same answers. "
+        "FNVVR has its own, made for VR.");
+    }
 
     if (VrGameTextEdit::install())
       renderer->m_textFieldKeyboard = std::make_unique<VrTextFieldKeyboard>(backend);
@@ -531,12 +543,21 @@ namespace dxvk {
       renderer->m_foveation = VrFoveation::create(device, passes.foveationZones);
       renderer->m_foveationTestGaze = passes.foveationTestGaze;
 
-      if (renderer->m_foveation) {
-        VrFoveation* foveation = renderer->m_foveation.get();
-        renderer->m_renderPasses->setWorldCallbacks(
-          [foveation] (uint32_t eye) { foveation->beginWorld(eye); },
-          [foveation] { foveation->endWorld(); });
-      }
+      renderer->m_renderPasses->setWorldCallbacks(
+        [self] (uint32_t eye) {
+          if (self->m_foveation)
+            self->m_foveation->beginWorld(eye);
+
+          if (self->m_occlusion)
+            self->m_occlusion->beginWorld(eye);
+        },
+        [self] {
+          if (self->m_foveation)
+            self->m_foveation->endWorld();
+
+          if (self->m_occlusion)
+            self->m_occlusion->endWorld();
+        });
     }
 
     renderer->m_scopeGame = VrScopeGame::install();
@@ -655,11 +676,19 @@ namespace dxvk {
     bool paced = m_swapped && m_paced;
 
     if (m_eye == NoEye) {
-      if (!m_swapped && m_mainThread == GetCurrentThreadId())
+      // No main loop frame came before: a movie, or the game's start before
+      // its main loop, which runs on the thread that will be the main one
+      bool outsideLoop = !m_swapped
+        && (!m_mainThread || m_mainThread == GetCurrentThreadId());
+
+      if (outsideLoop && m_mainThread)
         updateBlockedInput();
 
       m_swapped = false;
       updatePanel(swapchain);
+
+      if (outsideLoop && m_backend.panelsNeedFrames())
+        paced = endFrameOutsideLoop();
     }
 
     if (!paced)
@@ -759,6 +788,7 @@ namespace dxvk {
     VrD3D9Bridge::beginFrame(m_device, m_backend);
     m_paced = timing.paced;
     countFrame(timing);
+    showOcclusionPluginNotice(state);
 
     if (!timing.shouldRender) {
       VrD3D9Bridge::submitEmptyFrame(m_device, m_backend, timing.predictedDisplayTime);
@@ -942,6 +972,9 @@ namespace dxvk {
     if (m_renderPasses)
       m_renderPasses->endFrame();
 
+    if (m_occlusion)
+      m_occlusion->endFrame();
+
     if (m_spikeLog && m_renderPasses)
       m_spikeLog->setCpuPasses(m_frameId, m_renderPasses->lastFrame());
 
@@ -967,8 +1000,9 @@ namespace dxvk {
 
     drawFaders(eyes);
 
-    // The panels go first: the eye submission starts the hand-off, which
-    // holds DXVK's queue on its thread, and each panel waits for that queue
+    // The panels go to the runtime with the eyes, before them
+    m_submitter.beginFrame();
+
     if (m_hudRendered)
       submitHud();
     else
@@ -1014,9 +1048,8 @@ namespace dxvk {
     if (m_gpuTimer)
       m_gpuTimer->endFrame();
 
-    if (!VrD3D9Bridge::submitStereoFrame(m_device, m_backend, eyes, views,
-        timing.predictedDisplayTime) && !m_loggedFailure) {
-      Logger::err("VR: The backend rejected a stereo frame");
+    if (!m_submitter.submitFrame(eyes, views, timing.predictedDisplayTime) && !m_loggedFailure) {
+      Logger::err("VR: The eye images could not be handed to the backend");
       m_loggedFailure = true;
     }
 
@@ -1028,8 +1061,14 @@ namespace dxvk {
     // cursor as on the other menus
     VrMenuCursor::setPipBoyPanel(m_pipBoyOnPanel && !m_menuDrawn, m_pipBoyCrop, m_pipBoyInside);
 
-    if (m_preview)
+    if (m_preview) {
+      // The emulator's preview draws the panels as the backend shows them:
+      // let the frame's panels reach it first (emulator only)
+      if (VrPreviewPanels::enabled())
+        m_submitter.finish();
+
       m_preview->present(eyes, views);
+    }
   }
 
 
@@ -1041,6 +1080,10 @@ namespace dxvk {
     VrD3D9Bridge::beginFrame(m_device, m_backend);
     m_paced = timing.paced;
     countFrame(timing);
+    // Answers of the world's last frames age while it is not drawn
+    if (m_occlusion)
+      m_occlusion->endFrame();
+
     VrInputState input = m_backend.pollInput(timing.predictedDisplayTime);
     trackHead(input);
 
@@ -1165,6 +1208,22 @@ namespace dxvk {
 
     m_controls.update(input, readGameState(),
       m_hasReference ? &m_reference : nullptr, menuPanel(), dt);
+  }
+
+
+  bool VrStereoRenderer::endFrameOutsideLoop() {
+    // The panel's new image is only shown with a frame. The movie paces
+    // itself at a lower rate than the headset, so waiting for the headset
+    // takes less than one movie frame.
+    if (!m_loggedFrameOutsideLoop) {
+      Logger::info("VR: Presents outside of the main loop end a headset frame each, to show the panel's new image");
+      m_loggedFrameOutsideLoop = true;
+    }
+
+    VrFrameTiming timing = waitFrame();
+    VrD3D9Bridge::beginFrame(m_device, m_backend);
+    VrD3D9Bridge::submitEmptyFrame(m_device, m_backend, timing.predictedDisplayTime);
+    return timing.paced;
   }
 
 
@@ -1355,6 +1414,44 @@ namespace dxvk {
     m_gameTarget->GetDesc(&target);
 
     m_foveation->prepareFrame(views, gaze, VrExtent { target.Width, target.Height });
+  }
+
+
+  void VrStereoRenderer::setAsyncSubmit(bool enabled) {
+    m_submitter.setThreaded(enabled);
+  }
+
+
+  void VrStereoRenderer::setOcclusionCulling(bool enabled) {
+    // Its eyes are told by the render passes' world callbacks
+    if (enabled && !m_occlusionTried && m_renderPasses) {
+      m_occlusionTried = true;
+      m_occlusion = VrOcclusionCulling::install(m_device);
+    }
+
+    if (m_occlusion)
+      m_occlusion->setEnabled(enabled);
+  }
+
+
+  void VrStereoRenderer::showOcclusionPluginNotice(VrGameStateKind state) {
+    // A few seconds into the world, past the fade from the loading screen
+    constexpr uint32_t NoticeDelayFrames = 360;
+    constexpr float    NoticeSeconds     = 10.0f;
+
+    using ShowHudMessageFn = uint32_t (__cdecl*)(const char* text, uint32_t emotion, const char* image,
+      const char* sound, float time, uint32_t instant);
+
+    if (!m_occlusionPluginNotice || state != VrGameStateKind::InGame || ++m_noticeFrames < NoticeDelayFrames)
+      return;
+
+    if (VrGameMemory::matches(VrGame::ShowHudMessage, VrGame::ShowHudMessagePrologue, sizeof(VrGame::ShowHudMessagePrologue))) {
+      reinterpret_cast<ShowHudMessageFn>(VrGame::ShowHudMessage)(m_occlusionPluginNotice,
+        VrGame::HudMessageSad, nullptr, nullptr, NoticeSeconds, 0);
+      Logger::info("VR: The player was told to uninstall the Occlusion Culling plugin");
+    }
+
+    m_occlusionPluginNotice = nullptr;
   }
 
 
@@ -2647,6 +2744,9 @@ namespace dxvk {
 
 
   VrFrameTiming VrStereoRenderer::waitFrame() {
+    // The last frame reaches the runtime before it is asked for the next
+    m_submitter.finish();
+
     VrCpuPhaseScope phase(m_cpuSampler.get(), uint8_t(VrCpuPhase::Wait));
     return m_backend.waitFrame();
   }
@@ -3530,7 +3630,7 @@ namespace dxvk {
     pose.position.y = m_panelConfig.hudHeight;
     pose.position.z = -m_panelConfig.hudDistance;
 
-    m_hudShown = VrD3D9Bridge::submitPanel(m_device, m_backend, VrPanelId::HudHead,
+    m_hudShown = m_submitter.submitPanel(VrPanelId::HudHead,
       m_hudPanelTexture.ptr(), pose, m_panelConfig.hudWidth, VrPanelAnchor::Head);
 
     if (!m_hudShown && !m_loggedHudFailure) {
@@ -3556,7 +3656,7 @@ namespace dxvk {
 
     float panelWidth = minigamePanel ? minigamePanel->width : m_panelConfig.hudWidth;
 
-    m_panelShown = VrD3D9Bridge::submitPanel(m_device, m_backend, VrPanelId::Menu,
+    m_panelShown = m_submitter.submitPanel(VrPanelId::Menu,
       m_menuTexture.ptr(), m_panelPose, panelWidth, VrPanelAnchor::Room);
     m_panelWidth = panelWidth;
 
@@ -3571,7 +3671,7 @@ namespace dxvk {
     if (!m_hudShown)
       return;
 
-    m_backend.hidePanel(VrPanelId::HudHead);
+    m_submitter.hidePanel(VrPanelId::HudHead);
     m_hudShown = false;
   }
 
@@ -3797,7 +3897,7 @@ namespace dxvk {
         panelSurface.ptr(), &part.target, D3DTEXF_NONE));
     }
 
-    bool shown = copied && VrD3D9Bridge::submitPanel(m_device, m_backend, id,
+    bool shown = copied && m_submitter.submitPanel(id,
       texture.ptr(), pose, float(width) * metresPerPixel, VrPanelAnchor::Room);
 
     if (!shown && !m_loggedHandHudFailure) {
@@ -3813,7 +3913,7 @@ namespace dxvk {
     if (!shown)
       return;
 
-    m_backend.hidePanel(id);
+    m_submitter.hidePanel(id);
     shown = false;
   }
 
@@ -3854,7 +3954,7 @@ namespace dxvk {
     if (!m_panelShown || (!m_panelPlacedWithHead && m_hasHeadPose))
       placePanel(m_panelConfig.distance);
 
-    m_panelShown = VrD3D9Bridge::submitPanel(m_device, m_backend, VrPanelId::Menu,
+    m_panelShown = m_submitter.submitPanel(VrPanelId::Menu,
       m_panelTexture.ptr(), m_panelPose, m_panelConfig.width, VrPanelAnchor::Room);
     m_panelWidth = m_panelConfig.width;
 
@@ -3947,7 +4047,7 @@ namespace dxvk {
     if (!m_panelShown)
       return;
 
-    m_backend.hidePanel(VrPanelId::Menu);
+    m_submitter.hidePanel(VrPanelId::Menu);
     m_panelShown = false;
   }
 

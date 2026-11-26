@@ -1,0 +1,5 @@
+# Native file for building on Windows with MSYS2 (see docs/building.md): the VR unit tests are built with
+# MSYS2's POSIX gcc (the MSYS environment), since they use POSIX calls (mmap) as on Linux.
+[binaries]
+c = 'C:/msys64/usr/bin/gcc.exe'
+cpp = 'C:/msys64/usr/bin/g++.exe'

@@ -125,8 +125,9 @@ The full list of what to install (game, True Co-op requirements, VR runtime) is 
 - Mod managers: `d3d9.dll`, `dxvk.conf` and `fnvvr/` belong in the game root next to
   `FalloutNV.exe`, not in `Data/`. With Mod Organizer 2 that needs Root Builder or a manual copy;
   record in `local/NOTES.md` which manager and profile a test used.
-- VR runtime: FNVVR talks to OpenVR, so a headset needs SteamVR (an OpenXR backend exists only as
-  an upstream probe branch). Windows and Linux/Proton are both supported by upstream.
+- VR runtime: FNVVR talks to OpenVR (SteamVR) or, since upstream v1.0.0, to OpenXR
+  (`d3d9.vrBackend = openxr`, loader in `fnvvr/openxr_loader.dll`). Windows and Linux/Proton are both
+  supported by upstream.
 - Pin the game on test machines (Steam: "Only update this game when I launch it", no beta branch;
   GOG: auto-update off). Test results are only comparable with the same exe, xNVSE and mod list.
 
@@ -141,8 +142,8 @@ ninja -C build.32                     # output: build.32/src/d3d9/d3d9.dll
 meson test -C build.32 --print-errorlogs
 ```
 
-On Windows this needs WSL or MSYS2 with an i686 mingw-w64 toolchain (posix thread model); which one
-this fork uses is recorded in `local/NOTES.md` once set up. The co-op mod builds with its own CMake
+On Windows, FNVVR builds with MSYS2 (`tools/build-msys2.sh`); WSL and building on another machine over SSH
+are the alternatives. All ways: [docs/building.md](building.md). The co-op mod builds with its own CMake
 presets (see its README).
 
 ## Tests: what they do and do not cover

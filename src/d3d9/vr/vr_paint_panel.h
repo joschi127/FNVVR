@@ -5,12 +5,20 @@
 
 namespace dxvk {
 
+  class VrFrameSubmitter;
+
   /**
    * \brief Shows an image drawn by the GPU on one of the backend's panels
    *
    * The paint list is drawn into a render target texture the runtime
    * reads, with premultiplied alpha. It is only drawn again when it
    * changed.
+   *
+   * With a frame submitter, the panel is shown and hidden through it, so
+   * within a frame it goes to the backend with the eyes (on the submission
+   * thread when that is on) instead of flushing the device on the game
+   * thread itself. A move still goes to the backend at once: the panel was
+   * shown in an earlier frame, which the submitter has finished.
    */
   class VrPaintPanel {
 
@@ -20,6 +28,16 @@ namespace dxvk {
     : m_painter(painter), m_backend(backend), m_id(id) { }
 
     ~VrPaintPanel();
+
+    /**
+     * \brief Shows and hides the panel through a frame submitter
+     *
+     * \param [in] submitter The renderer's submitter, which outlives the
+     *    panel, or \c nullptr to go to the backend directly
+     */
+    void setSubmitter(VrFrameSubmitter* submitter) {
+      m_submitter = submitter;
+    }
 
     /**
      * \brief Draws a new image of the panel
@@ -45,6 +63,8 @@ namespace dxvk {
      *
      * For an image that did not change since it was last shown; otherwise
      * the same as show.
+     * Not after show() in the same frame: with a submitter, the show is
+     * queued and would reach the backend after the move.
      */
     bool move(const VrPose& pose, float width, VrPanelAnchor anchor = VrPanelAnchor::Room);
 
@@ -68,6 +88,7 @@ namespace dxvk {
 
     VrPainter&             m_painter;
     IVRBackend&            m_backend;
+    VrFrameSubmitter*      m_submitter = nullptr;
     VrPanelId              m_id;
 
     Com<IDirect3DTexture9> m_texture;

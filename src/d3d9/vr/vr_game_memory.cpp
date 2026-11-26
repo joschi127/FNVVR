@@ -204,11 +204,21 @@ namespace dxvk {
     if (!canChainCall(site, expectedTarget) || !readCallTarget(site, &current))
       return false;
 
-    if (!redirectCall(site, current, newTarget))
+    // A hook taking its own call would call itself
+    if (current == reinterpret_cast<uintptr_t>(newTarget))
       return false;
 
-    reportForeignCode(site, current);
+    // The hook may run as soon as the call reaches it: it must find where
+    // to go on first
+    uintptr_t before = *previous;
     *previous = current;
+
+    if (!redirectCall(site, current, newTarget)) {
+      *previous = before;
+      return false;
+    }
+
+    reportForeignCode(site, current);
     return true;
   }
 

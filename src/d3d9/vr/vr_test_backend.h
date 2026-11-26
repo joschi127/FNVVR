@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+#include "../../util/thread.h"
+
 #include "vr_backend.h"
 #include "vr_test_capture.h"
 #include "vr_test_input.h"
@@ -18,10 +20,15 @@ namespace dxvk {
    * \brief Backend in front of the real one that lets test tools drive VR
    *
    * Only created with d3d9.vrTestChannel = True. Forwards every call to the
-   * real backend (emulator or OpenVR) and adds what a test tool sets through
+   * real backend (emulator, OpenVR or OpenXR) and adds what a test tool sets through
    * the named pipe: head and hand poses, actions, sticks, aiming at panels,
    * waiting for frames and captures of the eyes and panels. Without requests
    * it only forwards; see docs/testing/vr-test-channel.md.
+   *
+   * With d3d9.vrAsyncSubmit, submitFrame, submitPanel and hidePanel come
+   * from the renderer's submission thread (see VrFrameSubmitter) while the
+   * game thread takes requests in pollInput. What both use (the panels' places, the pending request and
+   * its capture) is guarded by m_mutex.
    */
   class VrTestBackend : public IVRBackend {
 
@@ -57,6 +64,7 @@ namespace dxvk {
     bool submitFrame(const VrFrameSubmission& frame) override;
     void submitEmptyFrame(int64_t displayTime) override { m_inner->submitEmptyFrame(displayTime); }
     bool submitPanel(VrPanelId id, const VrPanelSubmission& panel) override;
+    bool panelsNeedFrames() const override { return m_inner->panelsNeedFrames(); }
     void hidePanel(VrPanelId id) override;
     bool movePanel(VrPanelId id, const VrPose& pose, float width, VrPanelAnchor anchor) override;
     bool submitPanelPixels(VrPanelId id, const VrPanelPixels& panel) override;
@@ -97,6 +105,9 @@ namespace dxvk {
     VrInputContext              m_context = VrInputContext::Game;
     VrTestSignal                m_signal;
     std::chrono::steady_clock::time_point m_lastPoll = std::chrono::steady_clock::now();
+
+    /// Guards m_places and the pending request with its capture
+    dxvk::mutex                 m_mutex;
 
     std::array<VrTestPanelPlace, VrPanelCount> m_places;
 

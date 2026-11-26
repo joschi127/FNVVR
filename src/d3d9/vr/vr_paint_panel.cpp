@@ -1,4 +1,5 @@
 #include "vr_d3d9_bridge.h"
+#include "vr_frame_submitter.h"
 #include "vr_paint_panel.h"
 
 namespace dxvk {
@@ -35,8 +36,10 @@ namespace dxvk {
     if (!m_drawn)
       return false;
 
-    m_shown = VrD3D9Bridge::submitPanel(m_painter.device(), m_backend, m_id, m_texture.ptr(),
-      pose, width, anchor, true);
+    m_shown = m_submitter
+      ? m_submitter->submitPanel(m_id, m_texture.ptr(), pose, width, anchor, true)
+      : VrD3D9Bridge::submitPanel(m_painter.device(), m_backend, m_id, m_texture.ptr(),
+          pose, width, anchor, true);
     return m_shown;
   }
 
@@ -62,7 +65,11 @@ namespace dxvk {
     if (!m_shown)
       return;
 
-    m_backend.hidePanel(m_id);
+    if (m_submitter)
+      m_submitter->hidePanel(m_id);
+    else
+      m_backend.hidePanel(m_id);
+
     m_shown = false;
   }
 

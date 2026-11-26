@@ -47,6 +47,8 @@
 #include "vr_minigames.h"
 #include "vr_manual_reload.h"
 #include "vr_foveation.h"
+#include "vr_frame_submitter.h"
+#include "vr_occlusion_culling.h"
 #include "vr_part_highlight.h"
 #include "vr_npc_gaze.h"
 #include "vr_painter.h"
@@ -206,10 +208,12 @@ namespace dxvk {
      * The game also plays movies, such as the intro of a new game, in a
      * loop of its own that presents every movie frame and polls the
      * gamepad to let the player skip the movie. The controllers are read
-     * here for those frames, see \ref updateBlockedInput.
+     * here for those frames, see \ref updateBlockedInput. A backend whose
+     * panels need frames also gets a frame of its own for each of them,
+     * see \ref endFrameOutsideLoop.
      *
-     * Frames drawn by the game's main loop were paced by the runtime, so
-     * they are presented without waiting for the desktop display.
+     * Frames paced by the runtime are presented without waiting for the
+     * desktop display.
      *
      * \param [in] swapchain Swap chain being presented
      * \returns What the swap chain does with the present
@@ -343,6 +347,20 @@ namespace dxvk {
      */
     void setFoveationEnabled(bool enabled);
 
+    /**
+     * \brief Hands frames to the runtime from a thread of their own
+     *
+     * See VrFrameSubmitter (d3d9.vrAsyncSubmit).
+     */
+    void setAsyncSubmit(bool enabled);
+
+    /**
+     * \brief Turns occlusion culling on or off (d3d9.vrOcclusionCulling)
+     *
+     * See VrOcclusionCulling. Installed the first time it is turned on.
+     */
+    void setOcclusionCulling(bool enabled);
+
   private:
 
     static constexpr uint32_t NoEye = ~0u;
@@ -370,6 +388,17 @@ namespace dxvk {
 
     Com<IDirect3DTexture9> m_eyeTextures[VrEyeCount];
     std::unique_ptr<VrPreviewWindow> m_preview;
+
+    // Every panel and frame of the renderer goes to the backend through it
+    VrFrameSubmitter   m_submitter;
+
+    // Occlusion culling, installed the first time it is wanted
+    std::unique_ptr<VrOcclusionCulling> m_occlusion;
+    bool               m_occlusionTried    = false;
+    // Shown once in the world when the Occlusion Culling plugin is loaded,
+    // after NoticeDelayFrames frames there, then cleared
+    const char*        m_occlusionPluginNotice = nullptr;
+    uint32_t           m_noticeFrames      = 0;
 
     // The game composes its final 3D image into the backbuffer
     Com<IDirect3DSurface9> m_gameTarget;
@@ -701,6 +730,7 @@ namespace dxvk {
     high_resolution_clock::time_point m_blockedInputTime;
     bool   m_blockedInput  = false;
     bool   m_loggedBlockedInput = false;
+    bool   m_loggedFrameOutsideLoop = false;
 
     // Latest tracked head pose, used to place the panel
     VrPose m_headPose;
@@ -783,6 +813,8 @@ namespace dxvk {
 
     void updateBlockedInput();
 
+    bool endFrameOutsideLoop();
+
     VrGameStateKind readGameState();
 
     bool createEyeTextures();
@@ -859,6 +891,8 @@ namespace dxvk {
     /**
      * \brief Sets the frame's shading rates from where the eyes look
      */
+    void showOcclusionPluginNotice(VrGameStateKind state);
+
     void updateFoveation(const std::array<VrEyeView, VrEyeCount>& views, float dt);
 
     void logGameFrustum();

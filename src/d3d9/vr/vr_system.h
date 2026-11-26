@@ -24,7 +24,7 @@ namespace dxvk {
    *
    * The backend is chosen by the \c d3d9.vrBackend option in dxvk.conf, which
    * the \c DXVK_VR_BACKEND environment variable overrides. Valid values are
-   * "off" (default), "emulator" and "openxr".
+   * "off" (default), "emulator", "openvr" and "openxr".
    */
   class VrSystem {
 
@@ -117,6 +117,8 @@ namespace dxvk {
     bool                                 m_foveation = false;
     bool                                 m_handPush = true;
     bool                                 m_asyncHandOff = true;
+    bool                                 m_asyncSubmit  = false;
+    bool                                 m_occlusionCulling = true;
     VrSneakConfig                        m_sneakConfig;
     bool                                 m_weaponInHand;
     VrGameTimerConfig                    m_timerConfig;

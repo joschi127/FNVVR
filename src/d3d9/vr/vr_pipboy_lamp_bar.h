@@ -31,6 +31,13 @@ namespace dxvk {
     VrPipBoyLampBar(VrPainter& painter, IVRBackend& backend, VrGameImages& images);
 
     /**
+     * \brief Shows the panel through the renderer's frame submitter
+     */
+    void setSubmitter(VrFrameSubmitter* submitter) {
+      m_panel.setSubmitter(submitter);
+    }
+
+    /**
      * \brief Shows the bar below the panel
      *
      * \param [in] panel The panel's pose in tracking space, +Y up
