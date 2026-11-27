@@ -267,6 +267,15 @@ namespace dxvk {
           list.fillRect(x, line - 0.5f * OwnLine, xe, line + 0.5f * OwnLine, colour.faded(0.9f * fade));
         }
 
+        // Short ticks every 5 degrees between the steps, as dense as the HP meter's
+        for (int32_t third = 1; third <= 2; third++) {
+          float xm = step.x + (next.x - step.x) * float(third) / 3.0f;
+
+          if (xm > x0 && xm < x1)
+            list.fillRect(xm - 0.5f * OwnTick, line - 0.6f * rise, xm + 0.5f * OwnTick, line,
+              colour.faded(0.8f * edgeFade(xm, width)));
+        }
+
         if (step.x < 0.0f || step.x > width)
           continue;
 
