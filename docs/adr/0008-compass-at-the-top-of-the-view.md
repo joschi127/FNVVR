@@ -52,6 +52,9 @@ B, drawn with the game's own pictures so that it looks and feels like the game's
   strip is also flatter (0.7 of its height) with smaller markers (0.65); the health bar thins with the strip.
   The game's picture stays an option (`d3d9.vrCompassGameStrip`), as do the strip's height and the markers'
   size (`d3d9.vrCompassStripHeight`, `d3d9.vrCompassMarkerSize`). To be confirmed in a headset session.
+  The health bar is then drawn the same way (line, glow and tick width of the strip, ticks as dense as on
+  the game's HP meter), so that both weigh alike; the HP meter picture is an option
+  (`d3d9.vrHealthBarGamePicture`).
 - Size and place follow the field of view the headset reports (the maintainer often plays with a field of
   view reduced in Virtual Desktop): the width is a share of the horizontal field of view, the top edge a share
   of its upper half. `dxvk.conf` overrides them in degrees (`auto` or not set: from the field of view); the dark
