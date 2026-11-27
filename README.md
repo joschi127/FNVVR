@@ -23,6 +23,15 @@
 >   How it works: [FNVVR-Test-Bridge's guide](https://github.com/joschi127/FNVVR-Test-Bridge/blob/main/docs/headset-sessions.md).
 >
 >   <img src="https://github.com/user-attachments/assets/4ece22cf-94ed-4203-b3f5-1c2e2c4924f9" width="390" alt="A question from the test tool over the Pip-Boy panel: Casing and round corners ok? Yes, No, Not sure; answered with the laser">
+> - **Custom VR HUD** (FNVVR only, in this fork): a compass along the top of the view in the look of the game's
+>   HUD, with the active quest's target, your own map marker and co-op friends. Below it, your health on the
+>   right and the drawn weapon's rounds on the left: loaded rounds of the clip and rounds left in the inventory.
+>   Both turn orange or red when health runs low, a reload is due or the ammunition runs out. It stays in view
+>   and is sized from the headset's field of view. Every part can be switched and tuned in `dxvk.conf`
+>   (`d3d9.vrCompass*`, `d3d9.vrHealthBar*`, `d3d9.vrAmmoCounter*`). Design and decisions:
+>   [ADR 0008](docs/adr/0008-compass-at-the-top-of-the-view.md).
+>
+>   <img src="https://github.com/user-attachments/assets/e0d6e405-a193-4cdb-ac93-4c53b825543a" width="480" alt="Compass with the strip, a friend marker in the middle and the quest marker on the right; below it the ammo counter on the left and the health bar on the right">
 
 A VR mod for *Fallout: New Vegas*, built into a fork of [DXVK](https://github.com/doitsujin/dxvk). The game is played with motion controllers: a weapon in your hand, a Pip-Boy on your forearm, objects you pick up, throw and reload by hand.
 
