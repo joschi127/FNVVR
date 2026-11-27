@@ -356,7 +356,8 @@ namespace dxvk {
           return { "err no compass yet (off, or no frame in game drawn)" };
 
         if (!vrSetCompassValue(check, name, value))
-          return { "err unknown setting or value; names: width top angle topdeg distance span backdrop opacity gap gapnoband quest" };
+          return { "err unknown setting or value; names: width top angle topdeg distance span backdrop opacity gap gapnoband quest"
+            " stripheight markersize gamestrip compass health healthpicture healthalign healthwidth healthlow healthcritical pulse" };
 
         VrTestHooks::requestCompass(name, value);
         return { "ok asked; see 'compass' a frame later" };
