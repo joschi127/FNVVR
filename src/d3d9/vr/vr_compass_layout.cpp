@@ -72,10 +72,13 @@ namespace dxvk {
     float markerRowHeight(const VrCompassConfig& config);
 
     // Top of the health bar's row: just below the markers, which move with the
-    // gap, the strip's height and their size
+    // gap, the strip's height and their size, but always inside the image (the
+    // markers then keep above it)
     float healthRowTop(const VrCompassConfig& config, float width) {
-      float gap = config.backdrop ? config.markerGap : config.markerGapNoBackdrop;
-      return markerRowTop(config, width) + markerRowHeight(config) + std::min(gap, 14.0f) + HealthSpace;
+      float gap   = config.backdrop ? config.markerGap : config.markerGapNoBackdrop;
+      float top   = markerRowTop(config, width) + markerRowHeight(config) + std::min(gap, 14.0f) + HealthSpace;
+      float light = std::clamp(config.stripHeight, 0.5f, 1.0f);
+      return std::min(top, float(VrCompassImage::Height) - HealthRowHeight * light - 1.0f);
     }
 
     // The label "HP" and the meter, its full part bright and the rest faint
@@ -418,12 +421,13 @@ namespace dxvk {
         VrColour c = colour.faded(alpha);
 
         if (picture) {
-          // The quest's arrow may be larger; its tip stays at the row's top
+          // The quest's arrow may be larger; it grows upwards, clear of the
+          // health bar's row, but not above the image
           float size  = kind == VrCompassMarkerKind::Quest ? std::clamp(config.questScale, 0.5f, 2.0f) : 1.0f;
           float scale = size * rowHeight / (MarkerBottom - MarkerTop);
           float left = x - MarkerCentreX * scale;
           // Kept inside the image: a large arrow moved down grows upwards
-          float tip  = std::min(rowTop, height - 2.0f - size * rowHeight);
+          float tip  = std::max(std::min(rowTop, height - 2.0f - size * rowHeight), 0.0f);
           float top  = tip - MarkerTop * scale;
           list.drawImage(*picture, VrPaintImageUse::Shape, left, top,
             left + MarkerSize * scale, top + MarkerSize * scale, 0.0f, 0.0f, 1.0f, 1.0f, c);
@@ -431,7 +435,7 @@ namespace dxvk {
           // The game's arrow: a pentagon pointing up, filled or hollow
           float h = (kind == VrCompassMarkerKind::Quest ? std::clamp(config.questScale, 0.5f, 2.0f) : 1.0f) * rowHeight;
           float w = 0.33f * h;
-          float t = std::min(rowTop, height - 2.0f - h);
+          float t = std::max(std::min(rowTop, height - 2.0f - h), 0.0f);
           const float arrow[] = {
             x, t,  x + w, t + 0.45f * h,  x + w, t + h,
             x - w, t + h,  x - w, t + 0.45f * h };

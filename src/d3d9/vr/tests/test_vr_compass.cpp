@@ -251,7 +251,7 @@ TEST_CASE(compass_health_bar_draws_in_its_row_and_follows_the_alignment) {
     right = -1.0e9f;
 
     for (const VrPaintVertex& v : list.vertices()) {
-      CHECK(v.y >= 60.0f && v.y <= float(VrCompassImage::Height));
+      CHECK(v.y >= 85.0f && v.y <= float(VrCompassImage::Height));
       left  = std::min(left, v.x);
       right = std::max(right, v.x);
     }
@@ -302,6 +302,40 @@ TEST_CASE(compass_flatter_strip_and_smaller_markers_move_the_health_bar_up) {
   CHECK(vrSetCompassValue(config, "gamestrip", "on") && config.gameStrip);
   CHECK(!vrSetCompassValue(config, "gamestrip", "yes"));
   CHECK(vrSetCompassValue(config, "healthpicture", "on") && config.healthPicture);
+}
+
+
+TEST_CASE(compass_stays_inside_its_image_for_extreme_settings) {
+  struct Case { const char* strip; const char* markers; const char* gap; bool band; const char* quest; };
+  const Case cases[] = {
+    { "1", "1.5", "14", true, "2" }, { "1", "1.5", "14", false, "1" },
+    { "0.5", "0.5", "-40", false, "2" }, { "0.7", "0.65", "0", true, "2" } };
+  std::vector<VrCompassMarker> markers = {
+    { VrCompassMarkerKind::Quest, degrees(10.0f), 0 }, { VrCompassMarkerKind::Custom, degrees(-20.0f), 0 },
+    { VrCompassMarkerKind::Friend, degrees(30.0f), 'F' } };
+  VrHealthState health;
+  health.known = true;
+  health.fraction = 0.5f;
+
+  for (const Case& c : cases) {
+    VrCompassConfig config;
+    CHECK(vrSetCompassValue(config, "stripheight", c.strip));
+    CHECK(vrSetCompassValue(config, "markersize", c.markers));
+    CHECK(vrSetCompassValue(config, c.band ? "gap" : "gapnoband", c.gap));
+    CHECK(vrSetCompassValue(config, "backdrop", c.band ? "on" : "off"));
+    CHECK(vrSetCompassValue(config, "quest", c.quest));
+    VrPaintList list(VrCompassImage::Width, VrCompassImage::Height);
+    vrPaintCompass(list, config, 0.0f, markers, { 1.0f, 0.7f, 0.2f, 1.0f }, nullptr, VrCompassPictures(), health);
+    for (const VrPaintVertex& v : list.vertices()) {
+      // a hollow arrow's stroke may reach a pixel past its shape
+      CHECK(v.y >= -2.0f && v.y <= float(VrCompassImage::Height) + 0.5f);
+    }
+    // The health bar is still drawn
+    VrPaintList without(VrCompassImage::Width, VrCompassImage::Height);
+    config.health = false;
+    vrPaintCompass(without, config, 0.0f, markers, { 1.0f, 0.7f, 0.2f, 1.0f }, nullptr, VrCompassPictures(), health);
+    CHECK(list.vertices().size() > without.vertices().size());
+  }
 }
 
 
