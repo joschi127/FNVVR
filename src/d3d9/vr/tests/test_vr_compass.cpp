@@ -321,6 +321,59 @@ TEST_CASE(compass_flatter_strip_and_smaller_markers_move_the_health_bar_up) {
 }
 
 
+TEST_CASE(compass_health_ecg_trace_draws_and_runs) {
+  VrCompassConfig config;
+  config.enabled = false;
+  config.ammo    = false;
+  VrHealthState health;
+  health.known    = true;
+  health.fraction = 0.8f;
+  VrColour amber = { 1.0f, 0.7f, 0.2f, 1.0f };
+
+  VrPaintList ticks(VrCompassImage::Width, VrCompassImage::Height);
+  vrPaintCompass(ticks, config, 0.0f, { }, amber, nullptr, VrCompassPictures(), health);
+
+  config.healthEcg = true;
+  VrPaintList ecg(VrCompassImage::Width, VrCompassImage::Height);
+  vrPaintCompass(ecg, config, 0.0f, { }, amber, nullptr, VrCompassPictures(), health);
+  CHECK(ecg.vertices().size() > ticks.vertices().size());
+
+  // The spike rises above the ticks' top, all of it stays in the image
+  float topTicks = 1.0e9f, topEcg = 1.0e9f;
+  for (const VrPaintVertex& v : ticks.vertices()) topTicks = std::min(topTicks, v.y);
+  for (const VrPaintVertex& v : ecg.vertices()) {
+    topEcg = std::min(topEcg, v.y);
+    CHECK(v.y >= 0.0f && v.y <= float(VrCompassImage::Height));
+  }
+  CHECK(topEcg < topTicks);
+
+  // The wave: flat at the start, the spike at 0.4, a dip right after it
+  CHECK(std::fabs(vrEcgWave(0.02f)) < 0.01f);
+  CHECK(vrEcgWave(0.40f) > 0.95f);
+  CHECK(vrEcgWave(0.44f) < -0.2f);
+
+  // Running: in 32nds of a beat, faster when low, the pulse's period when critical
+  CHECK(vrHealthEcg(config, 0.8f, 0.7) == 0.5f);     // 0.7 s of 1.4 s
+  float run = vrHealthEcg(config, 0.8f, 0.71);
+  CHECK(run * 32.0f == std::floor(run * 32.0f));
+  CHECK(vrHealthEcg(config, 0.4f, 0.56) == 0.5f);    // 0.8 * 1.4 s
+  CHECK(vrHealthEcg(config, 0.1f, 0.5) == 0.5f);     // the pulse's 1 s
+  config.healthEcgScroll = false;
+  CHECK(vrHealthEcg(config, 0.8f, 0.7) == 0.0f);
+  config.healthEcg = false;
+  config.healthEcgScroll = true;
+  CHECK(vrHealthEcg(config, 0.8f, 0.7) == 0.0f);
+
+  CHECK(vrSetCompassValue(config, "healthecg", "on") && config.healthEcg);
+  CHECK(vrSetCompassValue(config, "healthecgscroll", "off") && !config.healthEcgScroll);
+  CHECK(vrSetCompassValue(config, "healthecgbeat", "0.5") && config.healthEcgBeat == 0.5f);
+  CHECK(vrSetCompassValue(config, "healthecgperiod", "2") && config.healthEcgPeriod == 2.0f);
+  CHECK(!vrSetCompassValue(config, "healthecgbeat", "2"));
+  CHECK(vrDescribeCompass(config).find("healthecg=on healthecgscroll=off healthecgbeat=0.5 healthecgperiod=2")
+    != std::string::npos);
+}
+
+
 TEST_CASE(compass_stays_inside_its_image_for_extreme_settings) {
   struct Case { const char* strip; const char* markers; const char* gap; bool band; const char* quest; };
   const Case cases[] = {

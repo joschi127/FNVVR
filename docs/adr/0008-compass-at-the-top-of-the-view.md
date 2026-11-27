@@ -70,6 +70,11 @@ B, drawn with the game's own pictures so that it looks and feels like the game's
   faded the bar to grey, which hardly stood out against the sky; it now beats like a heart instead: the bar
   stays opaque, red most of the time with two quick beats once a second that blend smoothly to anthracite
   (3A3E42) and back, 0.16 s each, 0.08 s apart; no hard switch (the maintainer's wish) (`d3d9.vrHealthBarPulseColour`, `...PulsePeriod`, `...PulseBeat`, `...PulseGap`).
+- ECG trace (2026-11-27, an option, off by default until tried in the headset): instead of the tick marks the
+  health bar's full part can show an ECG trace (flat, P wave, QRS spike, T wave), a beat per quarter of the
+  bar, after a sketch the maintainer liked. It runs to the left like a monitor, one beat per 1.4 s, 0.8 of
+  that when low and the pulse's period when critical (`d3d9.vrHealthBarEcg`, `...EcgScroll`, `...EcgBeat`,
+  `...EcgPeriod`). Running, the image is drawn again up to 32 times a beat.
 - Size and place follow the field of view the headset reports (the maintainer often plays with a field of
   view reduced in Virtual Desktop): the width is a share of the horizontal field of view, the top edge a share
   of its upper half. `dxvk.conf` overrides them in degrees (`auto` or not set: from the field of view); the dark

@@ -267,7 +267,9 @@ namespace dxvk {
     }
 
     bool healthShown = m_config.health && m_health.known;
-    m_health.pulse = healthShown ? vrHealthPulse(m_config, m_health.fraction, steadySeconds()) : 1.0f;
+    double now = steadySeconds();
+    m_health.pulse = healthShown ? vrHealthPulse(m_config, m_health.fraction, now) : 1.0f;
+    m_health.ecg   = healthShown ? vrHealthEcg(m_config, m_health.fraction, now) : 0.0f;
 
     // Nothing to show: no layer of the runtime's few spent on an empty image
     // The numbers style draws nothing without the game's font
@@ -321,6 +323,7 @@ namespace dxvk {
       return fraction < m_config.healthCritical ? 2 : fraction < m_config.healthLow ? 1 : 0;
     };
     bool sameHealth = m_health.known == m_shownHealth.known && m_health.pulse == m_shownHealth.pulse
+      && m_health.ecg == m_shownHealth.ecg
       && std::fabs(m_health.fraction - m_shownHealth.fraction) < 0.005f
       && band(m_health.fraction) == band(m_shownHealth.fraction);
     // Without the strip the heading does not matter

@@ -151,6 +151,38 @@ namespace dxvk {
           list.fillRect(a, line - 0.5f * OwnLine, b, line + 0.5f * OwnLine, colour.faded(0.9f));
         };
 
+        if (config.healthEcg) {
+          // An ECG trace in the full part, the rest a faint flat line. Its
+          // spike reaches nearly to the row's top, its dips stay in the row.
+          part(xs, x1, c.faded(HealthEmpty));
+          list.fillRect(x0, line - 0.5f * OwnGlow, xs, line + 0.5f * OwnGlow, c.faded(0.15f));
+
+          float beat = std::max(std::clamp(config.healthEcgBeat, 0.05f, 1.0f) * (x1 - x0), 8.0f);
+          float up   = 0.85f * (line - HealthRowTop);
+          float half = 0.5f * OwnLine;
+          float prevX = x0;
+          float prevY = line - up * vrEcgWave(std::fmod(health.ecg, 1.0f));
+
+          for (float x = x0 + 1.0f; x <= xs + 0.01f; x += 1.0f) {
+            float u = (x - x0) / beat + health.ecg;
+            float y = std::clamp(line - up * vrEcgWave(u - std::floor(u)), HealthRowTop, HealthRowEnd);
+
+            // A quad along the segment, as wide as the strip's line
+            float dx = x - prevX;
+            float dy = y - prevY;
+            float len = std::max(std::sqrt(dx * dx + dy * dy), 1.0e-3f);
+            float nx = -dy / len * half;
+            float ny =  dx / len * half;
+            float quad[8] = { prevX + nx, prevY + ny, x + nx, y + ny, x - nx, y - ny, prevX - nx, prevY - ny };
+            list.fillPolygon(quad, 4, c);
+            // Round the joint, so that steep turns show no gaps
+            list.fillRect(x - half, y - half, x + half, y + half, c);
+            prevX = x;
+            prevY = y;
+          }
+          return;
+        }
+
         part(x0, xs, c);
         part(xs, x1, c.faded(HealthEmpty));
 
@@ -640,6 +672,12 @@ namespace dxvk {
       ok = value == "on" || value == "off";
       c.ammo = value == "on";
     }
+    else if (name == "healthecg" || name == "healthecgscroll") {
+      ok = value == "on" || value == "off";
+      (name == "healthecg" ? c.healthEcg : c.healthEcgScroll) = value == "on";
+    }
+    else if (name == "healthecgbeat")   ok = number(0.05f, 1.0f, c.healthEcgBeat);
+    else if (name == "healthecgperiod") ok = number(0.2f, 10.0f, c.healthEcgPeriod);
     else if (name == "healthpicture") {
       ok = value == "on" || value == "off";
       c.healthPicture = value == "on";
@@ -671,7 +709,7 @@ namespace dxvk {
 
 
   std::string vrDescribeCompass(const VrCompassConfig& c) {
-    char text[640];
+    char text[800];
     auto deg = [] (float v, char* out, size_t size) {
       if (v == 0.0f)
         std::snprintf(out, size, "auto");
@@ -684,12 +722,13 @@ namespace dxvk {
     deg(c.top, top, sizeof(top));
     std::snprintf(text, sizeof(text),
       "width=%g top=%g angle=%s topdeg=%s distance=%g span=%g backdrop=%s opacity=%g gap=%g gapnoband=%g quest=%g"
-      " stripheight=%g markersize=%g gamestrip=%s ammo=%s ammostyle=%s ammolow=%g ammoreservelow=%g ammowidth=%g ammofill=%g compass=%s health=%s healthpicture=%s healthalign=%s healthwidth=%g healthlow=%g healthcritical=%g pulse=%s pulseperiod=%g pulsebeat=%g pulsegap=%g",
+      " stripheight=%g markersize=%g gamestrip=%s ammo=%s ammostyle=%s ammolow=%g ammoreservelow=%g ammowidth=%g ammofill=%g compass=%s health=%s healthpicture=%s healthecg=%s healthecgscroll=%s healthecgbeat=%g healthecgperiod=%g healthalign=%s healthwidth=%g healthlow=%g healthcritical=%g pulse=%s pulseperiod=%g pulsebeat=%g pulsegap=%g",
       c.widthShare, c.topShare, angle, top, c.distance, c.span, c.backdrop ? "on" : "off",
       c.backdropOpacity, c.markerGap, c.markerGapNoBackdrop, c.questScale,
       c.stripHeight, c.markerSize, c.gameStrip ? "on" : "off",
       c.ammo ? "on" : "off", c.ammoNumbers ? "numbers" : "bars", c.ammoLow, c.ammoReserveLow, c.ammoWidth, c.ammoFill,
-      c.enabled ? "on" : "off", c.health ? "on" : "off", c.healthPicture ? "on" : "off", c.healthAlign == VrHealthAlign::Right ? "right" : "centre",
+      c.enabled ? "on" : "off", c.health ? "on" : "off", c.healthPicture ? "on" : "off",
+      c.healthEcg ? "on" : "off", c.healthEcgScroll ? "on" : "off", c.healthEcgBeat, c.healthEcgPeriod, c.healthAlign == VrHealthAlign::Right ? "right" : "centre",
       c.healthWidth, c.healthLow, c.healthCritical, c.healthPulse ? "on" : "off",
       c.healthPulsePeriod, c.healthPulseBeat, c.healthPulseGap);
     return text;
@@ -744,6 +783,28 @@ namespace dxvk {
     // that the image is drawn again only a few times per beat
     float dark = 0.5f - 0.5f * float(std::cos(t / beat * 2.0 * 3.14159265358979));
     return 1.0f - std::round(dark * 8.0f) / 8.0f;
+  }
+
+
+  float vrEcgWave(float u) {
+    auto bump = [u] (float centre, float width, float height) {
+      float d = (u - centre) / width;
+      return height * std::exp(-d * d);
+    };
+    return bump(0.18f, 0.035f, 0.18f) + bump(0.36f, 0.012f, -0.22f) + bump(0.40f, 0.014f, 1.0f)
+         + bump(0.44f, 0.012f, -0.35f) + bump(0.66f, 0.05f, 0.28f);
+  }
+
+
+  float vrHealthEcg(const VrCompassConfig& config, float fraction, double seconds) {
+    if (!config.healthEcg || !config.healthEcgScroll)
+      return 0.0f;
+
+    double period = fraction < config.healthCritical ? double(config.healthPulsePeriod)
+      : fraction < config.healthLow ? 0.8 * double(config.healthEcgPeriod) : double(config.healthEcgPeriod);
+    period = std::max(period, 0.2);
+    double run = std::fmod(std::max(seconds, 0.0) / period, 1.0);
+    return float(std::floor(run * 32.0) / 32.0);
   }
 
 

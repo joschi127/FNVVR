@@ -90,6 +90,14 @@ namespace dxvk {
     /// The game's HP meter picture; off: drawn as the own strip, a thin line
     /// with tick marks
     bool     healthPicture   = false;
+    /// Instead of the tick marks an ECG trace in the bar's full part, one
+    /// heartbeat every healthEcgBeat of the bar's width; with healthEcgScroll
+    /// it runs to the left, one beat per healthEcgPeriod seconds (shorter
+    /// when low, the pulse's period when critical)
+    bool     healthEcg       = false;
+    bool     healthEcgScroll = true;
+    float    healthEcgBeat   = 0.25f;
+    float    healthEcgPeriod = 1.4f;
 
     /// The rounds of the drawn weapon, in the same row as the health bar at
     /// the strip's left end, in the HUD's colour: loaded of the clip's size,
@@ -116,6 +124,8 @@ namespace dxvk {
     float fraction = 1.0f;
     /// Of the critical pulse: 1 the bar's colour, 0 the dark one, between blended
     float pulse    = 1.0f;
+    /// How far the ECG trace has run, in beats, 0 to 1
+    float ecg      = 0.0f;
   };
 
   /**
@@ -162,6 +172,26 @@ namespace dxvk {
    * \param [in] seconds A steadily running time, in seconds
    */
   float vrHealthPulse(const VrCompassConfig& config, float fraction, double seconds);
+
+  /**
+   * \brief How far the health bar's ECG trace has run
+   *
+   * In beats from 0 to 1, in steps of a 32nd, so that the image is drawn
+   * again at most 32 times a beat; 0 without the trace or its running.
+   *
+   * \param [in] seconds A steadily running time, in seconds
+   */
+  float vrHealthEcg(const VrCompassConfig& config, float fraction, double seconds);
+
+  /**
+   * \brief Height of the ECG trace over one heartbeat
+   *
+   * Flat, a small P wave, the QRS spike (up to 1) and the T wave; negative
+   * values dip below the line.
+   *
+   * \param [in] u Position in the beat, 0 to 1
+   */
+  float vrEcgWave(float u);
 
   /**
    * \brief The game's compass pictures, any of them may be missing
@@ -262,7 +292,8 @@ namespace dxvk {
    * compass (on|off: the strip and markers),
    * ammo (on|off), ammostyle (bars|numbers), ammolow, ammoreservelow,
    * ammowidth, ammofill,
-   * health (on|off), healthpicture (on|off), healthalign (centre|right), healthwidth, healthlow,
+   * health (on|off), healthpicture (on|off), healthecg (on|off), healthecgscroll (on|off),
+   * healthecgbeat, healthecgperiod, healthalign (centre|right), healthwidth, healthlow,
    * healthcritical, pulse (on|off), pulseperiod, pulsebeat, pulsegap (seconds).
    *
    * \returns \c false, the settings unchanged, for an unknown name or value

@@ -251,6 +251,10 @@ namespace dxvk {
     // The health bar below the compass
     compass.health = config.getOption<bool>("d3d9.vrHealthBar", compass.health);
     compass.healthPicture = config.getOption<bool>("d3d9.vrHealthBarGamePicture", compass.healthPicture);
+    compass.healthEcg       = config.getOption<bool>("d3d9.vrHealthBarEcg", compass.healthEcg);
+    compass.healthEcgScroll = config.getOption<bool>("d3d9.vrHealthBarEcgScroll", compass.healthEcgScroll);
+    compass.healthEcgBeat   = std::clamp(config.getOption<float>("d3d9.vrHealthBarEcgBeat", compass.healthEcgBeat), 0.05f, 1.0f);
+    compass.healthEcgPeriod = std::clamp(config.getOption<float>("d3d9.vrHealthBarEcgPeriod", compass.healthEcgPeriod), 0.2f, 10.0f);
 
     // The drawn weapon's rounds, in the health bar's row at the strip's left end
     compass.ammo = config.getOption<bool>("d3d9.vrAmmoCounter", compass.ammo);
