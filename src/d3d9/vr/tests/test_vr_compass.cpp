@@ -395,6 +395,24 @@ TEST_CASE(compass_ammo_counter_draws_at_the_left_end_in_the_health_row) {
   vrPaintCompass(both, config, 0.0f, { }, amber, nullptr, VrCompassPictures(), health, ammo);
   CHECK(both.vertices().size() > list.vertices().size());
 
+  // A centred health bar: the counter ends before it
+  {
+    VrCompassConfig c = config;
+    c.healthAlign = VrHealthAlign::Centre;
+    VrPaintList healthOnly(VrCompassImage::Width, VrCompassImage::Height);
+    vrPaintCompass(healthOnly, c, 0.0f, { }, amber, nullptr, VrCompassPictures(), health);
+    VrPaintList ammoOnly(VrCompassImage::Width, VrCompassImage::Height);
+    VrHealthState unknown;
+    vrPaintCompass(ammoOnly, c, 0.0f, { }, amber, nullptr, VrCompassPictures(), unknown, ammo);
+    float healthLeft = 1.0e9f, ammoRight = -1.0e9f;
+    for (const VrPaintVertex& v : healthOnly.vertices())
+      healthLeft = std::min(healthLeft, v.x);
+    for (const VrPaintVertex& v : ammoOnly.vertices())
+      ammoRight = std::max(ammoRight, v.x);
+    CHECK(!ammoOnly.vertices().empty());
+    CHECK(ammoRight < healthLeft - 8.0f);
+  }
+
   // Not known, switched off, or numbers without a font: nothing of it
   for (int k = 0; k < 3; k++) {
     VrCompassConfig c = config;

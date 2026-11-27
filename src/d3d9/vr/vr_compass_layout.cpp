@@ -163,6 +163,16 @@ namespace dxvk {
       float group = std::clamp(config.healthWidth, 0.1f, 1.0f) * width;
       float left  = EdgeSpace;
       float right = left + group;
+
+      // Clear of a centred or wide health bar in the same row
+      if (config.health) {
+        float healthLeft = config.healthAlign == VrHealthAlign::Right
+          ? width - EdgeSpace - group : 0.5f * (width - group);
+        right = std::min(right, healthLeft - 2.0f * EdgeSpace);
+      }
+
+      if (right - left < 4.0f * EdgeSpace)
+        return;
       float light = std::clamp(config.stripHeight, 0.5f, 1.0f);
       float top   = healthRowTop(config, width);
       float rowHeight = HealthRowHeight * light;

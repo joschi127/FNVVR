@@ -160,6 +160,8 @@ namespace dxvk {
       return false;
 
     clip    = std::max(field<int32_t>(loaded, VrGame::InventoryEntryCount), 0);
+    // A weapon mod may enlarge the clip beyond the form's size
+    capacity = std::max(capacity, clip);
     reserve = std::max(heldRounds(ammo) - clip, 0);
     return true;
   }

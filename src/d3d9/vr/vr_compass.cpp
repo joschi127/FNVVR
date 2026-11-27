@@ -270,7 +270,8 @@ namespace dxvk {
     m_health.pulse = healthShown ? vrHealthPulse(m_config, m_health.fraction, steadySeconds()) : 1.0f;
 
     // Nothing to show: no layer of the runtime's few spent on an empty image
-    bool ammoShown = m_config.ammo && m_ammo.known;
+    // The numbers style draws nothing without the game's font
+    bool ammoShown = m_config.ammo && m_ammo.known && (!m_config.ammoNumbers || m_images.font());
 
     if (!m_config.enabled && !healthShown && !ammoShown) {
       hide();
