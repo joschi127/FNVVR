@@ -66,7 +66,7 @@ namespace dxvk {
     uint32_t friendColour = 0xA6E585;
 
     /// The player's health below the markers, in the look of the game's HP
-    /// meter: green while well, orange below healthLow, red and pulsing
+    /// meter: green while well, yellow below healthLow, red and beating
     /// below healthCritical (shares of the full health)
     bool     health          = true;
     VrHealthAlign healthAlign = VrHealthAlign::Right;
@@ -75,9 +75,18 @@ namespace dxvk {
     float    healthLow       = 0.5f;
     float    healthCritical  = 0.25f;
     uint32_t healthColour    = 0xA6E585;
-    uint32_t healthLowColour = 0xF07830;
+    uint32_t healthLowColour = 0xE8D848;
     uint32_t healthCriticalColour = 0xE0705A;
+    /// While critical the bar beats like a heart: red most of the time and,
+    /// once every healthPulsePeriod seconds, two short flashes of
+    /// healthPulseColour (healthPulseBeat seconds each, healthPulseGap
+    /// apart; a gap of 0 makes them one). The bar stays opaque, so the dark
+    /// flash stands out against a bright sky.
     bool     healthPulse     = true;
+    uint32_t healthPulseColour = 0x3A3E42;
+    float    healthPulsePeriod = 1.0f;
+    float    healthPulseBeat   = 0.1f;
+    float    healthPulseGap    = 0.12f;
     /// The game's HP meter picture; off: drawn as the own strip, a thin line
     /// with tick marks
     bool     healthPicture   = false;
@@ -86,8 +95,8 @@ namespace dxvk {
     /// the strip's left end, in the HUD's colour: loaded of the clip's size,
     /// a frame with an area per round between dividers, the loaded ones
     /// filled faintly (or numbers only), and the rounds left in the
-    /// inventory; ammoWidth is its width as a share of the strip's. The clip turns orange at ammoLow of its size and red when
-    /// empty, the rest orange below ammoReserveLow clips and red at none
+    /// inventory; ammoWidth is its width as a share of the strip's. The clip turns yellow at ammoLow of its size and red when
+    /// empty, the rest yellow below ammoReserveLow clips and red at none
     /// (the health bar's colours).
     bool     ammo            = true;
     bool     ammoNumbers     = false;
@@ -105,7 +114,7 @@ namespace dxvk {
     bool  known    = false;
     /// Current health as a share of the full health, 0 to 1
     float fraction = 1.0f;
-    /// Brightness of the pulse while critical, 1 otherwise
+    /// 0 during a dark flash of the critical pulse, 1 otherwise
     float pulse    = 1.0f;
   };
 
@@ -144,11 +153,11 @@ namespace dxvk {
   VrColour vrHealthColour(const VrCompassConfig& config, float fraction);
 
   /**
-   * \brief Brightness of the health bar's pulse
+   * \brief Phase of the health bar's heartbeat pulse
    *
-   * Below the critical share, and with the pulse on, it rises and falls
-   * between 0.45 and 1 about once a second, in steps of a sixth, so that the
-   * image is drawn again at most twelve times a second; 1 otherwise.
+   * Below the critical share, and with the pulse on, 0 during the two short
+   * dark flashes at the start of each period and 1 between them; 1 otherwise.
+   * Only two values, so the image is drawn again four times a period.
    *
    * \param [in] seconds A steadily running time, in seconds
    */
@@ -254,7 +263,7 @@ namespace dxvk {
    * ammo (on|off), ammostyle (bars|numbers), ammolow, ammoreservelow,
    * ammowidth, ammofill,
    * health (on|off), healthpicture (on|off), healthalign (centre|right), healthwidth, healthlow,
-   * healthcritical, pulse (on|off).
+   * healthcritical, pulse (on|off), pulseperiod, pulsebeat, pulsegap (seconds).
    *
    * \returns \c false, the settings unchanged, for an unknown name or value
    */

@@ -90,7 +90,8 @@ namespace dxvk {
         const VrImage* meter, const VrHealthState& health) {
       float width    = float(list.width());
       float fraction = std::clamp(health.fraction, 0.0f, 1.0f);
-      VrColour c     = vrHealthColour(config, fraction).faded(std::clamp(health.pulse, 0.0f, 1.0f));
+      // The heartbeat's dark flash: the same opaque bar, dark instead of red
+      VrColour c     = health.pulse < 0.5f ? rgb(config.healthPulseColour) : vrHealthColour(config, fraction);
 
       float group = std::clamp(config.healthWidth, 0.1f, 1.0f) * width;
       float left  = config.healthAlign == VrHealthAlign::Right
@@ -646,6 +647,9 @@ namespace dxvk {
     else if (name == "healthwidth")    ok = number(0.1f, 1.0f, c.healthWidth);
     else if (name == "healthlow")      ok = number(0.0f, 1.0f, c.healthLow);
     else if (name == "healthcritical") ok = number(0.0f, 1.0f, c.healthCritical);
+    else if (name == "pulseperiod")    ok = number(0.2f, 10.0f, c.healthPulsePeriod);
+    else if (name == "pulsebeat")      ok = number(0.0f, 5.0f, c.healthPulseBeat);
+    else if (name == "pulsegap")       ok = number(0.0f, 5.0f, c.healthPulseGap);
     else if (name == "healthalign") {
       ok = value == "centre" || value == "center" || value == "right";
       c.healthAlign = value == "right" ? VrHealthAlign::Right : VrHealthAlign::Centre;
@@ -676,13 +680,14 @@ namespace dxvk {
     deg(c.top, top, sizeof(top));
     std::snprintf(text, sizeof(text),
       "width=%g top=%g angle=%s topdeg=%s distance=%g span=%g backdrop=%s opacity=%g gap=%g gapnoband=%g quest=%g"
-      " stripheight=%g markersize=%g gamestrip=%s ammo=%s ammostyle=%s ammolow=%g ammoreservelow=%g ammowidth=%g ammofill=%g compass=%s health=%s healthpicture=%s healthalign=%s healthwidth=%g healthlow=%g healthcritical=%g pulse=%s",
+      " stripheight=%g markersize=%g gamestrip=%s ammo=%s ammostyle=%s ammolow=%g ammoreservelow=%g ammowidth=%g ammofill=%g compass=%s health=%s healthpicture=%s healthalign=%s healthwidth=%g healthlow=%g healthcritical=%g pulse=%s pulseperiod=%g pulsebeat=%g pulsegap=%g",
       c.widthShare, c.topShare, angle, top, c.distance, c.span, c.backdrop ? "on" : "off",
       c.backdropOpacity, c.markerGap, c.markerGapNoBackdrop, c.questScale,
       c.stripHeight, c.markerSize, c.gameStrip ? "on" : "off",
       c.ammo ? "on" : "off", c.ammoNumbers ? "numbers" : "bars", c.ammoLow, c.ammoReserveLow, c.ammoWidth, c.ammoFill,
       c.enabled ? "on" : "off", c.health ? "on" : "off", c.healthPicture ? "on" : "off", c.healthAlign == VrHealthAlign::Right ? "right" : "centre",
-      c.healthWidth, c.healthLow, c.healthCritical, c.healthPulse ? "on" : "off");
+      c.healthWidth, c.healthLow, c.healthCritical, c.healthPulse ? "on" : "off",
+      c.healthPulsePeriod, c.healthPulseBeat, c.healthPulseGap);
     return text;
   }
 
@@ -720,11 +725,13 @@ namespace dxvk {
     if (!config.healthPulse || !(fraction < config.healthCritical))
       return 1.0f;
 
-    // A smooth rise and fall once a second, in six steps between 0.45 and 1
-    double phase = std::fmod(seconds, 1.0);
-    float wave = 0.5f + 0.5f * float(std::cos(phase * 2.0 * 3.14159265358979));
-    float step = std::round(wave * 6.0f) / 6.0f;
-    return 0.45f + 0.55f * step;
+    // Two short dark beats at the start of each period, like a heart
+    double period = std::max(double(config.healthPulsePeriod), 0.2);
+    double beat   = std::clamp(double(config.healthPulseBeat), 0.0, 0.5 * period);
+    double gap    = std::clamp(double(config.healthPulseGap), 0.0, period - 2.0 * beat);
+    double phase  = std::fmod(std::max(seconds, 0.0), period);
+    bool dark = phase < beat || (phase >= beat + gap && phase < 2.0 * beat + gap);
+    return dark ? 0.0f : 1.0f;
   }
 
 

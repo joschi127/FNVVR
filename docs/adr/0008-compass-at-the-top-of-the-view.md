@@ -59,13 +59,17 @@ B, drawn with the game's own pictures so that it looks and feels like the game's
   drawn weapon's rounds in the HUD's colour: loaded of the clip's size ("2/6"), a frame with an area per
   round between dividers that reach the frame, the loaded ones from the left filled faintly and the spent ones
   empty (after a sketch of the maintainer; ten areas filled as a share for clips over 30), and the rounds left
-  in the inventory. It is narrower than the health bar (0.22 of the strip) and looks different from it. The clip turns orange when a reload is due
-  (a quarter of its size, at least its last round) and red when empty; the rounds left turn orange below one
+  in the inventory. It is narrower than the health bar (0.22 of the strip) and looks different from it. The clip turns yellow when a reload is due
+  (a quarter of its size, at least its last round) and red when empty; the rounds left turn yellow below one
   clip and red at none. A second style shows the numbers only (`d3d9.vrAmmoCounterStyle = numbers`); the
   maintainer asked for both, switchable. Shown only while a weapon that takes ammunition is drawn.
 - Headset session h14 (2026-11-27, OpenXR): the lighter strip, the health bar's size and its gap to the
   markers, the red pulse at 15 percent and the ammo frame were all confirmed as defaults; the maintainer
-  prefers the frame over the numbers. The orange at 40 percent health should be another colour (open).
+  prefers the frame over the numbers. The orange at 40 percent health should be another colour: the warning
+  colour is now yellow (E8D848, chosen from a comparison), for health and ammunition alike. The red pulse
+  faded the bar to grey, which hardly stood out against the sky; it now beats like a heart instead: the bar
+  stays opaque, red most of the time with two short anthracite flashes (3A3E42, 0.1 s each, 0.12 s apart)
+  once a second (`d3d9.vrHealthBarPulseColour`, `...PulsePeriod`, `...PulseBeat`, `...PulseGap`).
 - Size and place follow the field of view the headset reports (the maintainer often plays with a field of
   view reduced in Virtual Desktop): the width is a share of the horizontal field of view, the top edge a share
   of its upper half. `dxvk.conf` overrides them in degrees (`auto` or not set: from the field of view); the dark

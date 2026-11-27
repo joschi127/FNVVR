@@ -199,13 +199,13 @@ TEST_CASE(compass_large_quest_marker_stays_inside_the_image) {
     CHECK(v.y <= 166.0f);   // above the health bar's row
 }
 
-TEST_CASE(compass_health_colour_turns_orange_then_red) {
+TEST_CASE(compass_health_colour_turns_yellow_then_red) {
   VrCompassConfig config;
   VrColour well = vrHealthColour(config, 0.8f);
   VrColour low  = vrHealthColour(config, 0.4f);
   VrColour critical = vrHealthColour(config, 0.1f);
   CHECK_NEAR(well.g, float(0xE5) / 255.0f, 1.0e-4);       // A6E585, green
-  CHECK_NEAR(low.g, float(0x78) / 255.0f, 1.0e-4);        // F07830, orange
+  CHECK_NEAR(low.g, float(0xD8) / 255.0f, 1.0e-4);        // E8D848, yellow
   CHECK_NEAR(critical.r, float(0xE0) / 255.0f, 1.0e-4);   // E0705A, red
   CHECK_NEAR(critical.g, float(0x70) / 255.0f, 1.0e-4);
   // The shares are the bounds: at them the better colour still shows
@@ -219,17 +219,25 @@ TEST_CASE(compass_health_pulses_only_when_critical) {
   CHECK(vrHealthPulse(config, 0.6f, 0.37) == 1.0f);
   CHECK(vrHealthPulse(config, 0.3f, 0.37) == 1.0f);
 
-  float lowest = 1.0f;
-  float highest = 0.0f;
+  // Two dark beats of 0.1 s, 0.12 s apart, at the start of every second
+  CHECK(vrHealthPulse(config, 0.1f, 5.05) == 0.0f);
+  CHECK(vrHealthPulse(config, 0.1f, 5.15) == 1.0f);
+  CHECK(vrHealthPulse(config, 0.1f, 5.27) == 0.0f);
+  CHECK(vrHealthPulse(config, 0.1f, 5.40) == 1.0f);
+  CHECK(vrHealthPulse(config, 0.1f, 5.90) == 1.0f);
 
-  for (int i = 0; i < 100; i++) {
-    float p = vrHealthPulse(config, 0.1f, 5.0 + 0.01 * i);
-    lowest  = std::min(lowest, p);
-    highest = std::max(highest, p);
-  }
+  int dark = 0;
+  for (int i = 0; i < 1000; i++)
+    dark += vrHealthPulse(config, 0.1f, 7.0 + 0.001 * i) == 0.0f;
+  CHECK(dark >= 190 && dark <= 210);   // red most of the time
 
-  CHECK_NEAR(lowest, 0.45, 1.0e-4);
-  CHECK_NEAR(highest, 1.0, 1.0e-4);
+  // A gap of 0 makes one longer beat; odd values stay inside the period
+  config.healthPulseGap = 0.0f;
+  CHECK(vrHealthPulse(config, 0.1f, 5.15) == 0.0f);
+  config.healthPulseBeat = 3.0f;
+  config.healthPulseGap  = 3.0f;
+  CHECK(vrHealthPulse(config, 0.1f, 5.99) == 0.0f);
+  config = VrCompassConfig();
 
   config.healthPulse = false;
   CHECK(vrHealthPulse(config, 0.1f, 5.5) == 1.0f);

@@ -279,6 +279,10 @@ namespace dxvk {
     colourOption("d3d9.vrHealthBarColour", compass.healthColour);
     colourOption("d3d9.vrHealthBarLowColour", compass.healthLowColour);
     colourOption("d3d9.vrHealthBarCriticalColour", compass.healthCriticalColour);
+    colourOption("d3d9.vrHealthBarPulseColour", compass.healthPulseColour);
+    compass.healthPulsePeriod = std::clamp(config.getOption<float>("d3d9.vrHealthBarPulsePeriod", compass.healthPulsePeriod), 0.2f, 10.0f);
+    compass.healthPulseBeat   = std::clamp(config.getOption<float>("d3d9.vrHealthBarPulseBeat", compass.healthPulseBeat), 0.0f, 5.0f);
+    compass.healthPulseGap    = std::clamp(config.getOption<float>("d3d9.vrHealthBarPulseGap", compass.healthPulseGap), 0.0f, 5.0f);
 
     VrTurnConfig turn;
     turn.smooth      = config.getOption<bool>("d3d9.vrSmoothTurn", turn.smooth);
