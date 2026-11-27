@@ -78,15 +78,15 @@ namespace dxvk {
     uint32_t healthLowColour = 0xE8D848;
     uint32_t healthCriticalColour = 0xE0705A;
     /// While critical the bar beats like a heart: red most of the time and,
-    /// once every healthPulsePeriod seconds, two short flashes of
-    /// healthPulseColour (healthPulseBeat seconds each, healthPulseGap
-    /// apart; a gap of 0 makes them one). The bar stays opaque, so the dark
-    /// flash stands out against a bright sky.
+    /// once every healthPulsePeriod seconds, two quick beats that blend
+    /// smoothly to healthPulseColour and back (healthPulseBeat seconds each,
+    /// healthPulseGap apart). The bar stays opaque, so the dark beat stands
+    /// out against a bright sky.
     bool     healthPulse     = true;
     uint32_t healthPulseColour = 0x3A3E42;
     float    healthPulsePeriod = 1.0f;
-    float    healthPulseBeat   = 0.1f;
-    float    healthPulseGap    = 0.12f;
+    float    healthPulseBeat   = 0.16f;
+    float    healthPulseGap    = 0.08f;
     /// The game's HP meter picture; off: drawn as the own strip, a thin line
     /// with tick marks
     bool     healthPicture   = false;
@@ -114,7 +114,7 @@ namespace dxvk {
     bool  known    = false;
     /// Current health as a share of the full health, 0 to 1
     float fraction = 1.0f;
-    /// 0 during a dark flash of the critical pulse, 1 otherwise
+    /// Of the critical pulse: 1 the bar's colour, 0 the dark one, between blended
     float pulse    = 1.0f;
   };
 
@@ -155,9 +155,9 @@ namespace dxvk {
   /**
    * \brief Phase of the health bar's heartbeat pulse
    *
-   * Below the critical share, and with the pulse on, 0 during the two short
-   * dark flashes at the start of each period and 1 between them; 1 otherwise.
-   * Only two values, so the image is drawn again four times a period.
+   * Below the critical share, and with the pulse on, two quick beats at the
+   * start of each period, each smoothly from 1 down to 0 and back, in
+   * eighths; 1 between them and otherwise.
    *
    * \param [in] seconds A steadily running time, in seconds
    */

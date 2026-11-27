@@ -90,8 +90,12 @@ namespace dxvk {
         const VrImage* meter, const VrHealthState& health) {
       float width    = float(list.width());
       float fraction = std::clamp(health.fraction, 0.0f, 1.0f);
-      // The heartbeat's dark flash: the same opaque bar, dark instead of red
-      VrColour c     = health.pulse < 0.5f ? rgb(config.healthPulseColour) : vrHealthColour(config, fraction);
+      // The heartbeat: the same opaque bar, blended towards the dark colour
+      float    p     = std::clamp(health.pulse, 0.0f, 1.0f);
+      VrColour full  = vrHealthColour(config, fraction);
+      VrColour dark  = rgb(config.healthPulseColour);
+      VrColour c     = { dark.r + (full.r - dark.r) * p, dark.g + (full.g - dark.g) * p,
+                         dark.b + (full.b - dark.b) * p, dark.a + (full.a - dark.a) * p };
 
       float group = std::clamp(config.healthWidth, 0.1f, 1.0f) * width;
       float left  = config.healthAlign == VrHealthAlign::Right
@@ -730,8 +734,16 @@ namespace dxvk {
     double beat   = std::clamp(double(config.healthPulseBeat), 0.0, 0.5 * period);
     double gap    = std::clamp(double(config.healthPulseGap), 0.0, period - 2.0 * beat);
     double phase  = std::fmod(std::max(seconds, 0.0), period);
-    bool dark = phase < beat || (phase >= beat + gap && phase < 2.0 * beat + gap);
-    return dark ? 0.0f : 1.0f;
+    double second = beat + gap;
+    double t = phase < beat ? phase : phase >= second && phase < second + beat ? phase - second : -1.0;
+
+    if (t < 0.0 || beat <= 0.0)
+      return 1.0f;
+
+    // Smoothly to the dark colour and back within the beat, in eighths, so
+    // that the image is drawn again only a few times per beat
+    float dark = 0.5f - 0.5f * float(std::cos(t / beat * 2.0 * 3.14159265358979));
+    return 1.0f - std::round(dark * 8.0f) / 8.0f;
   }
 
 

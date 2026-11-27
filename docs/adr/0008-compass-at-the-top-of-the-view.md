@@ -68,8 +68,8 @@ B, drawn with the game's own pictures so that it looks and feels like the game's
   prefers the frame over the numbers. The orange at 40 percent health should be another colour: the warning
   colour is now yellow (E8D848, chosen from a comparison), for health and ammunition alike. The red pulse
   faded the bar to grey, which hardly stood out against the sky; it now beats like a heart instead: the bar
-  stays opaque, red most of the time with two short anthracite flashes (3A3E42, 0.1 s each, 0.12 s apart)
-  once a second (`d3d9.vrHealthBarPulseColour`, `...PulsePeriod`, `...PulseBeat`, `...PulseGap`).
+  stays opaque, red most of the time with two quick beats once a second that blend smoothly to anthracite
+  (3A3E42) and back, 0.16 s each, 0.08 s apart; no hard switch (the maintainer's wish) (`d3d9.vrHealthBarPulseColour`, `...PulsePeriod`, `...PulseBeat`, `...PulseGap`).
 - Size and place follow the field of view the headset reports (the maintainer often plays with a field of
   view reduced in Virtual Desktop): the width is a share of the horizontal field of view, the top edge a share
   of its upper half. `dxvk.conf` overrides them in degrees (`auto` or not set: from the field of view); the dark

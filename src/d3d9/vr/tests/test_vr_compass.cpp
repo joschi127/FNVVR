@@ -219,24 +219,32 @@ TEST_CASE(compass_health_pulses_only_when_critical) {
   CHECK(vrHealthPulse(config, 0.6f, 0.37) == 1.0f);
   CHECK(vrHealthPulse(config, 0.3f, 0.37) == 1.0f);
 
-  // Two dark beats of 0.1 s, 0.12 s apart, at the start of every second
-  CHECK(vrHealthPulse(config, 0.1f, 5.05) == 0.0f);
-  CHECK(vrHealthPulse(config, 0.1f, 5.15) == 1.0f);
-  CHECK(vrHealthPulse(config, 0.1f, 5.27) == 0.0f);
-  CHECK(vrHealthPulse(config, 0.1f, 5.40) == 1.0f);
-  CHECK(vrHealthPulse(config, 0.1f, 5.90) == 1.0f);
+  // Two beats of 0.16 s, 0.08 s apart, at the start of every second: dark
+  // in their middle, blended on their way, red between and after them
+  CHECK(vrHealthPulse(config, 0.1f, 5.08) == 0.0f);
+  CHECK(vrHealthPulse(config, 0.1f, 5.20) == 1.0f);
+  CHECK(vrHealthPulse(config, 0.1f, 5.32) == 0.0f);
+  CHECK(vrHealthPulse(config, 0.1f, 5.60) == 1.0f);
+  float edge = vrHealthPulse(config, 0.1f, 5.03);
+  CHECK(edge > 0.0f && edge < 1.0f);
 
   int dark = 0;
-  for (int i = 0; i < 1000; i++)
-    dark += vrHealthPulse(config, 0.1f, 7.0 + 0.001 * i) == 0.0f;
-  CHECK(dark >= 190 && dark <= 210);   // red most of the time
+  int blended = 0;
+  for (int i = 0; i < 1000; i++) {
+    float p = vrHealthPulse(config, 0.1f, 7.0 + 0.001 * i);
+    dark    += p < 0.5f;
+    blended += p > 0.0f && p < 1.0f;
+  }
+  CHECK(dark >= 130 && dark <= 190);   // red most of the time
+  CHECK(blended > 50);                 // and no hard switch
 
-  // A gap of 0 makes one longer beat; odd values stay inside the period
-  config.healthPulseGap = 0.0f;
-  CHECK(vrHealthPulse(config, 0.1f, 5.15) == 0.0f);
+  // Odd values stay inside the period and between 0 and 1
   config.healthPulseBeat = 3.0f;
   config.healthPulseGap  = 3.0f;
-  CHECK(vrHealthPulse(config, 0.1f, 5.99) == 0.0f);
+  for (int i = 0; i < 100; i++) {
+    float p = vrHealthPulse(config, 0.1f, 5.0 + 0.01 * i);
+    CHECK(p >= 0.0f && p <= 1.0f);
+  }
   config = VrCompassConfig();
 
   config.healthPulse = false;
