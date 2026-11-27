@@ -51,7 +51,7 @@ B, drawn with the game's own pictures so that it looks and feels like the game's
   every 5 degrees (taller every 15) and the labels in the line, in the game's font and the HUD's colour. The
   strip is also flatter (0.7 of its height) with smaller markers (0.65); the health bar thins with the strip.
   The game's picture stays an option (`d3d9.vrCompassGameStrip`), as do the strip's height and the markers'
-  size (`d3d9.vrCompassStripHeight`, `d3d9.vrCompassMarkerSize`). To be confirmed in a headset session.
+  size (`d3d9.vrCompassStripHeight`, `d3d9.vrCompassMarkerSize`). Confirmed in the headset (h14).
   The health bar is then drawn the same way (line, glow and tick width of the strip, ticks as dense as on
   the game's HP meter), so that both weigh alike; the HP meter picture is an option
   (`d3d9.vrHealthBarGamePicture`).
@@ -63,6 +63,9 @@ B, drawn with the game's own pictures so that it looks and feels like the game's
   (a quarter of its size, at least its last round) and red when empty; the rounds left turn orange below one
   clip and red at none. A second style shows the numbers only (`d3d9.vrAmmoCounterStyle = numbers`); the
   maintainer asked for both, switchable. Shown only while a weapon that takes ammunition is drawn.
+- Headset session h14 (2026-11-27, OpenXR): the lighter strip, the health bar's size and its gap to the
+  markers, the red pulse at 15 percent and the ammo frame were all confirmed as defaults; the maintainer
+  prefers the frame over the numbers. The orange at 40 percent health should be another colour (open).
 - Size and place follow the field of view the headset reports (the maintainer often plays with a field of
   view reduced in Virtual Desktop): the width is a share of the horizontal field of view, the top edge a share
   of its upper half. `dxvk.conf` overrides them in degrees (`auto` or not set: from the field of view); the dark
