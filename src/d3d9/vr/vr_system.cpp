@@ -250,6 +250,7 @@ namespace dxvk {
 
     // The health bar below the compass
     compass.health = config.getOption<bool>("d3d9.vrHealthBar", compass.health);
+    compass.healthPicture = config.getOption<bool>("d3d9.vrHealthBarGamePicture", compass.healthPicture);
     std::string healthAlign = config.getOption<std::string>("d3d9.vrHealthBarAlign", "");
     if (healthAlign == "right" || healthAlign == "Right")
       compass.healthAlign = VrHealthAlign::Right;

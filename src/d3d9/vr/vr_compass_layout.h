@@ -77,6 +77,9 @@ namespace dxvk {
     uint32_t healthLowColour = 0xF07830;
     uint32_t healthCriticalColour = 0xE0705A;
     bool     healthPulse     = true;
+    /// The game's HP meter picture; off: drawn as the own strip, a thin line
+    /// with tick marks
+    bool     healthPicture   = false;
   };
 
   /**
@@ -202,7 +205,7 @@ namespace dxvk {
    * or "auto"), distance, span, backdrop (on|off), opacity, gap (with the
    * band), gapnoband, quest, stripheight, markersize, gamestrip (on|off),
    * compass (on|off: the strip and markers),
-   * health (on|off), healthalign (centre|right), healthwidth, healthlow,
+   * health (on|off), healthpicture (on|off), healthalign (centre|right), healthwidth, healthlow,
    * healthcritical, pulse (on|off).
    *
    * \returns \c false, the settings unchanged, for an unknown name or value

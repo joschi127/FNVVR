@@ -44,6 +44,12 @@ namespace dxvk {
 
     // The health bar's row below the markers, and the game's HP meter
     // (glow_hp_bar.dds, 512 x 32): its line and ticks cover x 98 to 413, y 6 to 25
+    // Lines drawn by FNVVR: the own strip and the health bar, alike
+    constexpr float OwnLine     = 3.0f;    // thickness of the line, as the HP meter's
+    constexpr float OwnGlow     = 9.0f;    // and of the faint glow around it
+    constexpr float OwnTick     = 2.5f;    // width of the tick marks
+    constexpr float OwnTickRise = 16.0f;   // their height above the line, at the full strip height
+
     constexpr float HealthSpace     = 8.0f;    // between the markers' bottom and the bar
     constexpr float HealthRowHeight = 30.0f;
     constexpr float HealthCapFull   = 17.0f;   // height of the "HP" label's capitals
@@ -106,7 +112,7 @@ namespace dxvk {
 
       float xs = x0 + (x1 - x0) * fraction;
 
-      if (meter) {
+      if (meter && config.healthPicture) {
         // The meter's visible part stretched over the row, cut where the health ends
         float u0 = MeterLeft / MeterTexels;
         float u1 = MeterRight / MeterTexels;
@@ -120,19 +126,27 @@ namespace dxvk {
           list.drawImage(*meter, VrPaintImageUse::Shape, xs, HealthRowTop, x1, HealthRowEnd, us, v0, u1, v1,
             c.faded(HealthEmpty));
       } else {
-        // Without the picture: a line with ticks in the same look
-        float line = HealthRowTop + 0.62f * rowHeight;
+        // Drawn as the own strip: a thin line with a faint glow, and tick marks
+        // rising from it as densely as on the game's HP meter
+        float line = HealthRowTop + 0.75f * rowHeight;
+        float rise = 0.75f * OwnTickRise * light;
         constexpr uint32_t Ticks = 14;
+
+        auto part = [&] (float a, float b, const VrColour& colour) {
+          if (b <= a)
+            return;
+          list.fillRect(a, line - 0.5f * OwnGlow, b, line + 0.5f * OwnGlow, colour.faded(0.15f));
+          list.fillRect(a, line - 0.5f * OwnLine, b, line + 0.5f * OwnLine, colour.faded(0.9f));
+        };
+
+        part(x0, xs, c);
+        part(xs, x1, c.faded(HealthEmpty));
 
         for (uint32_t i = 0; i <= Ticks; i++) {
           float x = x0 + (x1 - x0) * float(i) / float(Ticks);
-          list.fillRect(x - 1.5f, HealthRowTop + 0.2f * rowHeight, x + 1.5f, line, x <= xs ? c : c.faded(HealthEmpty));
+          list.fillRect(x - 0.5f * OwnTick, line - rise, x + 0.5f * OwnTick, line,
+            x <= xs + 0.5f ? c : c.faded(HealthEmpty));
         }
-
-        if (xs > x0)
-          list.fillRect(x0, line, xs, line + 0.3f * rowHeight, c);
-        if (xs < x1)
-          list.fillRect(xs, line, x1, line + 0.3f * rowHeight, c.faded(HealthEmpty));
       }
     }
 
@@ -140,10 +154,6 @@ namespace dxvk {
     const char* const Labels[] = { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
     constexpr float CardinalCapFull = 32.0f;   // at the full strip height
     constexpr float OrdinalCapFull  = 24.0f;
-    constexpr float OwnLine     = 3.0f;    // thickness of the line, as the HP meter's
-    constexpr float OwnGlow     = 9.0f;    // and of the faint glow around it
-    constexpr float OwnTick     = 2.5f;    // width of the tick marks
-    constexpr float OwnTickRise = 16.0f;   // their height above the line, at the full strip height
 
     float wrap(float angle) {
       angle = std::fmod(angle + Pi, TwoPi);
@@ -480,6 +490,10 @@ namespace dxvk {
     else if (name == "quest")    ok = number(0.5f, 2.0f, c.questScale);
     else if (name == "stripheight") ok = number(0.5f, 1.0f, c.stripHeight);
     else if (name == "markersize")  ok = number(0.5f, 1.5f, c.markerSize);
+    else if (name == "healthpicture") {
+      ok = value == "on" || value == "off";
+      c.healthPicture = value == "on";
+    }
     else if (name == "gamestrip") {
       ok = value == "on" || value == "off";
       c.gameStrip = value == "on";
@@ -517,11 +531,11 @@ namespace dxvk {
     deg(c.top, top, sizeof(top));
     std::snprintf(text, sizeof(text),
       "width=%g top=%g angle=%s topdeg=%s distance=%g span=%g backdrop=%s opacity=%g gap=%g gapnoband=%g quest=%g"
-      " stripheight=%g markersize=%g gamestrip=%s compass=%s health=%s healthalign=%s healthwidth=%g healthlow=%g healthcritical=%g pulse=%s",
+      " stripheight=%g markersize=%g gamestrip=%s compass=%s health=%s healthpicture=%s healthalign=%s healthwidth=%g healthlow=%g healthcritical=%g pulse=%s",
       c.widthShare, c.topShare, angle, top, c.distance, c.span, c.backdrop ? "on" : "off",
       c.backdropOpacity, c.markerGap, c.markerGapNoBackdrop, c.questScale,
       c.stripHeight, c.markerSize, c.gameStrip ? "on" : "off",
-      c.enabled ? "on" : "off", c.health ? "on" : "off", c.healthAlign == VrHealthAlign::Right ? "right" : "centre",
+      c.enabled ? "on" : "off", c.health ? "on" : "off", c.healthPicture ? "on" : "off", c.healthAlign == VrHealthAlign::Right ? "right" : "centre",
       c.healthWidth, c.healthLow, c.healthCritical, c.healthPulse ? "on" : "off");
     return text;
   }

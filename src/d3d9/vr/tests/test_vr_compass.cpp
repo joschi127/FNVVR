@@ -301,6 +301,7 @@ TEST_CASE(compass_flatter_strip_and_smaller_markers_move_the_health_bar_up) {
   CHECK(vrDescribeCompass(config).find("stripheight=0.8 markersize=0.75") != std::string::npos);
   CHECK(vrSetCompassValue(config, "gamestrip", "on") && config.gameStrip);
   CHECK(!vrSetCompassValue(config, "gamestrip", "yes"));
+  CHECK(vrSetCompassValue(config, "healthpicture", "on") && config.healthPicture);
 }
 
 

@@ -329,7 +329,7 @@ namespace dxvk {
       pictures.quest  = m_images.picture(QuestPicture);
       pictures.custom = m_images.picture(CustomPicture);
       pictures.person = m_images.picture(PersonPicture);
-      pictures.healthBar = m_config.health ? m_images.picture(HealthPicture) : nullptr;
+      pictures.healthBar = m_config.health && m_config.healthPicture ? m_images.picture(HealthPicture) : nullptr;
 
       vrPaintCompass(m_list, m_config, compassHeading, markers, VrGameImages::hudColour(), m_images.font(),
         pictures, m_health);
