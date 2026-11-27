@@ -55,7 +55,10 @@ namespace dxvk {
     constexpr float HealthCapFull   = 17.0f;   // height of the "HP" label's capitals
     constexpr float HealthLabelGap  = 8.0f;
     constexpr float HealthEmpty     = 0.22f;   // brightness of the meter's empty part
-    constexpr int32_t MaxRoundTicks = 30;      // a tick per round up to this clip size
+    constexpr int32_t MaxRoundSlots = 30;      // an area per round up to this clip size
+    constexpr int32_t LargeClipAreas = 10;     // the areas of a larger clip
+    constexpr float AmmoFrameLine   = 2.0f;    // the ammo frame's line
+    constexpr float AmmoDivider     = 2.0f;    // and its dividers
     constexpr float MeterTexels     = 512.0f;
     constexpr float MeterRows       = 32.0f;
     constexpr float MeterLeft       = 98.0f;
@@ -155,31 +158,35 @@ namespace dxvk {
     }
 
     // The drawn weapon's rounds at the strip's left end, in the health bar's
-    // row and look: "loaded/size", a tick per round (or a filled line for a
-    // large clip) and the rounds left; or the numbers only
+    // row: "loaded/size", a frame with an area per round between dividers
+    // (loaded ones from the left filled faintly, spent ones empty; a large
+    // clip filled as a share with fewer dividers) and the rounds left; or
+    // the numbers only. No two shapes overlap, so no line is brighter where
+    // they would meet.
     void paintAmmo(VrPaintList& list, const VrCompassConfig& config, const VrPaintFont* font,
         const VrColour& hud, const VrAmmoState& ammo) {
       float width = float(list.width());
-      float group = std::clamp(config.healthWidth, 0.1f, 1.0f) * width;
+      float group = std::clamp(config.ammoWidth, 0.1f, 1.0f) * width;
       float left  = EdgeSpace;
       float right = left + group;
 
       // Clear of a centred or wide health bar in the same row
       if (config.health) {
-        float healthLeft = config.healthAlign == VrHealthAlign::Right
-          ? width - EdgeSpace - group : 0.5f * (width - group);
+        float healthGroup = std::clamp(config.healthWidth, 0.1f, 1.0f) * width;
+        float healthLeft  = config.healthAlign == VrHealthAlign::Right
+          ? width - EdgeSpace - healthGroup : 0.5f * (width - healthGroup);
         right = std::min(right, healthLeft - 2.0f * EdgeSpace);
       }
 
       if (right - left < 4.0f * EdgeSpace)
         return;
+
       float light = std::clamp(config.stripHeight, 0.5f, 1.0f);
       float top   = healthRowTop(config, width);
       float rowHeight = HealthRowHeight * light;
-      float line  = top + 0.75f * rowHeight;
-      float rise  = 0.75f * OwnTickRise * light;
       float cap   = HealthCapFull * light;
-      float base  = top + 0.5f * (rowHeight + cap);
+      float text  = 1.2f * cap;                       // height of the numbers
+      float base  = top + 0.5f * (rowHeight + cap);   // their baseline, as the "HP" label's
 
       auto bandColour = [&] (uint32_t band) {
         return band == 2 ? rgb(config.healthCriticalColour) : band == 1 ? rgb(config.healthLowColour) : hud;
@@ -198,25 +205,25 @@ namespace dxvk {
 
       if (font) {
         float capitals = std::max(font->metrics.glyph('8').ascent, 1.0f);
-        float scale = 1.2f * cap / capitals;
-        float gap   = HealthLabelGap * light + 4.0f;
+        float scale = text / capitals;
+        float gap   = HealthLabelGap * light + 2.0f;
 
         if (config.ammoNumbers) {
           // "2/6 | 48": the clip, a short bar between, the rounds left
           float clipWidth = VrPaintList::measureText(*font, clipText, scale);
           list.drawText(*font, clipText, left, base, scale, clipColour);
           float bar = left + clipWidth + gap;
-          list.fillRect(bar, base - 1.2f * cap, bar + OwnTick, base, hud.faded(0.5f));
+          list.fillRect(bar, base - text, bar + OwnTick, base, hud.faded(0.5f));
           list.drawText(*font, reserveText, bar + OwnTick + gap, base, scale, reserveColour);
           return;
         }
 
         // Places as wide as the largest numbers of this clip, so that the
-        // ticks do not move while firing
+        // frame does not move while firing
         std::string digits(std::to_string(capacity).size(), '8');
         float clipSlot    = VrPaintList::measureText(*font, digits + "/" + digits, scale);
         float reserveSlot = VrPaintList::measureText(*font,
-          std::string(std::max<size_t>(reserveText.size(), 3), '8'), scale);
+          std::string(std::max<size_t>(reserveText.size(), 2), '8'), scale);
 
         list.drawText(*font, clipText, left, base, scale, clipColour);
         float reserveWidth = VrPaintList::measureText(*font, reserveText, scale);
@@ -228,35 +235,47 @@ namespace dxvk {
         return;
       }
 
-      if (x1 - x0 < 8.0f)
+      // The frame around the numbers' middle, a little taller than they are
+      float frameHeight = 1.35f * text;
+      float y0 = base - 0.5f * text - 0.5f * frameHeight;
+      float y1 = y0 + frameHeight;
+      float f  = AmmoFrameLine;
+
+      if (x1 - x0 < 4.0f * f + 8.0f)
         return;
 
-      float xs = x0 + (x1 - x0) * float(clip) / float(capacity);
+      VrColour line = clipColour.faded(0.85f);
 
-      auto part = [&] (float a, float b, const VrColour& colour) {
-        if (b <= a)
-          return;
-        list.fillRect(a, line - 0.5f * OwnGlow, b, line + 0.5f * OwnGlow, colour.faded(0.15f));
-        list.fillRect(a, line - 0.5f * OwnLine, b, line + 0.5f * OwnLine, colour.faded(0.9f));
-      };
+      // Top and bottom across the whole width, the sides between them
+      list.fillRect(x0, y0, x1, y0 + f, line);
+      list.fillRect(x0, y1 - f, x1, y1, line);
+      list.fillRect(x0, y0 + f, x0 + f, y1 - f, line);
+      list.fillRect(x1 - f, y0 + f, x1, y1 - f, line);
 
-      VrColour empty = clipColour.faded(HealthEmpty);
-      part(x0, xs, clipColour);
-      part(xs, x1, empty);
+      // Inside: areas between dividers that reach the frame
+      float i0 = x0 + f;
+      float i1 = x1 - f;
+      float t0 = y0 + f;
+      float t1 = y1 - f;
+      bool  each = capacity <= MaxRoundSlots;
+      int32_t areas = each ? capacity : LargeClipAreas;
+      float slot = (i1 - i0) / float(areas);
+      float d    = std::min(AmmoDivider, 0.4f * slot);
+      float filled = i0 + (i1 - i0) * float(clip) / float(capacity);
+      VrColour fill = clipColour.faded(std::clamp(config.ammoFill, 0.0f, 1.0f));
 
-      if (capacity <= MaxRoundTicks) {
-        // A tick per round, in the middle of its share of the line
-        for (int32_t i = 0; i < capacity; i++) {
-          float x = x0 + (x1 - x0) * (float(i) + 0.5f) / float(capacity);
-          list.fillRect(x - 0.5f * OwnTick, line - rise, x + 0.5f * OwnTick, line, i < clip ? clipColour : empty);
-        }
-      } else {
-        constexpr uint32_t Ticks = 14;
+      for (int32_t i = 0; i < areas; i++) {
+        float a = i0 + slot * float(i) + (i > 0 ? 0.5f * d : 0.0f);
+        float b = i0 + slot * float(i + 1) - (i + 1 < areas ? 0.5f * d : 0.0f);
 
-        for (uint32_t i = 0; i <= Ticks; i++) {
-          float x = x0 + (x1 - x0) * float(i) / float(Ticks);
-          list.fillRect(x - 0.5f * OwnTick, line - rise, x + 0.5f * OwnTick, line, x <= xs + 0.5f ? clipColour : empty);
-        }
+        if (i > 0)
+          list.fillRect(a - d, t0, a, t1, line);
+
+        // A loaded round fills its area; a large clip fills up to its share
+        float end = each ? (i < clip ? b : a) : std::min(b, filled);
+
+        if (end > a)
+          list.fillRect(a, t0, end, t1, fill);
       }
     }
 
@@ -606,6 +625,8 @@ namespace dxvk {
     else if (name == "markersize")  ok = number(0.5f, 1.5f, c.markerSize);
     else if (name == "ammolow")        ok = number(0.0f, 1.0f, c.ammoLow);
     else if (name == "ammoreservelow") ok = number(0.0f, 10.0f, c.ammoReserveLow);
+    else if (name == "ammowidth")      ok = number(0.1f, 1.0f, c.ammoWidth);
+    else if (name == "ammofill")       ok = number(0.0f, 1.0f, c.ammoFill);
     else if (name == "ammostyle") {
       ok = value == "bars" || value == "numbers";
       c.ammoNumbers = value == "numbers";
@@ -655,11 +676,11 @@ namespace dxvk {
     deg(c.top, top, sizeof(top));
     std::snprintf(text, sizeof(text),
       "width=%g top=%g angle=%s topdeg=%s distance=%g span=%g backdrop=%s opacity=%g gap=%g gapnoband=%g quest=%g"
-      " stripheight=%g markersize=%g gamestrip=%s ammo=%s ammostyle=%s ammolow=%g ammoreservelow=%g compass=%s health=%s healthpicture=%s healthalign=%s healthwidth=%g healthlow=%g healthcritical=%g pulse=%s",
+      " stripheight=%g markersize=%g gamestrip=%s ammo=%s ammostyle=%s ammolow=%g ammoreservelow=%g ammowidth=%g ammofill=%g compass=%s health=%s healthpicture=%s healthalign=%s healthwidth=%g healthlow=%g healthcritical=%g pulse=%s",
       c.widthShare, c.topShare, angle, top, c.distance, c.span, c.backdrop ? "on" : "off",
       c.backdropOpacity, c.markerGap, c.markerGapNoBackdrop, c.questScale,
       c.stripHeight, c.markerSize, c.gameStrip ? "on" : "off",
-      c.ammo ? "on" : "off", c.ammoNumbers ? "numbers" : "bars", c.ammoLow, c.ammoReserveLow,
+      c.ammo ? "on" : "off", c.ammoNumbers ? "numbers" : "bars", c.ammoLow, c.ammoReserveLow, c.ammoWidth, c.ammoFill,
       c.enabled ? "on" : "off", c.health ? "on" : "off", c.healthPicture ? "on" : "off", c.healthAlign == VrHealthAlign::Right ? "right" : "centre",
       c.healthWidth, c.healthLow, c.healthCritical, c.healthPulse ? "on" : "off");
     return text;

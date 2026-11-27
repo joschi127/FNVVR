@@ -56,8 +56,10 @@ B, drawn with the game's own pictures so that it looks and feels like the game's
   the game's HP meter), so that both weigh alike; the HP meter picture is an option
   (`d3d9.vrHealthBarGamePicture`).
 - Ammunition (2026-11-27): in the same row at the strip's left end, as a counterpart to the health bar, the
-  drawn weapon's rounds in the HUD's colour: loaded of the clip's size ("2/6"), a tick per round (a filled
-  line for clips over 30) and the rounds left in the inventory. The clip turns orange when a reload is due
+  drawn weapon's rounds in the HUD's colour: loaded of the clip's size ("2/6"), a frame with an area per
+  round between dividers that reach the frame, the loaded ones from the left filled faintly and the spent ones
+  empty (after a sketch of the maintainer; ten areas filled as a share for clips over 30), and the rounds left
+  in the inventory. It is narrower than the health bar (0.22 of the strip) and looks different from it. The clip turns orange when a reload is due
   (a quarter of its size, at least its last round) and red when empty; the rounds left turn orange below one
   clip and red at none. A second style shows the numbers only (`d3d9.vrAmmoCounterStyle = numbers`); the
   maintainer asked for both, switchable. Shown only while a weapon that takes ammunition is drawn.

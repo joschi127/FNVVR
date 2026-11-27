@@ -263,6 +263,8 @@ namespace dxvk {
       Logger::warn(str::format("VR: d3d9.vrAmmoCounterStyle '", ammoStyle, "' is neither bars nor numbers, bars is used"));
     compass.ammoLow        = std::clamp(config.getOption<float>("d3d9.vrAmmoCounterLow", compass.ammoLow), 0.0f, 1.0f);
     compass.ammoReserveLow = std::clamp(config.getOption<float>("d3d9.vrAmmoCounterReserveLow", compass.ammoReserveLow), 0.0f, 10.0f);
+    compass.ammoWidth      = std::clamp(config.getOption<float>("d3d9.vrAmmoCounterWidthShare", compass.ammoWidth), 0.1f, 1.0f);
+    compass.ammoFill       = std::clamp(config.getOption<float>("d3d9.vrAmmoCounterFill", compass.ammoFill), 0.0f, 1.0f);
     std::string healthAlign = config.getOption<std::string>("d3d9.vrHealthBarAlign", "");
     if (healthAlign == "right" || healthAlign == "Right")
       compass.healthAlign = VrHealthAlign::Right;

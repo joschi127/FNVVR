@@ -84,14 +84,17 @@ namespace dxvk {
 
     /// The rounds of the drawn weapon, in the same row as the health bar at
     /// the strip's left end, in the HUD's colour: loaded of the clip's size,
-    /// a tick per round (bars) or numbers only, and the rounds left in the
-    /// inventory. The clip turns orange at ammoLow of its size and red when
+    /// a frame with an area per round between dividers, the loaded ones
+    /// filled faintly (or numbers only), and the rounds left in the
+    /// inventory; ammoWidth is its width as a share of the strip's. The clip turns orange at ammoLow of its size and red when
     /// empty, the rest orange below ammoReserveLow clips and red at none
     /// (the health bar's colours).
     bool     ammo            = true;
     bool     ammoNumbers     = false;
     float    ammoLow         = 0.25f;
     float    ammoReserveLow  = 1.0f;
+    float    ammoWidth       = 0.22f;
+    float    ammoFill        = 0.4f;
   };
 
   /**
@@ -249,6 +252,7 @@ namespace dxvk {
    * band), gapnoband, quest, stripheight, markersize, gamestrip (on|off),
    * compass (on|off: the strip and markers),
    * ammo (on|off), ammostyle (bars|numbers), ammolow, ammoreservelow,
+   * ammowidth, ammofill,
    * health (on|off), healthpicture (on|off), healthalign (centre|right), healthwidth, healthlow,
    * healthcritical, pulse (on|off).
    *
