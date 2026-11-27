@@ -52,6 +52,8 @@ TEST_CASE(compass_places_the_heading_in_the_middle_and_holds_markers_at_the_ends
 
 TEST_CASE(compass_draws_markers_where_their_bearing_is) {
   VrCompassConfig config;
+  config.stripHeight = 1.0f;   // the full size
+  config.markerSize  = 1.0f;
   config.backdrop = false;
   config.markerGapNoBackdrop = 0.0f;
   VrPaintList list(VrCompassImage::Width, VrCompassImage::Height);
@@ -71,6 +73,8 @@ TEST_CASE(compass_draws_markers_where_their_bearing_is) {
 
 TEST_CASE(compass_friend_marker_is_in_the_friend_colour) {
   VrCompassConfig config;
+  config.stripHeight = 1.0f;   // the full size
+  config.markerSize  = 1.0f;
   config.backdrop = false;
   config.markerGapNoBackdrop = 0.0f;
   config.friendColour = 0x00FF00;
@@ -247,7 +251,7 @@ TEST_CASE(compass_health_bar_draws_in_its_row_and_follows_the_alignment) {
     right = -1.0e9f;
 
     for (const VrPaintVertex& v : list.vertices()) {
-      CHECK(v.y >= 128.0f && v.y <= float(VrCompassImage::Height));
+      CHECK(v.y >= 60.0f && v.y <= float(VrCompassImage::Height));
       left  = std::min(left, v.x);
       right = std::max(right, v.x);
     }
@@ -271,6 +275,8 @@ TEST_CASE(compass_health_bar_draws_in_its_row_and_follows_the_alignment) {
 
 TEST_CASE(compass_flatter_strip_and_smaller_markers_move_the_health_bar_up) {
   VrCompassConfig config;
+  config.stripHeight = 1.0f;   // the full size
+  config.markerSize  = 1.0f;
   config.enabled = false;   // only the health bar
   VrHealthState health;
   health.known = true;
@@ -293,6 +299,8 @@ TEST_CASE(compass_flatter_strip_and_smaller_markers_move_the_health_bar_up) {
   CHECK(smaller < flatter - 10.0f);
   CHECK(!vrSetCompassValue(config, "stripheight", "1.2"));
   CHECK(vrDescribeCompass(config).find("stripheight=0.8 markersize=0.75") != std::string::npos);
+  CHECK(vrSetCompassValue(config, "gamestrip", "on") && config.gameStrip);
+  CHECK(!vrSetCompassValue(config, "gamestrip", "yes"));
 }
 
 

@@ -224,6 +224,7 @@ namespace dxvk {
     compass.questScale = std::clamp(config.getOption<float>("d3d9.vrCompassQuestScale", compass.questScale), 0.5f, 2.0f);
     compass.stripHeight = std::clamp(config.getOption<float>("d3d9.vrCompassStripHeight", compass.stripHeight), 0.5f, 1.0f);
     compass.markerSize  = std::clamp(config.getOption<float>("d3d9.vrCompassMarkerSize", compass.markerSize), 0.5f, 1.5f);
+    compass.gameStrip   = config.getOption<bool>("d3d9.vrCompassGameStrip", compass.gameStrip);
     compass.backdropOpacity = std::clamp(config.getOption<float>("d3d9.vrCompassBackdropOpacity", compass.backdropOpacity), 0.0f, 1.0f);
 
     // Colours as RRGGBB; DXVK gives an empty text for an option not set

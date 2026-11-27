@@ -55,8 +55,11 @@ namespace dxvk {
     float questScale = 1.0f;
     /// Height of the strip against its picture's shape (0.5 to 1: flatter,
     /// the markers and health bar move up with it), and size of the markers
-    float stripHeight = 1.0f;
-    float markerSize  = 1.0f;
+    float stripHeight = 0.7f;
+    float markerSize  = 0.65f;
+    /// The game's picture of the strip; off: drawn in the look of the HP
+    /// meter, a thin line with tick marks, lighter than the picture
+    bool  gameStrip   = false;
     /// Colour of friends' markers, 0xRRGGBB: a phosphor green, as their name
     /// plates (VrWorldTileConfig::personColour); the others take the HUD's colour
     uint32_t friendColour = 0xA6E585;
@@ -197,8 +200,8 @@ namespace dxvk {
    *
    * Names: width, top (shares of the field of view), angle, topdeg (degrees
    * or "auto"), distance, span, backdrop (on|off), opacity, gap (with the
-   * band), gapnoband, quest, stripheight, markersize, compass (on|off: the
-   * strip and markers),
+   * band), gapnoband, quest, stripheight, markersize, gamestrip (on|off),
+   * compass (on|off: the strip and markers),
    * health (on|off), healthalign (centre|right), healthwidth, healthlow,
    * healthcritical, pulse (on|off).
    *

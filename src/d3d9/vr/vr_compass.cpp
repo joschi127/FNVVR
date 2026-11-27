@@ -325,7 +325,7 @@ namespace dxvk {
 
     if (!same) {
       VrCompassPictures pictures;
-      pictures.strip  = m_images.picture(StripPicture);
+      pictures.strip  = m_config.gameStrip ? m_images.picture(StripPicture) : nullptr;
       pictures.quest  = m_images.picture(QuestPicture);
       pictures.custom = m_images.picture(CustomPicture);
       pictures.person = m_images.picture(PersonPicture);
