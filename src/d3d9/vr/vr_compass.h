@@ -89,6 +89,8 @@ namespace dxvk {
     // What the image shows, to draw it only when it changes
     std::vector<VrCompassMarker> m_shownMarkers;
     VrHealthState     m_shownHealth;
+    VrAmmoState       m_ammo;
+    VrAmmoState       m_shownAmmo;
     float             m_shownHeading = -100.0f;
     bool              m_drawn = false;
     bool              m_placed = false;

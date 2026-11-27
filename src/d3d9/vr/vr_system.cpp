@@ -251,6 +251,18 @@ namespace dxvk {
     // The health bar below the compass
     compass.health = config.getOption<bool>("d3d9.vrHealthBar", compass.health);
     compass.healthPicture = config.getOption<bool>("d3d9.vrHealthBarGamePicture", compass.healthPicture);
+
+    // The drawn weapon's rounds, in the health bar's row at the strip's left end
+    compass.ammo = config.getOption<bool>("d3d9.vrAmmoCounter", compass.ammo);
+    std::string ammoStyle = config.getOption<std::string>("d3d9.vrAmmoCounterStyle", "");
+    if (ammoStyle == "numbers" || ammoStyle == "Numbers")
+      compass.ammoNumbers = true;
+    else if (ammoStyle == "bars" || ammoStyle == "Bars")
+      compass.ammoNumbers = false;
+    else if (!ammoStyle.empty())
+      Logger::warn(str::format("VR: d3d9.vrAmmoCounterStyle '", ammoStyle, "' is neither bars nor numbers, bars is used"));
+    compass.ammoLow        = std::clamp(config.getOption<float>("d3d9.vrAmmoCounterLow", compass.ammoLow), 0.0f, 1.0f);
+    compass.ammoReserveLow = std::clamp(config.getOption<float>("d3d9.vrAmmoCounterReserveLow", compass.ammoReserveLow), 0.0f, 10.0f);
     std::string healthAlign = config.getOption<std::string>("d3d9.vrHealthBarAlign", "");
     if (healthAlign == "right" || healthAlign == "Right")
       compass.healthAlign = VrHealthAlign::Right;

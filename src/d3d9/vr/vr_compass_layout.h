@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -80,6 +81,17 @@ namespace dxvk {
     /// The game's HP meter picture; off: drawn as the own strip, a thin line
     /// with tick marks
     bool     healthPicture   = false;
+
+    /// The rounds of the drawn weapon, in the same row as the health bar at
+    /// the strip's left end, in the HUD's colour: loaded of the clip's size,
+    /// a tick per round (bars) or numbers only, and the rounds left in the
+    /// inventory. The clip turns orange at ammoLow of its size and red when
+    /// empty, the rest orange below ammoReserveLow clips and red at none
+    /// (the health bar's colours).
+    bool     ammo            = true;
+    bool     ammoNumbers     = false;
+    float    ammoLow         = 0.25f;
+    float    ammoReserveLow  = 1.0f;
   };
 
   /**
@@ -93,6 +105,35 @@ namespace dxvk {
     /// Brightness of the pulse while critical, 1 otherwise
     float pulse    = 1.0f;
   };
+
+  /**
+   * \brief The rounds of the drawn weapon as the compass shows them
+   */
+  struct VrAmmoState {
+    /// Whether a weapon that takes ammunition is drawn and could be read
+    bool    known    = false;
+    /// Rounds in the clip
+    int32_t clip     = 0;
+    /// Size of the clip
+    int32_t capacity = 0;
+    /// Rounds of the same ammunition in the inventory besides the clip
+    int32_t reserve  = 0;
+
+    bool operator == (const VrAmmoState& other) const {
+      return known == other.known && clip == other.clip && capacity == other.capacity && reserve == other.reserve;
+    }
+  };
+
+  /**
+   * \brief How low the clip is: 0 well, 1 low (reload soon), 2 empty
+   */
+  uint32_t vrAmmoClipBand(const VrCompassConfig& config, const VrAmmoState& ammo);
+
+  /**
+   * \brief How low the rounds left in the inventory are: 0 well, 1 fewer
+   *    than ammoReserveLow clips, 2 none
+   */
+  uint32_t vrAmmoReserveBand(const VrCompassConfig& config, const VrAmmoState& ammo);
 
   /**
    * \brief Colour of the health bar for a share of the full health
@@ -193,10 +234,12 @@ namespace dxvk {
    * \param [in] font Font of labels and initials, or \c nullptr to write none
    * \param [in] pictures The game's compass pictures
    * \param [in] health The player's health, drawn when known and on
+   * \param [in] ammo The drawn weapon's rounds, drawn when known and on
    */
   void vrPaintCompass(VrPaintList& list, const VrCompassConfig& config, float heading,
     const std::vector<VrCompassMarker>& markers, const VrColour& colour, const VrPaintFont* font,
-    const VrCompassPictures& pictures, const VrHealthState& health = VrHealthState());
+    const VrCompassPictures& pictures, const VrHealthState& health = VrHealthState(),
+    const VrAmmoState& ammo = VrAmmoState());
 
   /**
    * \brief Changes one setting by name, for tuning it live (VR test channel)
@@ -205,6 +248,7 @@ namespace dxvk {
    * or "auto"), distance, span, backdrop (on|off), opacity, gap (with the
    * band), gapnoband, quest, stripheight, markersize, gamestrip (on|off),
    * compass (on|off: the strip and markers),
+   * ammo (on|off), ammostyle (bars|numbers), ammolow, ammoreservelow,
    * health (on|off), healthpicture (on|off), healthalign (centre|right), healthwidth, healthlow,
    * healthcritical, pulse (on|off).
    *

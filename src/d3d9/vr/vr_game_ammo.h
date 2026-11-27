@@ -43,6 +43,17 @@ namespace dxvk {
     static std::vector<VrAmmoType> types();
 
     /**
+     * \brief The rounds of the drawn weapon, for the counter below the compass
+     *
+     * \param [out] clip Rounds in the clip
+     * \param [out] capacity Size of the clip
+     * \param [out] reserve Rounds of the clip's ammunition in the inventory
+     *    besides those in the clip
+     * \returns \c false without a drawn weapon that takes ammunition
+     */
+    static bool rounds(int32_t& clip, int32_t& capacity, int32_t& reserve);
+
+    /**
      * \brief The ammunition in the clip, or \c nullptr
      */
     static const uint8_t* current();

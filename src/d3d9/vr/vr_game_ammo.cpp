@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "../../util/log/log.h"
 #include "../../util/util_string.h"
 
@@ -19,6 +21,7 @@ namespace dxvk {
     using AllocateFn       = uint8_t* (__cdecl*)(size_t size);
     using ConstructEntryFn = uint8_t* (__fastcall*)(uint8_t* entry, void* unused, const uint8_t* form, int32_t count);
     using AmmoSwapFn       = void (__fastcall*)(uint8_t* player, void* unused, uint32_t animate, uint32_t onlyIfEmpty);
+    using WeaponOutFn      = bool (__fastcall*)(uint8_t* process, void* unused);
 
     // Size of an inventory entry: extra lists, count, form
     constexpr size_t EntrySize = 0xC;
@@ -131,6 +134,34 @@ namespace dxvk {
       add(field<const uint8_t*>(node, 0));
 
     return result;
+  }
+
+
+  bool VrGameAmmo::rounds(int32_t& clip, int32_t& capacity, int32_t& reserve) {
+    clip = capacity = reserve = 0;
+
+    if (!available())
+      return false;
+
+    uint8_t* p     = process();
+    uint8_t* entry = p && virtualFunction<WeaponOutFn>(p, VrGame::ProcessIsWeaponOutSlot)(p, nullptr)
+      ? weaponEntry() : nullptr;
+    auto weapon = entry ? field<const uint8_t*>(entry, VrGame::InventoryEntryForm) : nullptr;
+
+    if (!weapon || field<uint8_t>(weapon, VrGame::FormType) != VrGame::FormTypeWeapon
+     || !field<const uint8_t*>(weapon, VrGame::WeaponAmmo))
+      return false;
+
+    capacity = field<uint8_t>(weapon, VrGame::WeaponClipRounds);
+    uint8_t* loaded = clipEntry();
+    auto ammo = loaded ? field<const uint8_t*>(loaded, VrGame::InventoryEntryForm) : nullptr;
+
+    if (capacity <= 0 || !ammo)
+      return false;
+
+    clip    = std::max(field<int32_t>(loaded, VrGame::InventoryEntryCount), 0);
+    reserve = std::max(heldRounds(ammo) - clip, 0);
+    return true;
   }
 
 

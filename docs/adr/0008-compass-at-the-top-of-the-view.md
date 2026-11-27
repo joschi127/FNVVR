@@ -55,6 +55,12 @@ B, drawn with the game's own pictures so that it looks and feels like the game's
   The health bar is then drawn the same way (line, glow and tick width of the strip, ticks as dense as on
   the game's HP meter), so that both weigh alike; the HP meter picture is an option
   (`d3d9.vrHealthBarGamePicture`).
+- Ammunition (2026-11-27): in the same row at the strip's left end, as a counterpart to the health bar, the
+  drawn weapon's rounds in the HUD's colour: loaded of the clip's size ("2/6"), a tick per round (a filled
+  line for clips over 30) and the rounds left in the inventory. The clip turns orange when a reload is due
+  (a quarter of its size, at least its last round) and red when empty; the rounds left turn orange below one
+  clip and red at none. A second style shows the numbers only (`d3d9.vrAmmoCounterStyle = numbers`); the
+  maintainer asked for both, switchable. Shown only while a weapon that takes ammunition is drawn.
 - Size and place follow the field of view the headset reports (the maintainer often plays with a field of
   view reduced in Virtual Desktop): the width is a share of the horizontal field of view, the top edge a share
   of its upper half. `dxvk.conf` overrides them in degrees (`auto` or not set: from the field of view); the dark

@@ -339,6 +339,98 @@ TEST_CASE(compass_stays_inside_its_image_for_extreme_settings) {
 }
 
 
+TEST_CASE(compass_ammo_bands_warn_for_a_low_clip_and_few_rounds_left) {
+  VrCompassConfig config;
+  VrAmmoState a;
+  a.known = true;
+  a.capacity = 6;
+  a.reserve  = 40;
+
+  a.clip = 6; CHECK(vrAmmoClipBand(config, a) == 0);
+  a.clip = 3; CHECK(vrAmmoClipBand(config, a) == 0);
+  a.clip = 2; CHECK(vrAmmoClipBand(config, a) == 1);   // a quarter of 6, rounded
+  a.clip = 0; CHECK(vrAmmoClipBand(config, a) == 2);
+
+  // A small clip warns at its last round, a single round only when empty
+  a.capacity = 2; a.clip = 1; CHECK(vrAmmoClipBand(config, a) == 1);
+  a.capacity = 1; a.clip = 1; CHECK(vrAmmoClipBand(config, a) == 0);
+
+  a.capacity = 6;
+  a.reserve = 6; CHECK(vrAmmoReserveBand(config, a) == 0);
+  a.reserve = 5; CHECK(vrAmmoReserveBand(config, a) == 1);   // fewer than one clip
+  a.reserve = 0; CHECK(vrAmmoReserveBand(config, a) == 2);
+  config.ammoReserveLow = 2.0f;
+  a.reserve = 11; CHECK(vrAmmoReserveBand(config, a) == 1);
+}
+
+
+TEST_CASE(compass_ammo_counter_draws_at_the_left_end_in_the_health_row) {
+  VrCompassConfig config;
+  config.enabled = false;   // only the counter
+  config.health  = false;
+  VrAmmoState ammo;
+  ammo.known = true;
+  ammo.clip = 2;
+  ammo.capacity = 6;
+  ammo.reserve = 48;
+  VrColour amber = { 1.0f, 0.7f, 0.2f, 1.0f };
+
+  VrPaintList list(VrCompassImage::Width, VrCompassImage::Height);
+  vrPaintCompass(list, config, 0.0f, { }, amber, nullptr, VrCompassPictures(), VrHealthState(), ammo);
+  CHECK(!list.vertices().empty());
+
+  float left = 1.0e9f, right = -1.0e9f;
+  for (const VrPaintVertex& v : list.vertices()) {
+    CHECK(v.y >= 85.0f && v.y <= float(VrCompassImage::Height));
+    left  = std::min(left, v.x);
+    right = std::max(right, v.x);
+  }
+  CHECK(left < 0.1f * VrCompassImage::Width && right < 0.5f * VrCompassImage::Width);
+
+  // With the health bar: both in the same row, apart
+  VrHealthState health;
+  health.known = true;
+  config.health = true;
+  VrPaintList both(VrCompassImage::Width, VrCompassImage::Height);
+  vrPaintCompass(both, config, 0.0f, { }, amber, nullptr, VrCompassPictures(), health, ammo);
+  CHECK(both.vertices().size() > list.vertices().size());
+
+  // Not known, switched off, or numbers without a font: nothing of it
+  for (int k = 0; k < 3; k++) {
+    VrCompassConfig c = config;
+    c.health = false;
+    VrAmmoState a = ammo;
+    if (k == 0) a.known = false;
+    if (k == 1) c.ammo = false;
+    if (k == 2) c.ammoNumbers = true;
+    VrPaintList none(VrCompassImage::Width, VrCompassImage::Height);
+    vrPaintCompass(none, c, 0.0f, { }, amber, nullptr, VrCompassPictures(), VrHealthState(), a);
+    CHECK(none.vertices().empty());
+  }
+
+  // A large clip: a filled line with ticks, no tick per round
+  ammo.capacity = 240;
+  ammo.clip = 100;
+  VrPaintList large(VrCompassImage::Width, VrCompassImage::Height);
+  vrPaintCompass(large, config, 0.0f, { }, amber, nullptr, VrCompassPictures(), VrHealthState(), ammo);
+  CHECK(!large.vertices().empty() && large.vertices().size() < 200);
+}
+
+
+TEST_CASE(compass_ammo_settings_change_by_name) {
+  VrCompassConfig config;
+  CHECK(vrSetCompassValue(config, "ammostyle", "numbers") && config.ammoNumbers);
+  CHECK(vrSetCompassValue(config, "ammostyle", "bars") && !config.ammoNumbers);
+  CHECK(vrSetCompassValue(config, "ammo", "off") && !config.ammo);
+  CHECK(vrSetCompassValue(config, "ammolow", "0.5") && config.ammoLow == 0.5f);
+  CHECK(vrSetCompassValue(config, "ammoreservelow", "2") && config.ammoReserveLow == 2.0f);
+  CHECK(!vrSetCompassValue(config, "ammostyle", "dots"));
+  CHECK(!vrSetCompassValue(config, "ammolow", "2"));
+  std::string text = vrDescribeCompass(config);
+  CHECK(text.find("ammo=off ammostyle=bars ammolow=0.5 ammoreservelow=2") != std::string::npos);
+}
+
+
 TEST_CASE(compass_health_settings_change_by_name) {
   VrCompassConfig config;
   CHECK(vrSetCompassValue(config, "healthalign", "right") && config.healthAlign == VrHealthAlign::Right);

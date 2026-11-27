@@ -7,6 +7,7 @@
 #include "../../util/log/log.h"
 
 #include "vr_compass.h"
+#include "vr_game_ammo.h"
 #include "vr_game_addresses.h"
 #include "vr_game_memory.h"
 
@@ -238,7 +239,7 @@ namespace dxvk {
 
 
   void VrCompass::show(bool shown, float heading, const std::vector<VrWorldTileInfo>& tiles, const VrFov& fov) {
-    if (!shown || !m_available || m_failed || !(m_config.enabled || m_config.health)) {
+    if (!shown || !m_available || m_failed || !(m_config.enabled || m_config.health || m_config.ammo)) {
       hide();
       return;
     }
@@ -251,6 +252,11 @@ namespace dxvk {
 
       if (m_config.health)
         readHealth(player);
+
+      m_ammo = VrAmmoState();
+
+      if (m_config.ammo)
+        m_ammo.known = VrGameAmmo::rounds(m_ammo.clip, m_ammo.capacity, m_ammo.reserve);
     }
 
     VrVector3 from;
@@ -264,7 +270,9 @@ namespace dxvk {
     m_health.pulse = healthShown ? vrHealthPulse(m_config, m_health.fraction, steadySeconds()) : 1.0f;
 
     // Nothing to show: no layer of the runtime's few spent on an empty image
-    if (!m_config.enabled && !healthShown) {
+    bool ammoShown = m_config.ammo && m_ammo.known;
+
+    if (!m_config.enabled && !healthShown && !ammoShown) {
       hide();
       return;
     }
@@ -316,7 +324,7 @@ namespace dxvk {
       && band(m_health.fraction) == band(m_shownHealth.fraction);
     // Without the strip the heading does not matter
     bool sameHeading = !m_config.enabled || std::fabs(vrCompassOffset(compassHeading, m_shownHeading)) < redraw;
-    bool same = m_drawn && sameHealth && sameHeading && markers.size() == m_shownMarkers.size();
+    bool same = m_drawn && sameHealth && m_ammo == m_shownAmmo && sameHeading && markers.size() == m_shownMarkers.size();
 
     for (size_t i = 0; same && i < markers.size(); i++) {
       same = markers[i].kind == m_shownMarkers[i].kind && markers[i].initial == m_shownMarkers[i].initial
@@ -332,7 +340,7 @@ namespace dxvk {
       pictures.healthBar = m_config.health && m_config.healthPicture ? m_images.picture(HealthPicture) : nullptr;
 
       vrPaintCompass(m_list, m_config, compassHeading, markers, VrGameImages::hudColour(), m_images.font(),
-        pictures, m_health);
+        pictures, m_health, m_ammo);
 
       if (!m_panel.paint(m_list)) {
         Logger::err("VR: Failed to draw the compass, it is not shown");
@@ -346,6 +354,7 @@ namespace dxvk {
       m_shownHeading = compassHeading;
       m_shownMarkers = std::move(markers);
       m_shownHealth  = m_health;
+      m_shownAmmo    = m_ammo;
     }
 
     // Fixed to the head: given again for a new image or after it was hidden,

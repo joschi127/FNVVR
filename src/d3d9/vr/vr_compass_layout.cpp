@@ -55,6 +55,7 @@ namespace dxvk {
     constexpr float HealthCapFull   = 17.0f;   // height of the "HP" label's capitals
     constexpr float HealthLabelGap  = 8.0f;
     constexpr float HealthEmpty     = 0.22f;   // brightness of the meter's empty part
+    constexpr int32_t MaxRoundTicks = 30;      // a tick per round up to this clip size
     constexpr float MeterTexels     = 512.0f;
     constexpr float MeterRows       = 32.0f;
     constexpr float MeterLeft       = 98.0f;
@@ -149,6 +150,102 @@ namespace dxvk {
           float x = x0 + (x1 - x0) * float(i) / float(Ticks);
           list.fillRect(x - 0.5f * OwnTick, line - rise, x + 0.5f * OwnTick, line,
             x <= xs + 0.5f ? c : c.faded(HealthEmpty));
+        }
+      }
+    }
+
+    // The drawn weapon's rounds at the strip's left end, in the health bar's
+    // row and look: "loaded/size", a tick per round (or a filled line for a
+    // large clip) and the rounds left; or the numbers only
+    void paintAmmo(VrPaintList& list, const VrCompassConfig& config, const VrPaintFont* font,
+        const VrColour& hud, const VrAmmoState& ammo) {
+      float width = float(list.width());
+      float group = std::clamp(config.healthWidth, 0.1f, 1.0f) * width;
+      float left  = EdgeSpace;
+      float right = left + group;
+      float light = std::clamp(config.stripHeight, 0.5f, 1.0f);
+      float top   = healthRowTop(config, width);
+      float rowHeight = HealthRowHeight * light;
+      float line  = top + 0.75f * rowHeight;
+      float rise  = 0.75f * OwnTickRise * light;
+      float cap   = HealthCapFull * light;
+      float base  = top + 0.5f * (rowHeight + cap);
+
+      auto bandColour = [&] (uint32_t band) {
+        return band == 2 ? rgb(config.healthCriticalColour) : band == 1 ? rgb(config.healthLowColour) : hud;
+      };
+
+      int32_t capacity = std::max(ammo.capacity, 1);
+      int32_t clip     = std::clamp(ammo.clip, 0, capacity);
+      VrColour clipColour    = bandColour(vrAmmoClipBand(config, ammo));
+      VrColour reserveColour = bandColour(vrAmmoReserveBand(config, ammo));
+
+      std::string clipText    = std::to_string(clip) + "/" + std::to_string(capacity);
+      std::string reserveText = std::to_string(std::max(ammo.reserve, 0));
+
+      float x0 = left;
+      float x1 = right;
+
+      if (font) {
+        float capitals = std::max(font->metrics.glyph('8').ascent, 1.0f);
+        float scale = 1.2f * cap / capitals;
+        float gap   = HealthLabelGap * light + 4.0f;
+
+        if (config.ammoNumbers) {
+          // "2/6 | 48": the clip, a short bar between, the rounds left
+          float clipWidth = VrPaintList::measureText(*font, clipText, scale);
+          list.drawText(*font, clipText, left, base, scale, clipColour);
+          float bar = left + clipWidth + gap;
+          list.fillRect(bar, base - 1.2f * cap, bar + OwnTick, base, hud.faded(0.5f));
+          list.drawText(*font, reserveText, bar + OwnTick + gap, base, scale, reserveColour);
+          return;
+        }
+
+        // Places as wide as the largest numbers of this clip, so that the
+        // ticks do not move while firing
+        std::string digits(std::to_string(capacity).size(), '8');
+        float clipSlot    = VrPaintList::measureText(*font, digits + "/" + digits, scale);
+        float reserveSlot = VrPaintList::measureText(*font,
+          std::string(std::max<size_t>(reserveText.size(), 3), '8'), scale);
+
+        list.drawText(*font, clipText, left, base, scale, clipColour);
+        float reserveWidth = VrPaintList::measureText(*font, reserveText, scale);
+        list.drawText(*font, reserveText, right - reserveWidth, base, scale, reserveColour);
+
+        x0 = left + clipSlot + gap;
+        x1 = right - reserveSlot - gap;
+      } else if (config.ammoNumbers) {
+        return;
+      }
+
+      if (x1 - x0 < 8.0f)
+        return;
+
+      float xs = x0 + (x1 - x0) * float(clip) / float(capacity);
+
+      auto part = [&] (float a, float b, const VrColour& colour) {
+        if (b <= a)
+          return;
+        list.fillRect(a, line - 0.5f * OwnGlow, b, line + 0.5f * OwnGlow, colour.faded(0.15f));
+        list.fillRect(a, line - 0.5f * OwnLine, b, line + 0.5f * OwnLine, colour.faded(0.9f));
+      };
+
+      VrColour empty = clipColour.faded(HealthEmpty);
+      part(x0, xs, clipColour);
+      part(xs, x1, empty);
+
+      if (capacity <= MaxRoundTicks) {
+        // A tick per round, in the middle of its share of the line
+        for (int32_t i = 0; i < capacity; i++) {
+          float x = x0 + (x1 - x0) * (float(i) + 0.5f) / float(capacity);
+          list.fillRect(x - 0.5f * OwnTick, line - rise, x + 0.5f * OwnTick, line, i < clip ? clipColour : empty);
+        }
+      } else {
+        constexpr uint32_t Ticks = 14;
+
+        for (uint32_t i = 0; i <= Ticks; i++) {
+          float x = x0 + (x1 - x0) * float(i) / float(Ticks);
+          list.fillRect(x - 0.5f * OwnTick, line - rise, x + 0.5f * OwnTick, line, x <= xs + 0.5f ? clipColour : empty);
         }
       }
     }
@@ -342,7 +439,7 @@ namespace dxvk {
 
   void vrPaintCompass(VrPaintList& list, const VrCompassConfig& config, float heading,
       const std::vector<VrCompassMarker>& markers, const VrColour& colour, const VrPaintFont* font,
-      const VrCompassPictures& pictures, const VrHealthState& health) {
+      const VrCompassPictures& pictures, const VrHealthState& health, const VrAmmoState& ammo) {
     float width  = float(list.width());
     float height = float(list.height());
 
@@ -350,6 +447,9 @@ namespace dxvk {
 
     if (config.health && health.known)
       paintHealth(list, config, font, pictures.healthBar, health);
+
+    if (config.ammo && ammo.known && ammo.capacity > 0)
+      paintAmmo(list, config, font, colour, ammo);
 
     if (!config.enabled)
       return;
@@ -494,6 +594,16 @@ namespace dxvk {
     else if (name == "quest")    ok = number(0.5f, 2.0f, c.questScale);
     else if (name == "stripheight") ok = number(0.5f, 1.0f, c.stripHeight);
     else if (name == "markersize")  ok = number(0.5f, 1.5f, c.markerSize);
+    else if (name == "ammolow")        ok = number(0.0f, 1.0f, c.ammoLow);
+    else if (name == "ammoreservelow") ok = number(0.0f, 10.0f, c.ammoReserveLow);
+    else if (name == "ammostyle") {
+      ok = value == "bars" || value == "numbers";
+      c.ammoNumbers = value == "numbers";
+    }
+    else if (name == "ammo") {
+      ok = value == "on" || value == "off";
+      c.ammo = value == "on";
+    }
     else if (name == "healthpicture") {
       ok = value == "on" || value == "off";
       c.healthPicture = value == "on";
@@ -522,7 +632,7 @@ namespace dxvk {
 
 
   std::string vrDescribeCompass(const VrCompassConfig& c) {
-    char text[512];
+    char text[640];
     auto deg = [] (float v, char* out, size_t size) {
       if (v == 0.0f)
         std::snprintf(out, size, "auto");
@@ -535,13 +645,32 @@ namespace dxvk {
     deg(c.top, top, sizeof(top));
     std::snprintf(text, sizeof(text),
       "width=%g top=%g angle=%s topdeg=%s distance=%g span=%g backdrop=%s opacity=%g gap=%g gapnoband=%g quest=%g"
-      " stripheight=%g markersize=%g gamestrip=%s compass=%s health=%s healthpicture=%s healthalign=%s healthwidth=%g healthlow=%g healthcritical=%g pulse=%s",
+      " stripheight=%g markersize=%g gamestrip=%s ammo=%s ammostyle=%s ammolow=%g ammoreservelow=%g compass=%s health=%s healthpicture=%s healthalign=%s healthwidth=%g healthlow=%g healthcritical=%g pulse=%s",
       c.widthShare, c.topShare, angle, top, c.distance, c.span, c.backdrop ? "on" : "off",
       c.backdropOpacity, c.markerGap, c.markerGapNoBackdrop, c.questScale,
       c.stripHeight, c.markerSize, c.gameStrip ? "on" : "off",
+      c.ammo ? "on" : "off", c.ammoNumbers ? "numbers" : "bars", c.ammoLow, c.ammoReserveLow,
       c.enabled ? "on" : "off", c.health ? "on" : "off", c.healthPicture ? "on" : "off", c.healthAlign == VrHealthAlign::Right ? "right" : "centre",
       c.healthWidth, c.healthLow, c.healthCritical, c.healthPulse ? "on" : "off");
     return text;
+  }
+
+
+  uint32_t vrAmmoClipBand(const VrCompassConfig& config, const VrAmmoState& ammo) {
+    if (ammo.clip <= 0)
+      return 2;
+
+    // At least one round low, so that a small clip warns before its last shot
+    int32_t low = std::max(int32_t(std::lround(float(ammo.capacity) * std::clamp(config.ammoLow, 0.0f, 1.0f))), 1);
+    return ammo.clip <= low && ammo.capacity > 1 ? 1 : 0;
+  }
+
+
+  uint32_t vrAmmoReserveBand(const VrCompassConfig& config, const VrAmmoState& ammo) {
+    if (ammo.reserve <= 0)
+      return 2;
+
+    return float(ammo.reserve) < float(std::max(ammo.capacity, 1)) * std::max(config.ammoReserveLow, 0.0f) ? 1 : 0;
   }
 
 
