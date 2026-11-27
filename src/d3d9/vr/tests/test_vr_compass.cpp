@@ -330,6 +330,8 @@ TEST_CASE(compass_health_ecg_trace_draws_and_runs) {
   health.fraction = 0.8f;
   VrColour amber = { 1.0f, 0.7f, 0.2f, 1.0f };
 
+  CHECK(config.healthEcg);   // the default
+  config.healthEcg = false;
   VrPaintList ticks(VrCompassImage::Width, VrCompassImage::Height);
   vrPaintCompass(ticks, config, 0.0f, { }, amber, nullptr, VrCompassPictures(), health);
 

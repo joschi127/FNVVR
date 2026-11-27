@@ -93,8 +93,9 @@ namespace dxvk {
     /// Instead of the tick marks an ECG trace in the bar's full part, one
     /// heartbeat every healthEcgBeat of the bar's width; with healthEcgScroll
     /// it runs to the left, one beat per healthEcgPeriod seconds (shorter
-    /// when low, the pulse's period when critical)
-    bool     healthEcg       = false;
+    /// when low, the pulse's period when critical). On by default; off
+    /// shows the tick marks
+    bool     healthEcg       = true;
     bool     healthEcgScroll = true;
     float    healthEcgBeat   = 0.25f;
     float    healthEcgPeriod = 1.4f;
