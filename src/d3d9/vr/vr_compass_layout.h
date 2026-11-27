@@ -61,9 +61,9 @@ namespace dxvk {
     /// meter: green while well, orange below healthLow, red and pulsing
     /// below healthCritical (shares of the full health)
     bool     health          = true;
-    VrHealthAlign healthAlign = VrHealthAlign::Centre;
+    VrHealthAlign healthAlign = VrHealthAlign::Right;
     /// Width of the label and meter together, as a share of the strip's
-    float    healthWidth     = 0.42f;
+    float    healthWidth     = 0.32f;
     float    healthLow       = 0.5f;
     float    healthCritical  = 0.25f;
     uint32_t healthColour    = 0xA6E585;
@@ -123,8 +123,9 @@ namespace dxvk {
    */
   struct VrCompassImage {
     constexpr static uint32_t Width  = 768;
-    /// The strip and markers in the top 166 rows, the health bar below
-    constexpr static uint32_t Height = 222;
+    /// The strip and markers at the top, the health bar just below them
+    /// (lower when the markers are moved down)
+    constexpr static uint32_t Height = 206;
   };
 
   enum class VrCompassMarkerKind : uint32_t {

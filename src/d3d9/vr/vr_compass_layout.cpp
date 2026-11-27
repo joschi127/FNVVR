@@ -44,10 +44,10 @@ namespace dxvk {
 
     // The health bar's row below the markers, and the game's HP meter
     // (glow_hp_bar.dds, 512 x 32): its line and ticks cover x 98 to 413, y 6 to 25
-    constexpr float HealthRowTop    = 172.0f;
-    constexpr float HealthRowEnd    = 214.0f;
-    constexpr float HealthCap       = 24.0f;   // height of the "HP" label's capitals
-    constexpr float HealthLabelGap  = 12.0f;
+    constexpr float HealthSpace     = 8.0f;    // between the markers' bottom and the bar
+    constexpr float HealthRowHeight = 30.0f;
+    constexpr float HealthCap       = 17.0f;   // height of the "HP" label's capitals
+    constexpr float HealthLabelGap  = 8.0f;
     constexpr float HealthEmpty     = 0.22f;   // brightness of the meter's empty part
     constexpr float MeterTexels     = 512.0f;
     constexpr float MeterRows       = 32.0f;
@@ -61,6 +61,12 @@ namespace dxvk {
         float(colour & 0xFF) / 255.0f, alpha };
     }
 
+    // Top of the health bar's row: just below the markers, which move with the gap
+    float healthRowTop(const VrCompassConfig& config) {
+      float gap = config.backdrop ? config.markerGap : config.markerGapNoBackdrop;
+      return MarkerRowEnd + std::min(gap, 14.0f) + HealthSpace;
+    }
+
     // The label "HP" and the meter, its full part bright and the rest faint
     void paintHealth(VrPaintList& list, const VrCompassConfig& config, const VrPaintFont* font,
         const VrImage* meter, const VrHealthState& health) {
@@ -71,7 +77,9 @@ namespace dxvk {
       float group = std::clamp(config.healthWidth, 0.1f, 1.0f) * width;
       float left  = config.healthAlign == VrHealthAlign::Right
         ? width - EdgeSpace - group : 0.5f * (width - group);
-      float rowHeight = HealthRowEnd - HealthRowTop;
+      float HealthRowTop = healthRowTop(config);
+      float HealthRowEnd = HealthRowTop + HealthRowHeight;
+      float rowHeight    = HealthRowHeight;
 
       float labelWidth = 0.0f;
 
@@ -290,7 +298,7 @@ namespace dxvk {
       return;
 
     // The markers keep out of the health bar's row
-    height = std::min(height, HealthRowTop - 6.0f);
+    height = std::min(height, healthRowTop(config) - 6.0f);
 
     // A dark band behind the strip, round at its ends
     if (config.backdrop && config.backdropOpacity > 0.0f) {

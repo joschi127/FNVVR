@@ -250,8 +250,10 @@ namespace dxvk {
     std::string healthAlign = config.getOption<std::string>("d3d9.vrHealthBarAlign", "");
     if (healthAlign == "right" || healthAlign == "Right")
       compass.healthAlign = VrHealthAlign::Right;
-    else if (!healthAlign.empty() && healthAlign != "centre" && healthAlign != "center" && healthAlign != "Centre")
-      Logger::warn(str::format("VR: d3d9.vrHealthBarAlign '", healthAlign, "' is neither centre nor right, centre is used"));
+    else if (healthAlign == "centre" || healthAlign == "center" || healthAlign == "Centre")
+      compass.healthAlign = VrHealthAlign::Centre;
+    else if (!healthAlign.empty())
+      Logger::warn(str::format("VR: d3d9.vrHealthBarAlign '", healthAlign, "' is neither centre nor right, right is used"));
     compass.healthWidth    = std::clamp(config.getOption<float>("d3d9.vrHealthBarWidthShare", compass.healthWidth), 0.1f, 1.0f);
     compass.healthLow      = std::clamp(config.getOption<float>("d3d9.vrHealthBarLow", compass.healthLow), 0.0f, 1.0f);
     compass.healthCritical = std::clamp(config.getOption<float>("d3d9.vrHealthBarCritical", compass.healthCritical), 0.0f, 1.0f);

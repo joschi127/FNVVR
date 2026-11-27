@@ -247,7 +247,7 @@ TEST_CASE(compass_health_bar_draws_in_its_row_and_follows_the_alignment) {
     right = -1.0e9f;
 
     for (const VrPaintVertex& v : list.vertices()) {
-      CHECK(v.y >= 166.0f && v.y <= float(VrCompassImage::Height));
+      CHECK(v.y >= 128.0f && v.y <= float(VrCompassImage::Height));
       left  = std::min(left, v.x);
       right = std::max(right, v.x);
     }
