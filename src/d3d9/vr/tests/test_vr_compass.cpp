@@ -269,6 +269,33 @@ TEST_CASE(compass_health_bar_draws_in_its_row_and_follows_the_alignment) {
 }
 
 
+TEST_CASE(compass_flatter_strip_and_smaller_markers_move_the_health_bar_up) {
+  VrCompassConfig config;
+  config.enabled = false;   // only the health bar
+  VrHealthState health;
+  health.known = true;
+
+  auto barTop = [&] () {
+    VrPaintList list(VrCompassImage::Width, VrCompassImage::Height);
+    vrPaintCompass(list, config, 0.0f, { }, { 1.0f, 0.7f, 0.2f, 1.0f }, nullptr, VrCompassPictures(), health);
+    float top = 1.0e9f;
+    for (const VrPaintVertex& v : list.vertices())
+      top = std::min(top, v.y);
+    return top;
+  };
+
+  float full = barTop();
+  CHECK(vrSetCompassValue(config, "stripheight", "0.8"));
+  float flatter = barTop();
+  CHECK(vrSetCompassValue(config, "markersize", "0.75"));
+  float smaller = barTop();
+  CHECK(flatter < full - 10.0f);
+  CHECK(smaller < flatter - 10.0f);
+  CHECK(!vrSetCompassValue(config, "stripheight", "1.2"));
+  CHECK(vrDescribeCompass(config).find("stripheight=0.8 markersize=0.75") != std::string::npos);
+}
+
+
 TEST_CASE(compass_health_settings_change_by_name) {
   VrCompassConfig config;
   CHECK(vrSetCompassValue(config, "healthalign", "right") && config.healthAlign == VrHealthAlign::Right);

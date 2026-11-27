@@ -46,7 +46,7 @@ namespace dxvk {
     // (glow_hp_bar.dds, 512 x 32): its line and ticks cover x 98 to 413, y 6 to 25
     constexpr float HealthSpace     = 8.0f;    // between the markers' bottom and the bar
     constexpr float HealthRowHeight = 30.0f;
-    constexpr float HealthCap       = 17.0f;   // height of the "HP" label's capitals
+    constexpr float HealthCapFull   = 17.0f;   // height of the "HP" label's capitals
     constexpr float HealthLabelGap  = 8.0f;
     constexpr float HealthEmpty     = 0.22f;   // brightness of the meter's empty part
     constexpr float MeterTexels     = 512.0f;
@@ -61,10 +61,15 @@ namespace dxvk {
         float(colour & 0xFF) / 255.0f, alpha };
     }
 
-    // Top of the health bar's row: just below the markers, which move with the gap
-    float healthRowTop(const VrCompassConfig& config) {
+    float stripRowScale(const VrCompassConfig& config, float width);
+    float markerRowTop(const VrCompassConfig& config, float width);
+    float markerRowHeight(const VrCompassConfig& config);
+
+    // Top of the health bar's row: just below the markers, which move with the
+    // gap, the strip's height and their size
+    float healthRowTop(const VrCompassConfig& config, float width) {
       float gap = config.backdrop ? config.markerGap : config.markerGapNoBackdrop;
-      return MarkerRowEnd + std::min(gap, 14.0f) + HealthSpace;
+      return markerRowTop(config, width) + markerRowHeight(config) + std::min(gap, 14.0f) + HealthSpace;
     }
 
     // The label "HP" and the meter, its full part bright and the rest faint
@@ -77,17 +82,20 @@ namespace dxvk {
       float group = std::clamp(config.healthWidth, 0.1f, 1.0f) * width;
       float left  = config.healthAlign == VrHealthAlign::Right
         ? width - EdgeSpace - group : 0.5f * (width - group);
-      float HealthRowTop = healthRowTop(config);
-      float HealthRowEnd = HealthRowTop + HealthRowHeight;
-      float rowHeight    = HealthRowHeight;
+      // As light as the strip: thinner with it
+      float light        = std::clamp(config.stripHeight, 0.5f, 1.0f);
+      float HealthRowTop = healthRowTop(config, width);
+      float rowHeight    = HealthRowHeight * light;
+      float HealthRowEnd = HealthRowTop + rowHeight;
+      float cap          = HealthCapFull * light;
 
       float labelWidth = 0.0f;
 
       if (font) {
         float capitals = std::max(font->metrics.glyph('H').ascent, 1.0f);
-        float scale = HealthCap / capitals;
+        float scale = cap / capitals;
         labelWidth = VrPaintList::measureText(*font, "HP", scale) + HealthLabelGap;
-        list.drawText(*font, "HP", left, HealthRowTop + 0.5f * (rowHeight + HealthCap), scale, c);
+        list.drawText(*font, "HP", left, HealthRowTop + 0.5f * (rowHeight + cap), scale, c);
       }
 
       float x0 = left + labelWidth;
@@ -153,9 +161,23 @@ namespace dxvk {
       return width / (std::max(config.span, 1.0f) / 360.0f * StripTexels);
     }
 
-    // Pixels per texel up and down: as across, but never into the markers' row
+    // Pixels per texel up and down: as across, but never into the markers' row,
+    // and flattened by the strip's height setting
     float stripRowScale(const VrCompassConfig& config, float width) {
-      return std::min(stripScale(config, width), (MarkerRowTop - StripY - 4.0f) / (StripBottom - StripTop));
+      return std::clamp(config.stripHeight, 0.5f, 1.0f)
+        * std::min(stripScale(config, width), (MarkerRowTop - StripY - 4.0f) / (StripBottom - StripTop));
+    }
+
+    // The markers' row: below the strip, as far from it as at the full height,
+    // and as high as the marker size gives
+    float markerRowTop(const VrCompassConfig& config, float width) {
+      float full = (MarkerRowTop - StripY - 4.0f) / (StripBottom - StripTop);
+      float k    = std::min(stripScale(config, width), full);
+      return MarkerRowTop - (StripBottom - StripTop) * (k - stripRowScale(config, width));
+    }
+
+    float markerRowHeight(const VrCompassConfig& config) {
+      return std::clamp(config.markerSize, 0.5f, 1.5f) * (MarkerRowEnd - MarkerRowTop);
     }
 
     void paintGameStrip(VrPaintList& list, const VrCompassConfig& config, float heading,
@@ -298,7 +320,7 @@ namespace dxvk {
       return;
 
     // The markers keep out of the health bar's row
-    height = std::min(height, healthRowTop(config) - 6.0f);
+    height = std::min(height, healthRowTop(config, width) - 6.0f);
 
     // A dark band behind the strip, round at its ends
     if (config.backdrop && config.backdropOpacity > 0.0f) {
@@ -321,10 +343,10 @@ namespace dxvk {
     static const VrCompassMarkerKind DrawOrder[] = {
       VrCompassMarkerKind::Friend, VrCompassMarkerKind::Custom, VrCompassMarkerKind::Quest };
 
-    float rowHeight = MarkerRowEnd - MarkerRowTop;
+    float rowHeight = markerRowHeight(config);
     float gap       = config.backdrop ? config.markerGap : config.markerGapNoBackdrop;
-    float rowTop    = MarkerRowTop + gap;
-    float rowEnd    = MarkerRowEnd + gap;
+    float rowTop    = markerRowTop(config, width) + gap;
+    float rowEnd    = rowTop + rowHeight;
     float capitals  = font ? std::max(font->metrics.glyph('A').ascent, 1.0f) : 1.0f;
 
     for (VrCompassMarkerKind kind : DrawOrder) {
@@ -352,8 +374,9 @@ namespace dxvk {
 
           if (font && marker.initial) {
             std::string initial(1, marker.initial);
-            float textScale = 22.0f / capitals;
-            list.drawText(*font, initial, x + 8.0f, rowEnd - 4.0f, textScale, c);
+            float size      = std::clamp(config.markerSize, 0.5f, 1.5f);
+            float textScale = 22.0f * size / capitals;
+            list.drawText(*font, initial, x + 8.0f * size, rowEnd - 4.0f * size, textScale, c);
           }
 
           continue;
@@ -433,6 +456,8 @@ namespace dxvk {
     else if (name == "gap")      ok = number(-40.0f, 14.0f, c.markerGap);
     else if (name == "gapnoband") ok = number(-40.0f, 14.0f, c.markerGapNoBackdrop);
     else if (name == "quest")    ok = number(0.5f, 2.0f, c.questScale);
+    else if (name == "stripheight") ok = number(0.5f, 1.0f, c.stripHeight);
+    else if (name == "markersize")  ok = number(0.5f, 1.5f, c.markerSize);
     else if (name == "healthwidth")    ok = number(0.1f, 1.0f, c.healthWidth);
     else if (name == "healthlow")      ok = number(0.0f, 1.0f, c.healthLow);
     else if (name == "healthcritical") ok = number(0.0f, 1.0f, c.healthCritical);
@@ -453,7 +478,7 @@ namespace dxvk {
 
 
   std::string vrDescribeCompass(const VrCompassConfig& c) {
-    char text[448];
+    char text[512];
     auto deg = [] (float v, char* out, size_t size) {
       if (v == 0.0f)
         std::snprintf(out, size, "auto");
@@ -466,9 +491,10 @@ namespace dxvk {
     deg(c.top, top, sizeof(top));
     std::snprintf(text, sizeof(text),
       "width=%g top=%g angle=%s topdeg=%s distance=%g span=%g backdrop=%s opacity=%g gap=%g gapnoband=%g quest=%g"
-      " compass=%s health=%s healthalign=%s healthwidth=%g healthlow=%g healthcritical=%g pulse=%s",
+      " stripheight=%g markersize=%g compass=%s health=%s healthalign=%s healthwidth=%g healthlow=%g healthcritical=%g pulse=%s",
       c.widthShare, c.topShare, angle, top, c.distance, c.span, c.backdrop ? "on" : "off",
       c.backdropOpacity, c.markerGap, c.markerGapNoBackdrop, c.questScale,
+      c.stripHeight, c.markerSize,
       c.enabled ? "on" : "off", c.health ? "on" : "off", c.healthAlign == VrHealthAlign::Right ? "right" : "centre",
       c.healthWidth, c.healthLow, c.healthCritical, c.healthPulse ? "on" : "off");
     return text;
